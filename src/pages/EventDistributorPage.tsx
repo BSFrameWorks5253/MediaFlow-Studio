@@ -41,7 +41,6 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
   const [filterAbbr, setFilterAbbr] = useState<string>('ALL');
   const [isPathSetupOpen, setIsPathSetupOpen] = useState(false);
   const [setupImagesPath, setSetupImagesPath] = useState('');
-  const [setupExcelPath, setSetupExcelPath] = useState('');
 
   // Auto-load persistent config on mount and prompt if not set
   useEffect(() => {
@@ -107,10 +106,7 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
     if (window.electronAPI) {
       window.electronAPI.getConfig().then((cfg: any) => {
         if (cfg) {
-          if (cfg.eventExcelPath && !excelPath) {
-            setExcelPath(cfg.eventExcelPath);
-            setSetupExcelPath(cfg.eventExcelPath);
-          }
+
           if (cfg.eventImagesDirPath && !imagesDir) {
             setImagesDir(cfg.eventImagesDirPath);
             setSetupImagesPath(cfg.eventImagesDirPath);
@@ -141,14 +137,6 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
     if (dir) setSetupImagesPath(dir);
   };
 
-  const handleBrowseSetupExcel = async () => {
-    if (!window.electronAPI) return;
-    const file = await window.electronAPI.selectOpenFile('Select Event Abbreviations Excel File', [
-      { name: 'Excel Spreadsheets', extensions: ['xlsx', 'xls'] },
-    ]);
-    if (file) setSetupExcelPath(file);
-  };
-
   const handleSaveFixedPath = async () => {
     if (!setupImagesPath.trim()) {
       onShowToast('Please select a valid Event Reference Images directory.', 'warning');
@@ -157,11 +145,9 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
     if (window.electronAPI) {
       await window.electronAPI.saveConfig({
         eventImagesDirPath: setupImagesPath.trim(),
-        ...(setupExcelPath ? { eventExcelPath: setupExcelPath.trim() } : {}),
       });
     }
     setImagesDir(setupImagesPath.trim());
-    if (setupExcelPath) setExcelPath(setupExcelPath.trim());
     setIsPathSetupOpen(false);
     onShowToast('✓ Master Event Images path saved permanently until changed in Settings.', 'success');
   };
@@ -454,7 +440,6 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
           <button
             onClick={() => {
               setSetupImagesPath(imagesDir);
-              setSetupExcelPath(excelPath);
               setIsPathSetupOpen(true);
             }}
             style={{
@@ -874,33 +859,26 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
                 </div>
               </div>
 
-              {/* Optional Excel File */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <label style={{ fontSize: 12, fontWeight: 700, color: '#E2E8F0', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <FileSpreadsheet size={14} color="#10E79D" />
-                  Event Abbreviations Spreadsheet (Optional):
-                </label>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <input
-                    value={setupExcelPath}
-                    onChange={(e) => setSetupExcelPath(e.target.value)}
-                    placeholder="e.g. D:\EVENTS\Event Abbreviations List.xlsx (Optional)"
-                    style={{
-                      flex: 1,
-                      background: 'rgba(15, 23, 42, 0.8)',
-                      border: '1px solid rgba(255, 255, 255, 0.15)',
-                      borderRadius: 8,
-                      padding: '8px 12px',
-                      color: '#F8FAFC',
-                      fontSize: 12.5,
-                      fontFamily: 'var(--font-mono)',
-                      outline: 'none',
-                    }}
-                  />
-                  <StudioButton variant="secondary" size="sm" onClick={handleBrowseSetupExcel}>
-                    <FileSpreadsheet size={13} />
-                    Browse
-                  </StudioButton>
+              {/* Hardcoded Built-in Dictionary Notice */}
+              <div
+                style={{
+                  padding: '12px 14px',
+                  borderRadius: 10,
+                  backgroundColor: 'rgba(16, 231, 157, 0.08)',
+                  border: '1px solid rgba(16, 231, 157, 0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                }}
+              >
+                <CheckCircle2 size={16} color="#10E79D" style={{ flexShrink: 0 }} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#10E79D' }}>
+                    Event Code Abbreviations: Hardcoded & Pre-Configured
+                  </span>
+                  <span style={{ fontSize: 11, color: '#94A3B8', lineHeight: 1.4 }}>
+                    Standard 34-code dictionary (Q, M, Z, AQ, BM, BQ, BZ, FMB, H, ID, IF, NAMAZ, N, etc.) is permanently hardcoded. No spreadsheet required.
+                  </span>
                 </div>
               </div>
             </div>
