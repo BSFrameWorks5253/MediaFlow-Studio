@@ -16,8 +16,8 @@
     "build": "npm run build:installer-assets && npm run build:vite && npm run build:electron",
     "package:exe": "npm run build && electron-builder --win nsis",
     "package:msi": "npm run build && electron-builder --win msi",
-    "package:msix": "npm run build && electron-builder --win msix",
-    "package:all": "npm run build && electron-builder --win nsis msi msix",
+    "package:msix": "npm run build && electron-builder --win appx",
+    "package:all": "npm run build && electron-builder --win nsis msi appx",
     "package:portable": "npm run build && electron-builder --win portable",
     "analyze:context": "python scripts/codebase_analyzer.py",
     "builder:gui": "python scripts/release_builder_gui.py",
@@ -79,7 +79,7 @@
       "target": [
         "nsis",
         "msi",
-        "msix"
+        "appx"
       ],
       "icon": "public/assets/app.ico",
       "legalTrademarks": "BSFrameWorks MediaFlow",
@@ -107,7 +107,7 @@
       "shortcutName": "MediaFlow Studio",
       "artifactName": "${productName} 4.1.${ext}"
     },
-    "msix": {
+    "appx": {
       "identityName": "BSFrameWorks.MediaFlow.Studio",
       "publisherDisplayName": "BSFrameWorks",
       "publisher": "CN=YOUR-MICROSOFT-PUBLISHER-ID",

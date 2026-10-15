@@ -40,7 +40,7 @@ if %ERRORLEVEL% NEQ 0 (
 
 echo.
 echo [3/3] Packaging Microsoft Store MSIX Package (.msix) via Electron Builder...
-call npx electron-builder --win msix
+call npx electron-builder --win appx
 
 if %ERRORLEVEL% NEQ 0 (
     echo.

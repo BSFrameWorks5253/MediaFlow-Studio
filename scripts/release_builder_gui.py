@@ -34,8 +34,8 @@ class BuildManagerApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("DataFlow Studio • Ultra Release & Packaging Manager")
-        self.geometry("980x740")
+        self.title("MediaFlow Studio • Ultra Release & Packaging Manager")
+        self.geometry("980x760")
         self.minsize(860, 640)
 
         # Process handle
@@ -52,10 +52,10 @@ class BuildManagerApp(ctk.CTk):
             try:
                 with open(PACKAGE_JSON_PATH, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                    return data.get("version", "4.0.0")
+                    return data.get("version", "4.1.0")
             except Exception:
                 pass
-        return "4.0.0"
+        return "4.1.0"
 
     def save_package_version(self, new_ver: str):
         if PACKAGE_JSON_PATH.exists():
@@ -68,7 +68,7 @@ class BuildManagerApp(ctk.CTk):
     def calculate_next_version(self, current_ver: str, bump_type: str) -> str:
         parts = current_ver.split(".")
         major = int(parts[0]) if len(parts) > 0 and parts[0].isdigit() else 4
-        minor = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
+        minor = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 1
         patch = int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 0
 
         if bump_type == "patch":
@@ -91,10 +91,10 @@ class BuildManagerApp(ctk.CTk):
         # App Badge / Indicator
         icon_badge = ctk.CTkLabel(
             header,
-            text="DF",
+            text="MF",
             font=ctk.CTkFont(family="Inter", size=18, weight="bold"),
-            fg_color="#007AFF",
-            text_color="#FFFFFF",
+            fg_color="#00F2FE",
+            text_color="#07090E",
             width=48,
             height=48,
             corner_radius=12,
@@ -107,7 +107,7 @@ class BuildManagerApp(ctk.CTk):
 
         main_title = ctk.CTkLabel(
             title_box,
-            text="DataFlow Studio • Production Release Station",
+            text="MediaFlow Studio • Production Release Station",
             font=ctk.CTkFont(family="Inter", size=18, weight="bold"),
             text_color="#FFFFFF",
         )
@@ -224,36 +224,47 @@ class BuildManagerApp(ctk.CTk):
 
         r1 = ctk.CTkRadioButton(
             radio_frame,
-            text="Both Setup EXE & Enterprise MSI  (Recommended)",
+            text="All Three: EXE + MSI + MSIX  (Full Production Suite)",
             value="all",
             variable=self.target_var,
             font=ctk.CTkFont(size=12, weight="bold"),
-            text_color="#FFFFFF",
-            fg_color="#007AFF",
+            text_color="#00F2FE",
+            fg_color="#00F2FE",
         )
-        r1.pack(anchor="w", pady=4)
+        r1.pack(anchor="w", pady=3)
 
         r2 = ctk.CTkRadioButton(
             radio_frame,
-            text="Setup EXE Only (NSIS High-Compression Installer)",
+            text="Setup EXE Only (NSIS Modern UI 2 Installer)",
             value="exe",
             variable=self.target_var,
             font=ctk.CTkFont(size=12),
             text_color="#D1D5DB",
             fg_color="#007AFF",
         )
-        r2.pack(anchor="w", pady=4)
+        r2.pack(anchor="w", pady=3)
 
         r3 = ctk.CTkRadioButton(
             radio_frame,
-            text="MSI Only (Windows Installer Package for Enterprise)",
+            text="Enterprise MSI Only (WiX Windows Installer Package)",
             value="msi",
             variable=self.target_var,
             font=ctk.CTkFont(size=12),
             text_color="#D1D5DB",
             fg_color="#007AFF",
         )
-        r3.pack(anchor="w", pady=4)
+        r3.pack(anchor="w", pady=3)
+
+        r4 = ctk.CTkRadioButton(
+            radio_frame,
+            text="Microsoft Store MSIX Only (Windows 10/11 Partner Center)",
+            value="msix",
+            variable=self.target_var,
+            font=ctk.CTkFont(size=12),
+            text_color="#D1D5DB",
+            fg_color="#C084FC",
+        )
+        r4.pack(anchor="w", pady=3)
 
         # Action Execution Bar
         action_bar = ctk.CTkFrame(self, fg_color="transparent")
@@ -370,11 +381,31 @@ class BuildManagerApp(ctk.CTk):
     def run_build_thread(self, version: str, target: str):
         try:
             self.log("\n" + "=" * 65 + "\n")
-            self.log(f"  STARTING DATAFLOW STUDIO RELEASE BUILD v{version}\n")
+            self.log(f"  STARTING MEDIAFLOW STUDIO RELEASE BUILD v{version}\n")
             self.log("=" * 65 + "\n\n")
 
-            # 1. Compile Assets & Vite Frontend
-            self.log("[1/3] Compiling Frontend (Vite Build)...\n")
+            # 1. Compile Presentation & Tile Assets
+            self.log("[1/4] Generating Installer & AppX Store Assets...\n")
+            p_assets = subprocess.Popen(
+                "npm run build:installer-assets",
+                shell=True,
+                cwd=str(BASE_DIR),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+            )
+            for line in iter(p_assets.stdout.readline, ""):
+                self.log("  " + line)
+            p_assets.stdout.close()
+            if p_assets.wait() != 0:
+                self.log("[ERROR] Asset generation failed!\n")
+                self.after(0, self.finish_build, False)
+                return
+            self.log("  ✓ Assets generated successfully!\n\n")
+
+            # 2. Compile Vite Frontend
+            self.log("[2/4] Compiling Frontend (Vite Build)...\n")
             p_vite = subprocess.Popen(
                 "npm run build:vite",
                 shell=True,
@@ -393,8 +424,8 @@ class BuildManagerApp(ctk.CTk):
                 return
             self.log("  ✓ Frontend compiled successfully!\n\n")
 
-            # 2. Compile Electron Backend
-            self.log("[2/3] Compiling Electron Backend (TypeScript)...\n")
+            # 3. Compile Electron Backend
+            self.log("[3/4] Compiling Electron Backend (TypeScript)...\n")
             p_elec = subprocess.Popen(
                 "npm run build:electron",
                 shell=True,
@@ -413,16 +444,20 @@ class BuildManagerApp(ctk.CTk):
                 return
             self.log("  ✓ Backend compiled successfully!\n\n")
 
-            # 3. Packaging target
+            # 4. Packaging target
             if target == "all":
-                target_args = "--win nsis msi"
+                target_args = "--win nsis msi appx"
             elif target == "exe":
                 target_args = "--win nsis"
-            else:
+            elif target == "msi":
                 target_args = "--win msi"
+            elif target == "msix":
+                target_args = "--win appx"
+            else:
+                target_args = "--win nsis msi appx"
 
-            self.log(f"[3/3] Packaging Targets via electron-builder ({target_args})...\n")
-            self.log("  (Please wait ~30-60s while NSIS / MSI compresses runtime binary)\n\n")
+            self.log(f"[4/4] Packaging Targets via electron-builder ({target_args})...\n")
+            self.log("  (Please wait ~30-60s while binaries are compiled and compressed)\n\n")
 
             # Set FORCE_COLOR=1 and unbuffered execution
             env = os.environ.copy()
