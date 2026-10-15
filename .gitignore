@@ -22,6 +22,8 @@ venv/
 .env
 .env.local
 .env.*.local
+*.pfx
+*.cer
 
 # Logs and scratch files
 npm-debug.log*

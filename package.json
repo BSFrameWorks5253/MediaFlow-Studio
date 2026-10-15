@@ -1,6 +1,6 @@
 {
   "name": "mediaflow-studio",
-  "version": "4.1.0",
+  "version": "5.0.0",
   "description": "DataFlow Studio \u2014 Professional Media Ingestion, Synchronization and Report Fusion Desktop Suite",
   "main": "dist-electron/main.js",
   "author": "BSFrameWorks",
@@ -93,34 +93,32 @@
       "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
       "shortcutName": "MediaFlow Studio",
-      "uninstallDisplayName": "MediaFlow Studio v4.1",
+      "uninstallDisplayName": "MediaFlow Studio v5.0",
       "runAfterFinish": true,
       "installerIcon": "public/assets/app.ico",
       "uninstallerIcon": "public/assets/app.ico",
       "installerHeader": "build/installerHeader.bmp",
       "installerSidebar": "build/installerSidebar.bmp",
       "uninstallerSidebar": "build/uninstallerSidebar.bmp",
-      "artifactName": "${productName} Setup 4.1.${ext}"
+      "artifactName": "${productName} Setup v${version}.${ext}"
     },
     "msi": {
       "oneClick": false,
       "shortcutName": "MediaFlow Studio",
-      "artifactName": "${productName} 4.1.${ext}"
+      "artifactName": "${productName} v${version}.${ext}"
     },
     "appx": {
-      "identityName": "BSFrameWorks.MediaFlow.Studio",
-      "publisherDisplayName": "BSFrameWorks",
-      "publisher": "CN=YOUR-MICROSOFT-PUBLISHER-ID",
+      "identityName": "BS.Framework.MediaFlowStudio",
+      "publisherDisplayName": "BS.Framework",
+      "publisher": "CN=B2B152C3-5239-413B-BE54-035A4A6AFF1E",
       "applicationId": "MediaFlowStudio",
       "displayName": "MediaFlow Studio",
-      "languages": ["en-US"],
+      "languages": [
+        "en-US"
+      ],
       "backgroundColor": "#07080d",
       "showNameOnTiles": true,
-      "capabilities": [
-        "runFullTrust"
-      ],
-      "artifactName": "${productName}_Store_V${version}.${ext}",
-      "autoUpdate": false
+      "artifactName": "${productName}_Store_v${version}.${ext}"
     }
   }
 }
