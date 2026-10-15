@@ -141,33 +141,33 @@
    Light Mode (Soothing Studio Off-White — Soft on Eyes & Low Glare)
    ============================================================ */
 [data-theme="light"] {
-  --system-bg: #eceff5;
-  --secondary-system-bg: #f4f6fa;
-  --tertiary-system-bg: #e2e6ef;
-  --system-grouped-bg: #e5eaf2;
+  --system-bg: #f1f4f9;
+  --secondary-system-bg: #e6ebf3;
+  --tertiary-system-bg: #dbe2ee;
+  --system-grouped-bg: #edf2f8;
 
-  --sidebar-bg: rgba(244, 246, 251, 0.94);
-  --surface: rgba(249, 250, 253, 0.94);
-  --surface-elevated: #f3f5f9;
-  --surface-glass: rgba(246, 248, 252, 0.88);
-  --surface-glass-elevated: rgba(253, 254, 255, 0.96);
-  --surface-card: rgba(252, 253, 255, 0.94);
+  --sidebar-bg: rgba(255, 255, 255, 0.96);
+  --surface: rgba(255, 255, 255, 0.94);
+  --surface-elevated: #f8fafc;
+  --surface-glass: rgba(255, 255, 255, 0.92);
+  --surface-glass-elevated: #ffffff;
+  --surface-card: #ffffff;
   --surface-card-hover: #ffffff;
 
-  --label: #1e293b;
-  --secondary-label: #475569;
+  --label: #0f172a;
+  --secondary-label: #334155;
   --tertiary-label: #64748b;
   --quaternary-label: #94a3b8;
 
-  --border: rgba(203, 213, 225, 0.85);
-  --border-subtle: rgba(226, 232, 240, 0.75);
-  --border-hover: rgba(148, 163, 184, 0.7);
-  --border-glass: rgba(203, 213, 225, 0.75);
-  --border-glow: rgba(2, 132, 199, 0.22);
+  --border: rgba(15, 23, 42, 0.11);
+  --border-subtle: rgba(15, 23, 42, 0.06);
+  --border-hover: rgba(15, 23, 42, 0.28);
+  --border-glass: rgba(15, 23, 42, 0.1);
+  --border-glow: rgba(0, 122, 255, 0.28);
 
-  --glass-specular-top: rgba(255, 255, 255, 0.85);
+  --glass-specular-top: rgba(255, 255, 255, 0.95);
   --glass-inner-shadow: rgba(0, 0, 0, 0.02);
-  --glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.1) 100%);
+  --glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.1) 100%);
 
   /* Apple Light Tokens */
   --system-blue: #007aff;
@@ -195,7 +195,7 @@
   --info-soft: rgba(2, 132, 199, 0.12);
 
   --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05);
-  --shadow-card: 0 3px 12px -2px rgba(15, 23, 42, 0.06), 0 0 0 1px var(--border);
-  --shadow-elevated: 0 12px 30px -6px rgba(15, 23, 42, 0.1), 0 0 0 1px var(--border);
-  --shadow-glow: 0 0 15px -3px rgba(2, 132, 199, 0.2);
+  --shadow-card: 0 4px 14px -2px rgba(15, 23, 42, 0.07), 0 0 0 1px var(--border);
+  --shadow-elevated: 0 16px 36px -6px rgba(15, 23, 42, 0.12), 0 0 0 1px var(--border);
+  --shadow-glow: 0 0 20px -3px rgba(2, 132, 199, 0.25);
 }
