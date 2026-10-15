@@ -1,0 +1,842 @@
+{
+  "BUILD_EXE.bat": {
+    "hash": "16ffb6ad692140c22721ac125ad650ec482e67183eaa7add26113a2e60a4e878",
+    "last_modified": "2026-10-15T10:59:22.592805",
+    "lines": 48,
+    "est_tokens": 340,
+    "summary": "48 lines, 0 symbols"
+  },
+  "BUILD_MSI.bat": {
+    "hash": "297493a50953ef19af3bb6ec20f8593da443ec4ee88e998f8bd27c555bf83a98",
+    "last_modified": "2026-10-15T10:59:29.441865",
+    "lines": 48,
+    "est_tokens": 345,
+    "summary": "48 lines, 0 symbols"
+  },
+  "BUILD_MSIX.bat": {
+    "hash": "63da70514ba2ef9a48cf28aa2cd33d5bfedf962f090dfef0340579716729b528",
+    "last_modified": "2026-10-15T11:27:52.820674",
+    "lines": 58,
+    "est_tokens": 433,
+    "summary": "58 lines, 0 symbols"
+  },
+  "collect_inventory_reports.py": {
+    "hash": "b785cd32ff5e5c8aed9e1cf4dcc2d84fb5e422197e53e73748ac9c6109c49b73",
+    "last_modified": "2026-10-15T00:55:59.309080",
+    "lines": 683,
+    "est_tokens": 6902,
+    "summary": "683 lines, 8 symbols"
+  },
+  "DATAFLOW_SYSTEM_LOGIC_SPECIFICATION.md": {
+    "hash": "0c6f036294e47a521e54cdd2681663a12efbc4a758ab51919e57465969051867",
+    "last_modified": "2026-09-07T22:42:03.805773",
+    "lines": 794,
+    "est_tokens": 7457,
+    "summary": "794 lines, 0 symbols"
+  },
+  "index.html": {
+    "hash": "4b30b4b37487095423cbca281a614b9ca91764de488117a6267f5634c094161c",
+    "last_modified": "2026-10-15T10:57:59.610711",
+    "lines": 23,
+    "est_tokens": 251,
+    "summary": "23 lines, 0 symbols"
+  },
+  "LAUNCH_DATAFLOW.bat": {
+    "hash": "c15680c37800f8d7493c7132d89f8420cc37521229b3ec3287aca9d033950a59",
+    "last_modified": "2026-10-15T10:59:08.527072",
+    "lines": 37,
+    "est_tokens": 224,
+    "summary": "37 lines, 0 symbols"
+  },
+  "package-lock.json": {
+    "hash": "5107f7ee9119d931065aedaed9e0d8e449bc61aff3fcf8a21b441002923c6e28",
+    "last_modified": "2026-09-07T22:42:29.357347",
+    "lines": 7423,
+    "est_tokens": 68499,
+    "summary": "7423 lines, 0 symbols"
+  },
+  "package.json": {
+    "hash": "cba07735cb8a789a1b22126a6059230ecc1d90fdaa7aedc8504dff765873a5c6",
+    "last_modified": "2026-10-15T11:27:39.751973",
+    "lines": 126,
+    "est_tokens": 1248,
+    "summary": "126 lines, 0 symbols"
+  },
+  "photo_renamer_tool.py": {
+    "hash": "70c043bc488ff211a523e08e234f7e86fceaecb3e3b4467fd19f7449499eec37",
+    "last_modified": "2026-10-03T17:09:48.520869",
+    "lines": 786,
+    "est_tokens": 8825,
+    "summary": "786 lines, 8 symbols"
+  },
+  "PRODUCT.md": {
+    "hash": "fbfc8a8ba510708025c92e68097460448153328b1883bc41de1b0adbc4959c55",
+    "last_modified": "2026-10-15T11:00:52.582139",
+    "lines": 62,
+    "est_tokens": 1219,
+    "summary": "62 lines, 0 symbols"
+  },
+  "README.md": {
+    "hash": "4be1bdcdfa3d61d182cae66c5eb861744836378440a5bc2533156bb6c2bf4459",
+    "last_modified": "2026-10-15T11:36:38.734308",
+    "lines": 190,
+    "est_tokens": 3176,
+    "summary": "190 lines, 0 symbols"
+  },
+  "RUN_INVENTORY_COLLECTOR.bat": {
+    "hash": "fb017eca3cc483c09f7ef2bd2a0391b6485a1d834695276ed15ff7b746142889",
+    "last_modified": "2026-10-15T00:56:10.036776",
+    "lines": 41,
+    "est_tokens": 243,
+    "summary": "41 lines, 0 symbols"
+  },
+  "RUN_PHOTO_RENAMER.bat": {
+    "hash": "ec41867fcf90777d0a8cb883c033ec88ea8d30ac8528093d481f04dda37626fd",
+    "last_modified": "2026-09-14T10:13:20.148856",
+    "lines": 49,
+    "est_tokens": 311,
+    "summary": "49 lines, 0 symbols"
+  },
+  "tsconfig.electron.json": {
+    "hash": "7a837896d39a89b8c05e0989fee899aa37af654bf610c6fac2eb1db5af61a486",
+    "last_modified": "2026-09-07T19:19:00.209185",
+    "lines": 16,
+    "est_tokens": 95,
+    "summary": "16 lines, 0 symbols"
+  },
+  "tsconfig.json": {
+    "hash": "53e05bcaa43b97c773368e4b08a84d82a8156f58bfe23e908714c578a7e1e5bc",
+    "last_modified": "2026-09-07T19:18:53.761217",
+    "lines": 20,
+    "est_tokens": 134,
+    "summary": "20 lines, 0 symbols"
+  },
+  "vite.config.ts": {
+    "hash": "9d7f0e12746ba6463e944487d8edb0e420353a8022901f9cf277146cc68a92c5",
+    "last_modified": "2026-10-14T15:27:27.668840",
+    "lines": 22,
+    "est_tokens": 103,
+    "summary": "22 lines, 1 symbols"
+  },
+  ".github/pull_request_template.md": {
+    "hash": "1710fcf127cd0241e25dccd063828d0e9ceebe063ac61d5e040900ec425a9a3f",
+    "last_modified": "2026-10-15T11:28:53.488868",
+    "lines": 18,
+    "est_tokens": 223,
+    "summary": "18 lines, 0 symbols"
+  },
+  ".impeccable/config.json": {
+    "hash": "47c9348681feca8bbb886588ee251f5e902b6a3222ba304dc99e6e59467bf562",
+    "last_modified": "2026-10-14T20:41:48.114242",
+    "lines": 3,
+    "est_tokens": 6,
+    "summary": "3 lines, 0 symbols"
+  },
+  ".impeccable/config.local.json": {
+    "hash": "1de4a5ea082e026eaac1046cf5e487030b3a3df3cfb24ed9e836b08a4de01d41",
+    "last_modified": "2026-10-14T20:34:47.983284",
+    "lines": 5,
+    "est_tokens": 12,
+    "summary": "5 lines, 0 symbols"
+  },
+  "Docs/blueprints/01_AUTO_UPDATE_SYSTEM.md": {
+    "hash": "f4200136e728a03e1c218985ff1f181a05c0a141d3f1e38fe967bfb98dde97e9",
+    "last_modified": "2026-10-15T11:00:07.719677",
+    "lines": 208,
+    "est_tokens": 1868,
+    "summary": "208 lines, 2 symbols"
+  },
+  "Docs/blueprints/02_PROFESSIONAL_GITHUB_REPO_AND_PAGES.md": {
+    "hash": "1a59ca9a1a97ded9483d15a2ade46b92cd1cbaad254d14f0aea81cf7d6296a06",
+    "last_modified": "2026-10-15T11:00:24.181570",
+    "lines": 155,
+    "est_tokens": 1413,
+    "summary": "155 lines, 0 symbols"
+  },
+  "Docs/blueprints/03_TOKEN_SAVING_CONTEXT_ENGINE.md": {
+    "hash": "82244a6bcf37f7a31ab9b6f0b8d2ccf7ecf747816378d5d05fdc14e13063afdd",
+    "last_modified": "2026-10-15T11:00:45.543922",
+    "lines": 211,
+    "est_tokens": 2076,
+    "summary": "211 lines, 4 symbols"
+  },
+  "Docs/blueprints/04_PREMIUM_ANIMATED_BANNERS_AND_SVGS.md": {
+    "hash": "a4fc4d72ecf4448e568f069441e9b216c2775af3a75cb4a5cacbae9fb8f59d7c",
+    "last_modified": "2026-10-15T11:01:03.866076",
+    "lines": 149,
+    "est_tokens": 1456,
+    "summary": "149 lines, 1 symbols"
+  },
+  "Docs/blueprints/05_CUSTOM_PREMIUM_INSTALLER.md": {
+    "hash": "a88fcaf2ee77c4705b4ba48256f3f8c8f5f602f8430d34732c4bc29ab6233bdc",
+    "last_modified": "2026-10-15T11:01:22.750737",
+    "lines": 261,
+    "est_tokens": 1988,
+    "summary": "261 lines, 1 symbols"
+  },
+  "Docs/blueprints/06_MICROSOFT_STORE_MSIX_PACKAGING.md": {
+    "hash": "460988a1c950b3d79750f634f4a8379356d210c10178ddb1f4ccef7c27512306",
+    "last_modified": "2026-10-15T11:12:38.567173",
+    "lines": 229,
+    "est_tokens": 2825,
+    "summary": "229 lines, 2 symbols"
+  },
+  "Docs/blueprints/INDEX.md": {
+    "hash": "2ced51680227ae94b56c4395736210aa0022aa3abf34a8f8cfe1ff4e6495958f",
+    "last_modified": "2026-10-15T11:13:03.726234",
+    "lines": 31,
+    "est_tokens": 681,
+    "summary": "31 lines, 1 symbols"
+  },
+  "DO_NOT_UPLOAD_ISOLATOR_PORTABLE/DOUBLE_CLICK_TO_RUN.bat": {
+    "hash": "5322afdd2a3cb91795439b74354cf40f7296a39ba4e52b379ec9fdb5fe82c600",
+    "last_modified": "2026-10-06T13:01:58.859998",
+    "lines": 24,
+    "est_tokens": 173,
+    "summary": "24 lines, 0 symbols"
+  },
+  "DO_NOT_UPLOAD_ISOLATOR_PORTABLE/isolate_do_not_upload.py": {
+    "hash": "bbab27d569658a1cfc3098760bae20ff92520c46020e63cfc84f76c10cab2107",
+    "last_modified": "2026-10-06T13:01:50.686438",
+    "lines": 517,
+    "est_tokens": 4809,
+    "summary": "517 lines, 8 symbols"
+  },
+  "electron/main.ts": {
+    "hash": "26858b3acdc666eec7c1f99796ddbb32143493e577f6a311524019625752951a",
+    "last_modified": "2026-10-15T11:19:51.914607",
+    "lines": 616,
+    "est_tokens": 6198,
+    "summary": "616 lines, 0 symbols"
+  },
+  "electron/preload.ts": {
+    "hash": "ee4dab813f291d3f444c566d4be7eac2550832b78c6b3f77ace7b2b91a9c83a1",
+    "last_modified": "2026-10-15T11:20:04.685689",
+    "lines": 186,
+    "est_tokens": 2335,
+    "summary": "186 lines, 1 symbols"
+  },
+  "electron/engines/eventImageDistributor.ts": {
+    "hash": "09b01454fb98520b9aa002c2024a48e74f9aca0cc7c8cd3ecdc0fa13f4c32461",
+    "last_modified": "2026-10-11T02:22:42.608770",
+    "lines": 466,
+    "est_tokens": 3937,
+    "summary": "466 lines, 6 symbols"
+  },
+  "electron/engines/excelMerger.ts": {
+    "hash": "45ba4f8d2ae495bbf0bdca45d24da71ef758058fdcc4baa69b42af568907b56d",
+    "last_modified": "2026-09-07T19:28:30.042577",
+    "lines": 92,
+    "est_tokens": 657,
+    "summary": "92 lines, 3 symbols"
+  },
+  "electron/engines/photoMatcher.ts": {
+    "hash": "45ce3735394600a3b7d0320d1b807160d39e495637faf126f9125cc6b17b8305",
+    "last_modified": "2026-10-06T12:53:38.301231",
+    "lines": 607,
+    "est_tokens": 5258,
+    "summary": "607 lines, 5 symbols"
+  },
+  "electron/engines/productionTools.ts": {
+    "hash": "414742934f891c8eebc7e139bea1153894da6b9cc98f4d0e5e6ff9302daa8ce1",
+    "last_modified": "2026-10-15T01:09:09.453080",
+    "lines": 568,
+    "est_tokens": 5280,
+    "summary": "568 lines, 3 symbols"
+  },
+  "electron/engines/pvSeparator.ts": {
+    "hash": "4b60ae42890f72709bdea41feb41e77553bf656120d62e22c855aaab5de7629e",
+    "last_modified": "2026-10-03T17:39:58.871447",
+    "lines": 581,
+    "est_tokens": 5353,
+    "summary": "581 lines, 8 symbols"
+  },
+  "electron/engines/remainingCollector.ts": {
+    "hash": "6c0183edc046b1fec57df38d5b42dba1715a1e31680463acfc7dc9e32f0f8fad",
+    "last_modified": "2026-09-07T19:21:13.854056",
+    "lines": 219,
+    "est_tokens": 1900,
+    "summary": "219 lines, 4 symbols"
+  },
+  "electron/engines/thumbnailSeparator.ts": {
+    "hash": "80403c09a6310326a21732d402647e311034674cfc98a1492f7364fcb2000b13",
+    "last_modified": "2026-09-07T19:20:52.513157",
+    "lines": 135,
+    "est_tokens": 1091,
+    "summary": "135 lines, 4 symbols"
+  },
+  "electron/engines/videoTransfer.ts": {
+    "hash": "585b4226b664f72ac6e70d7f863dcefd139e207c79d550449177b4adb7e86ea0",
+    "last_modified": "2026-10-12T11:05:43.921743",
+    "lines": 603,
+    "est_tokens": 5624,
+    "summary": "603 lines, 8 symbols"
+  },
+  "electron/engines/scripts/excel_merger.py": {
+    "hash": "725e18f14a36866950b698251b20b5f6d66474881b1dc9dd8b4007b607f6f96c",
+    "last_modified": "2026-10-06T12:29:05.430704",
+    "lines": 448,
+    "est_tokens": 4978,
+    "summary": "448 lines, 7 symbols"
+  },
+  "electron/engines/scripts/generate_separation_report.py": {
+    "hash": "7080d6b4df2297a0fbb138b68e1dc079f28674438c55f1b7d0f7eb33230fe89e",
+    "last_modified": "2026-10-03T17:37:04.955173",
+    "lines": 243,
+    "est_tokens": 2576,
+    "summary": "243 lines, 3 symbols"
+  },
+  "electron/managers/activityReportsManager.ts": {
+    "hash": "e319c190ed9cc901525a58ecce4281e964ddfb1b23166fb428d2c7881aee82bc",
+    "last_modified": "2026-09-07T19:21:40.227222",
+    "lines": 111,
+    "est_tokens": 732,
+    "summary": "111 lines, 3 symbols"
+  },
+  "electron/managers/autoUpdater.ts": {
+    "hash": "816a6f1aa2ad9f280b22abf193e20ff122bc628cab8f7827ac07030e695ae5ab",
+    "last_modified": "2026-10-15T11:19:12.873228",
+    "lines": 273,
+    "est_tokens": 2243,
+    "summary": "273 lines, 2 symbols"
+  },
+  "electron/managers/googleDriveManager.ts": {
+    "hash": "7e7cce38c7be55e69da3aa6b728f752d58179b6a4689b7d6750b1ccb5725e387",
+    "last_modified": "2026-09-07T19:21:31.904795",
+    "lines": 61,
+    "est_tokens": 434,
+    "summary": "61 lines, 2 symbols"
+  },
+  "installer/installer.nsi": {
+    "hash": "254ffe4313e93b4067655eafba12752a1f9d64e1ef501002ae57c532c3d38736",
+    "last_modified": "2026-10-15T11:21:56.485888",
+    "lines": 81,
+    "est_tokens": 908,
+    "summary": "81 lines, 0 symbols"
+  },
+  "microsoft_store_assets/documents/PRIVACY_POLICY.html": {
+    "hash": "c3fe812adaffecedfc0d291d487e09229fc04e1a24380876fc37252fcedfa01a",
+    "last_modified": "2026-10-11T12:55:03.628424",
+    "lines": 143,
+    "est_tokens": 1337,
+    "summary": "143 lines, 0 symbols"
+  },
+  "microsoft_store_assets/documents/PRIVACY_POLICY.md": {
+    "hash": "4e139dae36f25f1c073e79f4e4a04ddb29ead4960db01dcc432e73493b21732c",
+    "last_modified": "2026-10-11T12:54:52.902697",
+    "lines": 65,
+    "est_tokens": 1072,
+    "summary": "65 lines, 0 symbols"
+  },
+  "microsoft_store_assets/documents/STORE_LISTING_METADATA.md": {
+    "hash": "bdd3628ee12e7dde7d6019def09b6ad95bd93f4c59ac43a88a7e331b4f98210b",
+    "last_modified": "2026-10-11T12:54:32.684668",
+    "lines": 171,
+    "est_tokens": 2475,
+    "summary": "171 lines, 0 symbols"
+  },
+  "microsoft_store_assets/documents/STORE_SUBMISSION_CHECKLIST.md": {
+    "hash": "35c9c6a8a3b19a591086ee86d111daa7b21e62e894e8c3f4aed681e57c3b2269",
+    "last_modified": "2026-10-11T12:55:28.649657",
+    "lines": 165,
+    "est_tokens": 1891,
+    "summary": "165 lines, 0 symbols"
+  },
+  "microsoft_store_assets/documents/TERMS_OF_SERVICE_AND_EULA.md": {
+    "hash": "c33a576c6ec4a7d0c0f14deaa66eb23e3055b0858f9caea458ea4f21f9369984",
+    "last_modified": "2026-10-11T12:55:12.273651",
+    "lines": 48,
+    "est_tokens": 972,
+    "summary": "48 lines, 0 symbols"
+  },
+  "PHOTO_RENAMER_PORTABLE/DOUBLE_CLICK_TO_RUN.bat": {
+    "hash": "0ec6076e780a182eaf142571749f265481fa91ce178354542abb8fd775835c3f",
+    "last_modified": "2026-09-14T10:13:10.418294",
+    "lines": 68,
+    "est_tokens": 532,
+    "summary": "68 lines, 0 symbols"
+  },
+  "PHOTO_RENAMER_PORTABLE/photo_renamer_tool.py": {
+    "hash": "70c043bc488ff211a523e08e234f7e86fceaecb3e3b4467fd19f7449499eec37",
+    "last_modified": "2026-10-03T17:09:57.099257",
+    "lines": 786,
+    "est_tokens": 8825,
+    "summary": "786 lines, 8 symbols"
+  },
+  "scripts/codebase_analyzer.py": {
+    "hash": "e23fb2af295c3d0f6b9caa04d25bf3a00e3912aff03d47d8d7801dd52f8b4458",
+    "last_modified": "2026-10-15T11:28:09.985822",
+    "lines": 141,
+    "est_tokens": 1435,
+    "summary": "141 lines, 4 symbols"
+  },
+  "scripts/collect_inventory_reports.py": {
+    "hash": "64e2fe1883bc0ffdc0c5d859f1c534008ffda2aae36542970db7523dbf666353",
+    "last_modified": "2026-10-15T00:56:17.047511",
+    "lines": 11,
+    "est_tokens": 104,
+    "summary": "11 lines, 0 symbols"
+  },
+  "scripts/generate_appx_assets.py": {
+    "hash": "312ccce481e7232601ed23dec3518b686ddd96c6fd6909ef46b3c1bff18f6af9",
+    "last_modified": "2026-10-15T11:26:18.434602",
+    "lines": 64,
+    "est_tokens": 664,
+    "summary": "64 lines, 1 symbols"
+  },
+  "scripts/generate_installer_assets.py": {
+    "hash": "e0bfa89e71ec0b71009a822f9743916ae34f84b6dd8182e7fd678e557bab5117",
+    "last_modified": "2026-10-11T11:49:27.361629",
+    "lines": 152,
+    "est_tokens": 1537,
+    "summary": "152 lines, 3 symbols"
+  },
+  "scripts/generate_store_assets.py": {
+    "hash": "a77ed9d7d88c40188f43aa05a3d2409203c865fb074894f7641c1d67828c0fa7",
+    "last_modified": "2026-10-15T11:00:41.882579",
+    "lines": 377,
+    "est_tokens": 4284,
+    "summary": "377 lines, 5 symbols"
+  },
+  "scripts/release_builder_gui.py": {
+    "hash": "1f36f201fe06146abaaa31585b37565cf2594a996147e1425f92c978633f710c",
+    "last_modified": "2026-10-12T11:30:04.787134",
+    "lines": 480,
+    "est_tokens": 4634,
+    "summary": "480 lines, 8 symbols"
+  },
+  "src/App.tsx": {
+    "hash": "e07d2661572f69457c273c05a52e49692d30ed8f565beb39c7929ab20934c687",
+    "last_modified": "2026-10-15T11:32:01.599706",
+    "lines": 361,
+    "est_tokens": 2935,
+    "summary": "361 lines, 2 symbols"
+  },
+  "src/main.tsx": {
+    "hash": "dad6e99c0c5beef2b68e4fd7f325b0b0942627cbfbd5e83568674fde38a324f2",
+    "last_modified": "2026-09-07T19:27:07.577669",
+    "lines": 10,
+    "est_tokens": 64,
+    "summary": "10 lines, 0 symbols"
+  },
+  "src/components/AppLoadingScreen.tsx": {
+    "hash": "17bf8d685923d62b1d418170118b0d8ab193bcd3aaa2e9bc82df6da9fd944644",
+    "last_modified": "2026-10-14T20:22:04.900953",
+    "lines": 104,
+    "est_tokens": 802,
+    "summary": "104 lines, 1 symbols"
+  },
+  "src/components/CommandPalette.tsx": {
+    "hash": "e6f8a8df1922f40b38d293d1e8c214542dc3afa243937511eddc3750236bd7a7",
+    "last_modified": "2026-10-14T16:33:42.670824",
+    "lines": 296,
+    "est_tokens": 2936,
+    "summary": "296 lines, 1 symbols"
+  },
+  "src/components/index.ts": {
+    "hash": "f3721b280f009970c7849c769597b6dcf017502473c9c6e26c3e04b2a0b41750",
+    "last_modified": "2026-10-15T11:22:22.769806",
+    "lines": 31,
+    "est_tokens": 355,
+    "summary": "31 lines, 8 symbols"
+  },
+  "src/components/IngestionTerminal.tsx": {
+    "hash": "9e1a2b5784321885c6bac9d70e086dfb0d5b16a71961f62e601d4760291365fc",
+    "last_modified": "2026-10-14T16:32:52.976887",
+    "lines": 190,
+    "est_tokens": 1477,
+    "summary": "190 lines, 2 symbols"
+  },
+  "src/components/KeyboardShortcutsModal.tsx": {
+    "hash": "71c9bd270f31d44531895557647016fc303f1f242d58337ee041fe622cbfea62",
+    "last_modified": "2026-10-14T11:41:47.840970",
+    "lines": 261,
+    "est_tokens": 2333,
+    "summary": "261 lines, 1 symbols"
+  },
+  "src/components/LiquidAuroraBackground.tsx": {
+    "hash": "8fb9dbb1835c119fab70567bc06860c08b764a9bf33d959c22fb399d25709228",
+    "last_modified": "2026-10-14T16:02:02.708847",
+    "lines": 107,
+    "est_tokens": 772,
+    "summary": "107 lines, 1 symbols"
+  },
+  "src/components/OperationLoadingOverlay.tsx": {
+    "hash": "d5f685aae3347d19f0d86a0fa26bc93b8a491edf84488bc6792a99cde914bbd0",
+    "last_modified": "2026-10-14T17:15:14.570646",
+    "lines": 244,
+    "est_tokens": 1825,
+    "summary": "244 lines, 1 symbols"
+  },
+  "src/components/PipelineStageNavigator.tsx": {
+    "hash": "349facd987de4a0dd1ecaf4477e62bea9e22e8ab07719af7578b05f6ccad9f69",
+    "last_modified": "2026-10-14T15:30:30.147197",
+    "lines": 261,
+    "est_tokens": 2450,
+    "summary": "261 lines, 1 symbols"
+  },
+  "src/components/SettingsModal.tsx": {
+    "hash": "3c2e4527bae73111d133d2ed2e9715107478cf14a12b355ba017b079e2da4ff5",
+    "last_modified": "2026-10-15T11:23:29.895907",
+    "lines": 688,
+    "est_tokens": 7263,
+    "summary": "688 lines, 1 symbols"
+  },
+  "src/components/SetupWizard.css": {
+    "hash": "835c504c76d303bac7a569a0230507ba5fc7e65a05c981e2cc99718bb5267cc5",
+    "last_modified": "2026-10-15T11:21:23.169977",
+    "lines": 270,
+    "est_tokens": 1360,
+    "summary": "270 lines, 0 symbols"
+  },
+  "src/components/SetupWizard.tsx": {
+    "hash": "1d659f223f3157f20e43366a472a632700b155f9e15a3ba5cb388b9af121a0d2",
+    "last_modified": "2026-10-15T11:21:39.536265",
+    "lines": 210,
+    "est_tokens": 1949,
+    "summary": "210 lines, 2 symbols"
+  },
+  "src/components/Sidebar.tsx": {
+    "hash": "6bd9f5decaec40b7fff825655fd63abb517f251f43f286b1eb2ea3d8230d5aad",
+    "last_modified": "2026-10-15T10:58:49.985198",
+    "lines": 399,
+    "est_tokens": 3213,
+    "summary": "399 lines, 3 symbols"
+  },
+  "src/components/StatCard.tsx": {
+    "hash": "bdeecb1366d8a42dd1447379d31c8345fd6d8ac55597248dde39855a0dc15068",
+    "last_modified": "2026-10-14T17:24:22.287075",
+    "lines": 135,
+    "est_tokens": 905,
+    "summary": "135 lines, 1 symbols"
+  },
+  "src/components/StorageHeadroomBar.tsx": {
+    "hash": "6b7b01f447fa9d84c624938bb71066c596883c7550dcfa8bc274ef19c2307e29",
+    "last_modified": "2026-10-14T11:31:22.752491",
+    "lines": 129,
+    "est_tokens": 1000,
+    "summary": "129 lines, 1 symbols"
+  },
+  "src/components/StudioButton.tsx": {
+    "hash": "0225693b032d510cb06dd3fb46c0ff9fa90b903a4bd3ed6a58715994fd16d219",
+    "last_modified": "2026-10-14T11:31:00.389857",
+    "lines": 142,
+    "est_tokens": 1141,
+    "summary": "142 lines, 1 symbols"
+  },
+  "src/components/StudioErrorBoundary.tsx": {
+    "hash": "0c236b5af1b2d6bd00dc6c9b6a79c952a8dbb46d3585c9090f5cff0f886ff064",
+    "last_modified": "2026-10-14T15:27:57.987472",
+    "lines": 250,
+    "est_tokens": 2220,
+    "summary": "250 lines, 1 symbols"
+  },
+  "src/components/StudioFolderInput.tsx": {
+    "hash": "4848fac0647229f37fbc99c3cde7951e78d008e71a1c9c2b6d56159301ba109a",
+    "last_modified": "2026-10-14T16:04:20.443612",
+    "lines": 258,
+    "est_tokens": 2020,
+    "summary": "258 lines, 1 symbols"
+  },
+  "src/components/ToastNotification.tsx": {
+    "hash": "af84fcae3312acaa8ec3d30efcdcd97b89beb20dc3acb1d0ef1aa171ad2b8e63",
+    "last_modified": "2026-10-12T11:05:28.882114",
+    "lines": 208,
+    "est_tokens": 1454,
+    "summary": "208 lines, 2 symbols"
+  },
+  "src/components/TopToolbar.tsx": {
+    "hash": "4a721a66f0dd7240a2e57d34479a3996949243c9e7595ec6269e31c19709904b",
+    "last_modified": "2026-10-14T15:56:53.016479",
+    "lines": 172,
+    "est_tokens": 1373,
+    "summary": "172 lines, 2 symbols"
+  },
+  "src/components/UpdateModal.css": {
+    "hash": "d86776ada9d2428687a6a1c5756f22e755974e90b69f4330088e9cf5a13de8ec",
+    "last_modified": "2026-10-15T11:20:32.477396",
+    "lines": 247,
+    "est_tokens": 1311,
+    "summary": "247 lines, 0 symbols"
+  },
+  "src/components/UpdateModal.tsx": {
+    "hash": "e78acf4694c6fea8139c1e77cfdd491504216e21e2041bad63f674478f3629df",
+    "last_modified": "2026-10-15T11:20:47.031828",
+    "lines": 180,
+    "est_tokens": 1470,
+    "summary": "180 lines, 3 symbols"
+  },
+  "src/components/loading-templates/AircordCyberGridLoader.tsx": {
+    "hash": "ec7c3b035a945ca31a5c2fbc92408ec9c312928be8b73a740e18f598eadd2929",
+    "last_modified": "2026-10-14T20:20:21.468841",
+    "lines": 205,
+    "est_tokens": 1722,
+    "summary": "205 lines, 1 symbols"
+  },
+  "src/components/loading-templates/AstralFrontierLoader.tsx": {
+    "hash": "a8ed84603f7d4c746ab5a7f3e798444b61bca78c3f734a1a3a5297c3a82d1921",
+    "last_modified": "2026-10-14T20:19:28.674735",
+    "lines": 253,
+    "est_tokens": 1878,
+    "summary": "253 lines, 1 symbols"
+  },
+  "src/components/loading-templates/CosmosEditorialLoader.tsx": {
+    "hash": "a391deb1dab7df6542bf46bf216835d7c2ffe96b2b036c93c17768a58f86b5be",
+    "last_modified": "2026-10-14T20:20:02.820796",
+    "lines": 218,
+    "est_tokens": 1448,
+    "summary": "218 lines, 1 symbols"
+  },
+  "src/components/loading-templates/DataflowFlagshipLoader.tsx": {
+    "hash": "978baf07f669cf6f73b68f8cacdad8457134e651da2ea8e64cf16b21229e3c17",
+    "last_modified": "2026-10-14T20:19:07.922504",
+    "lines": 314,
+    "est_tokens": 2768,
+    "summary": "314 lines, 1 symbols"
+  },
+  "src/components/loading-templates/index.tsx": {
+    "hash": "09d015781707d6404069253a0dedc358f5a9b855dc208ae45cf9020c37bf1fc3",
+    "last_modified": "2026-10-14T20:25:07.051578",
+    "lines": 44,
+    "est_tokens": 401,
+    "summary": "44 lines, 4 symbols"
+  },
+  "src/components/loading-templates/LoadingScreenPreviewModal.tsx": {
+    "hash": "5da2e1b6891e583867be7dded66d4faa19203b1d2a9208f6be273aff69457beb",
+    "last_modified": "2026-10-14T20:21:48.143670",
+    "lines": 495,
+    "est_tokens": 4579,
+    "summary": "495 lines, 1 symbols"
+  },
+  "src/components/loading-templates/MobbinDynamicPillLoader.tsx": {
+    "hash": "4a381a616b542764141694b1ec42d9a05623eb29647fdd931e2af254738334e2",
+    "last_modified": "2026-10-14T20:20:39.634921",
+    "lines": 178,
+    "est_tokens": 1416,
+    "summary": "178 lines, 1 symbols"
+  },
+  "src/components/loading-templates/MobbinMinimalSheetLoader.tsx": {
+    "hash": "57118b39af96b103c9c7f87f29dea4dda3c1e765078aa9ec06471d579d2c4cd7",
+    "last_modified": "2026-10-14T20:21:05.192244",
+    "lines": 188,
+    "est_tokens": 1684,
+    "summary": "188 lines, 1 symbols"
+  },
+  "src/components/loading-templates/types.ts": {
+    "hash": "4ac23125245cbbc3d2c497cadd156573d7c32a7cc57510417f3accfdfc393f17",
+    "last_modified": "2026-10-14T20:18:41.171324",
+    "lines": 94,
+    "est_tokens": 899,
+    "summary": "94 lines, 4 symbols"
+  },
+  "src/components/loading-templates/WalbiKineticLoader.tsx": {
+    "hash": "d30ee493ed2c306db3e52a62ba5ed2cca2ad822b8e68e2f110f68236441e97f3",
+    "last_modified": "2026-10-14T20:19:45.970667",
+    "lines": 200,
+    "est_tokens": 1585,
+    "summary": "200 lines, 1 symbols"
+  },
+  "src/context/PipelineContext.tsx": {
+    "hash": "7090e2d5831c793b365bcac7dd7f0818bce2b75b60db12074e3ad7b661d242c3",
+    "last_modified": "2026-09-07T22:58:16.694417",
+    "lines": 78,
+    "est_tokens": 526,
+    "summary": "78 lines, 3 symbols"
+  },
+  "src/context/ThemeContext.tsx": {
+    "hash": "1428bf8e2fd5db060023acc2066b7b4b92d8df5145ee1ca1f3f9aacb4e577bba",
+    "last_modified": "2026-10-12T10:37:36.019145",
+    "lines": 121,
+    "est_tokens": 953,
+    "summary": "121 lines, 4 symbols"
+  },
+  "src/pages/ActivityPage.tsx": {
+    "hash": "1d641dcd59f4afd4327741482fad64b869ba38c6837569b1c451e7d6b5c2e081",
+    "last_modified": "2026-09-07T19:26:39.961482",
+    "lines": 219,
+    "est_tokens": 2001,
+    "summary": "219 lines, 1 symbols"
+  },
+  "src/pages/DoNotUploadPage.tsx": {
+    "hash": "0b6b4996c18b946b3d15d6a58f99f29dcf2ec5434d57d4ef77658a0f8924be62",
+    "last_modified": "2026-10-14T17:19:21.869306",
+    "lines": 525,
+    "est_tokens": 5061,
+    "summary": "525 lines, 1 symbols"
+  },
+  "src/pages/EventDistributorPage.tsx": {
+    "hash": "4f3280f2699ac3c2f02a8197cc58ba69a738245c07e4209c20c93d6937da06a4",
+    "last_modified": "2026-10-15T11:34:30.388188",
+    "lines": 951,
+    "est_tokens": 9863,
+    "summary": "951 lines, 1 symbols"
+  },
+  "src/pages/ExcelMergerPage.tsx": {
+    "hash": "d4daa4554a0613a6acd50ed75c19dee376f4ca076a1c69d6c00df2296113aff5",
+    "last_modified": "2026-10-15T01:15:16.428719",
+    "lines": 1535,
+    "est_tokens": 14283,
+    "summary": "1535 lines, 1 symbols"
+  },
+  "src/pages/GoogleDrivePage.tsx": {
+    "hash": "ed46c3121c59ee07e98c7c09246dcbaea6d5daedbd14fffef1f0681da0d50906",
+    "last_modified": "2026-09-07T19:36:34.282241",
+    "lines": 158,
+    "est_tokens": 1385,
+    "summary": "158 lines, 1 symbols"
+  },
+  "src/pages/index.ts": {
+    "hash": "1ddb89ecefef79e0cded0b391a6596c68dda9264732e6cd6cb3959479fb10202",
+    "last_modified": "2026-10-14T15:41:39.470301",
+    "lines": 16,
+    "est_tokens": 256,
+    "summary": "16 lines, 8 symbols"
+  },
+  "src/pages/OverviewPage.tsx": {
+    "hash": "029c45910fc625afecf9864c0d0e1fe9e166497739d8d90c54adc22c99686ce9",
+    "last_modified": "2026-10-14T17:24:43.410904",
+    "lines": 526,
+    "est_tokens": 4919,
+    "summary": "526 lines, 1 symbols"
+  },
+  "src/pages/PhotoMatcherPage.tsx": {
+    "hash": "362caeb650f769886e32ad834856ff62d72a7067268b4e8891da8a286d5312ab",
+    "last_modified": "2026-10-14T17:18:19.060157",
+    "lines": 1053,
+    "est_tokens": 9298,
+    "summary": "1053 lines, 1 symbols"
+  },
+  "src/pages/PVSeparatorPage.tsx": {
+    "hash": "9071761a845b5f72e98eac56b0394ad54a6b2e3d261a5d2cab36ed68e753daa1",
+    "last_modified": "2026-10-14T16:45:05.122547",
+    "lines": 922,
+    "est_tokens": 9205,
+    "summary": "922 lines, 1 symbols"
+  },
+  "src/pages/RemainingCollectorPage.tsx": {
+    "hash": "477c341907264961dc022f7340058e077356603be7f1f50b8eb06618bbd9ab23",
+    "last_modified": "2026-10-14T17:20:34.707445",
+    "lines": 430,
+    "est_tokens": 4005,
+    "summary": "430 lines, 1 symbols"
+  },
+  "src/pages/StandaloneToolsPage.tsx": {
+    "hash": "f10d3c2fefa05f219d80463d5c89cbe3a381b22551ef15500d4ad9395314de4a",
+    "last_modified": "2026-10-15T01:11:28.436926",
+    "lines": 1174,
+    "est_tokens": 11593,
+    "summary": "1174 lines, 1 symbols"
+  },
+  "src/pages/ThumbnailSeparatorPage.tsx": {
+    "hash": "a3c805c6e62669ba152db409d9f0e26f3dcb382882f5c60bb287fa899ac8eef0",
+    "last_modified": "2026-10-14T17:22:13.208441",
+    "lines": 445,
+    "est_tokens": 4231,
+    "summary": "445 lines, 1 symbols"
+  },
+  "src/pages/UploadStructurePage.tsx": {
+    "hash": "347e0f19268c6f45f0ff4e6b3c87fb4b0edd7d416568e6f3c30a9db54e4161f7",
+    "last_modified": "2026-10-14T16:45:24.849336",
+    "lines": 659,
+    "est_tokens": 6529,
+    "summary": "659 lines, 1 symbols"
+  },
+  "src/pages/VideoTransferPage.tsx": {
+    "hash": "396b9232e120f11e36a2e8461d2457119314477a692b86be0e27f8d37c0581c3",
+    "last_modified": "2026-10-14T17:18:50.347027",
+    "lines": 1437,
+    "est_tokens": 15415,
+    "summary": "1437 lines, 1 symbols"
+  },
+  "src/styles/global.css": {
+    "hash": "486e35c5c2a0ef88a3e06007b37dd63ebb4a03ec6aec6d41099d0545544902a7",
+    "last_modified": "2026-10-14T20:18:23.439607",
+    "lines": 380,
+    "est_tokens": 2471,
+    "summary": "380 lines, 0 symbols"
+  },
+  "src/styles/theme.css": {
+    "hash": "510d029ce6ee66b923e6c3571dac670fa657dde35ad10bf72a9c177a16a37a4e",
+    "last_modified": "2026-10-14T20:18:07.515962",
+    "lines": 201,
+    "est_tokens": 1749,
+    "summary": "201 lines, 0 symbols"
+  },
+  "src/types/electron.d.ts": {
+    "hash": "952997850f4be704d2de8adada6387c31ae6b0213237074ca7128e73275e66c6",
+    "last_modified": "2026-09-07T19:22:36.433572",
+    "lines": 9,
+    "est_tokens": 38,
+    "summary": "9 lines, 1 symbols"
+  },
+  "src/types/pipelineStages.ts": {
+    "hash": "2de5bea035fe06491eafaf7930f6f3fa232b7229d5b83cf3be39ef05bd4dd076",
+    "last_modified": "2026-10-14T16:33:05.121047",
+    "lines": 196,
+    "est_tokens": 1306,
+    "summary": "196 lines, 7 symbols"
+  },
+  "website/DEPLOY_FIREBASE.bat": {
+    "hash": "6068bbcaeffa12a9669546015e2b715ad83aba162af1143192edfd8964539f17",
+    "last_modified": "2026-10-11T13:09:57.900705",
+    "lines": 37,
+    "est_tokens": 307,
+    "summary": "37 lines, 0 symbols"
+  },
+  "website/firebase.json": {
+    "hash": "c3a09473c181fd612f5ded81f3c61ec8daf6ee200e3298b0d012fc824080b20e",
+    "last_modified": "2026-10-11T13:07:34.923289",
+    "lines": 36,
+    "est_tokens": 181,
+    "summary": "36 lines, 0 symbols"
+  },
+  "website/README.md": {
+    "hash": "92a345857aff0a5842ce4add6310ea2eb6173269559de69b7c14579786cdd79b",
+    "last_modified": "2026-10-11T13:10:08.052938",
+    "lines": 86,
+    "est_tokens": 866,
+    "summary": "86 lines, 0 symbols"
+  },
+  "website/public/index.html": {
+    "hash": "e81ab2d68ca53b198479cedd854488786cae6c59c974836c2aa1b0bbf1d6cdc9",
+    "last_modified": "2026-10-11T13:09:31.213042",
+    "lines": 452,
+    "est_tokens": 6590,
+    "summary": "452 lines, 1 symbols"
+  },
+  "website/public/privacy.html": {
+    "hash": "2d4168dca8bfac8914e0b8a7da9172f30f5f4414966af7a034e4afc51a4ab2d6",
+    "last_modified": "2026-10-11T13:09:41.804348",
+    "lines": 105,
+    "est_tokens": 1268,
+    "summary": "105 lines, 0 symbols"
+  },
+  "website/public/terms.html": {
+    "hash": "2115a7055e54f1b47460d48ae98db3e160f542171bc68826fd14265ae2cd29cc",
+    "last_modified": "2026-10-11T13:09:51.089408",
+    "lines": 86,
+    "est_tokens": 1027,
+    "summary": "86 lines, 0 symbols"
+  },
+  "website/public/css/styles.css": {
+    "hash": "b747c81ce46182e48a0e0203d361bd910262af4ad7c8d6c7a4df8f2da21a1ce6",
+    "last_modified": "2026-10-11T13:08:38.574356",
+    "lines": 551,
+    "est_tokens": 2712,
+    "summary": "551 lines, 0 symbols"
+  },
+  "website/public/js/app.js": {
+    "hash": "ee9fd7277c16e87e5596def36def0110e3c1be0a72ef5670584d0705a7bb1788",
+    "last_modified": "2026-10-11T13:08:06.965140",
+    "lines": 94,
+    "est_tokens": 827,
+    "summary": "94 lines, 0 symbols"
+  },
+  "website/public/js/github-updater.js": {
+    "hash": "645a3c89f59d6123ef1e9d53ca2f4737eb664430747cb793e8990a56a688953d",
+    "last_modified": "2026-10-11T13:07:56.251137",
+    "lines": 156,
+    "est_tokens": 1506,
+    "summary": "156 lines, 0 symbols"
+  }
+}

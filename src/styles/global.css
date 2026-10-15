@@ -1,0 +1,380 @@
+@import './theme.css';
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font-system);
+  background-color: var(--system-bg);
+  color: var(--label);
+  user-select: none;
+}
+
+::selection {
+  background: rgba(0, 242, 254, 0.35);
+  color: #ffffff;
+}
+
+.window-drag-region {
+  -webkit-app-region: drag;
+}
+
+.window-no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* ============================================================
+   Sleek Next-Gen Studio Custom Scrollbar
+   ============================================================ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  transition: background var(--transition-fast);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 242, 254, 0.45);
+}
+
+/* ============================================================
+   Crystal-Clear Panels & Cards — Specular Glass Architecture
+   ============================================================ */
+.glass-panel {
+  background: var(--surface-glass);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid var(--border-glass);
+  position: relative;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+.glass-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--glass-specular-top) 25%, var(--glass-specular-top) 75%, transparent 100%);
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 2;
+}
+
+.glass-card {
+  background: var(--surface-card);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  transition: all var(--transition-smooth);
+  position: relative;
+  box-shadow: var(--shadow-card);
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.12) 30%, rgba(255, 255, 255, 0.12) 70%, transparent 100%);
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+.glass-card:hover {
+  border-color: var(--border-hover);
+}
+
+/* Interactive Card Variant with Vibrant Accent Edge */
+.glass-card-interactive {
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition-smooth);
+}
+
+.glass-card-interactive:hover {
+  border-color: var(--border-hover);
+  background: var(--surface-card-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-elevated);
+}
+
+.glass-card-interactive::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent-gradient);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.glass-card-interactive:hover::after {
+  opacity: 1;
+}
+
+/* ============================================================
+   Typography Utilities & Displays
+   ============================================================ */
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #00f2fe 0%, #8b5cf6 50%, #ff2e93 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-text-cyan {
+  background: linear-gradient(135deg, #ffffff 0%, #00f2fe 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ============================================================
+   Form Inputs & Universal Controls
+   ============================================================ */
+input[type="text"],
+input[type="search"],
+input[type="number"],
+input[type="password"],
+textarea,
+select {
+  font-family: inherit;
+  font-size: 12.5px;
+  color: var(--label);
+  background-color: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+input[type="text"]:focus,
+input[type="search"]:focus,
+input[type="number"]:focus,
+input[type="password"]:focus,
+textarea:focus,
+select:focus {
+  border-color: #00F2FE !important;
+  box-shadow: 0 0 0 3px rgba(0, 242, 254, 0.22), 0 0 16px rgba(0, 242, 254, 0.18) !important;
+  background-color: var(--surface-card-hover);
+}
+
+/* Checkbox Modern Glow */
+input[type="checkbox"] {
+  accent-color: #00F2FE;
+  cursor: pointer;
+}
+
+/* ============================================================
+   Button Micro-Interactions & Tactile Feedback
+   ============================================================ */
+button {
+  font-family: inherit;
+}
+
+.btn-tactile {
+  transition: all var(--transition-fast);
+  will-change: transform, box-shadow;
+}
+
+.btn-tactile:active:not(:disabled) {
+  transform: scale(0.97) !important;
+}
+
+/* ============================================================
+   Keyframe Animations for Live Cyber Aesthetics
+   ============================================================ */
+@keyframes beaconPulse {
+  0% { transform: scale(0.95); opacity: 0.4; }
+  50% { transform: scale(1.08); opacity: 1; filter: drop-shadow(0 0 8px currentColor); }
+  100% { transform: scale(0.95); opacity: 0.4; }
+}
+
+.animate-pulse-beacon {
+  animation: beaconPulse 1.8s infinite ease-in-out;
+}
+
+@keyframes radarPing {
+  0% { transform: scale(0.8); opacity: 0.8; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+.animate-radar-ping {
+  position: absolute;
+  border-radius: 50%;
+  animation: radarPing 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+/* Floating animation for liquid aurora orbs */
+@keyframes orbFloat1 {
+  0% { transform: translate3d(0px, 0px, 0px) scale(1) rotate(0deg); }
+  33% { transform: translate3d(45px, -30px, 0px) scale(1.12) rotate(15deg); }
+  66% { transform: translate3d(-25px, 35px, 0px) scale(0.92) rotate(-10deg); }
+  100% { transform: translate3d(0px, 0px, 0px) scale(1) rotate(0deg); }
+}
+
+@keyframes orbFloat2 {
+  0% { transform: translate3d(0px, 0px, 0px) scale(1) rotate(0deg); }
+  33% { transform: translate3d(-50px, 40px, 0px) scale(1.15) rotate(-20deg); }
+  66% { transform: translate3d(30px, -25px, 0px) scale(0.88) rotate(12deg); }
+  100% { transform: translate3d(0px, 0px, 0px) scale(1) rotate(0deg); }
+}
+
+@keyframes orbFloat3 {
+  0% { transform: translate3d(0px, 0px, 0px) scale(1); }
+  50% { transform: translate3d(20px, 45px, 0px) scale(1.18); }
+  100% { transform: translate3d(0px, 0px, 0px) scale(1); }
+}
+
+.animate-orb-1 {
+  animation: orbFloat1 22s infinite ease-in-out;
+  will-change: transform;
+}
+
+.animate-orb-2 {
+  animation: orbFloat2 26s infinite ease-in-out;
+  will-change: transform;
+}
+
+.animate-orb-3 {
+  animation: orbFloat3 30s infinite ease-in-out;
+  will-change: transform;
+}
+
+/* Subtle Shimmer for Pipeline Badges and Progress Bars */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+.animate-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.animate-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+  animation: shimmer 2.5s infinite;
+  pointer-events: none;
+}
+
+@keyframes studioSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes studioSpinReverse {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-360deg); }
+}
+
+@keyframes studioPulse {
+  0%, 100% { opacity: 0.5; transform: scale(0.94); }
+  50% { opacity: 1; transform: scale(1.06); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Page Entry Micro-Transition */
+@keyframes pageEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.996);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.page-enter {
+  animation: pageEnter 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: opacity, transform;
+}
+
+/* Cosmic & Cyber Keyframes for Loading Templates */
+@keyframes cosmicOrbit {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes cosmicOrbitReverse {
+  0% { transform: rotate(360deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes glowWave {
+  0%, 100% { opacity: 0.35; filter: drop-shadow(0 0 12px var(--accent)); }
+  50% { opacity: 0.85; filter: drop-shadow(0 0 24px var(--accent)); }
+}
+
+@keyframes scanlineSweep {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(400%); }
+}
+
+@keyframes audioBarWave {
+  0%, 100% { height: 18%; opacity: 0.45; }
+  50% { height: 96%; opacity: 1; }
+}
+
+@keyframes morphPulse {
+  0%, 100% { transform: scale(1); border-radius: 20px; }
+  50% { transform: scale(1.04); border-radius: 26px; }
+}
+
+/* Subtle Interactive Button & Card Transition Enhancements */
+.transition-smooth-ui {
+  transition: all var(--transition-smooth);
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 20px -3px var(--border-glow);
+  border-color: var(--border-hover);
+}

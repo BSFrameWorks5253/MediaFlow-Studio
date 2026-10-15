@@ -1,0 +1,126 @@
+{
+  "name": "mediaflow-studio",
+  "version": "4.1.0",
+  "description": "DataFlow Studio \u2014 Professional Media Ingestion, Synchronization and Report Fusion Desktop Suite",
+  "main": "dist-electron/main.js",
+  "author": "BSFrameWorks",
+  "copyright": "Copyright \u00a9 2026 BSFrameWorks",
+  "license": "Commercial",
+  "scripts": {
+    "dev": "concurrently -k -r \"npm run dev:vite\" \"npm run dev:electron\"",
+    "dev:vite": "vite",
+    "dev:electron": "wait-on -t 30000 tcp:127.0.0.1:5173 && npm run build:electron && cross-env NODE_ENV=development electron dist-electron/main.js",
+    "build:vite": "vite build",
+    "build:electron": "tsc -p tsconfig.electron.json && node -e \"const fs=require('fs'); fs.mkdirSync('dist-electron/engines/scripts', {recursive:true}); fs.copyFileSync('electron/engines/scripts/excel_merger.py', 'dist-electron/engines/scripts/excel_merger.py'); fs.copyFileSync('electron/engines/scripts/generate_separation_report.py', 'dist-electron/engines/scripts/generate_separation_report.py')\"",
+    "build:installer-assets": "python scripts/generate_installer_assets.py && python scripts/generate_appx_assets.py",
+    "build": "npm run build:installer-assets && npm run build:vite && npm run build:electron",
+    "package:exe": "npm run build && electron-builder --win nsis",
+    "package:msi": "npm run build && electron-builder --win msi",
+    "package:msix": "npm run build && electron-builder --win msix",
+    "package:all": "npm run build && electron-builder --win nsis msi msix",
+    "package:portable": "npm run build && electron-builder --win portable",
+    "analyze:context": "python scripts/codebase_analyzer.py",
+    "builder:gui": "python scripts/release_builder_gui.py",
+    "start": "npx electron dist-electron/main.js",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.electron.json --noEmit"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "canvas-confetti": "^1.9.4",
+    "lucide-react": "^1.16.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/canvas-confetti": "^1.9.0",
+    "@types/node": "^22.10.7",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^34.0.2",
+    "electron-builder": "^25.1.8",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.11",
+    "wait-on": "^8.0.2"
+  },
+  "build": {
+    "appId": "BSFrameWorks.MediaFlow.Studio.v4",
+    "productName": "MediaFlow Studio",
+    "copyright": "Copyright \u00a9 2026 BSFrameWorks",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "dist-electron/engines/scripts/excel_merger.py",
+        "to": "scripts/excel_merger.py"
+      },
+      {
+        "from": "dist-electron/engines/scripts/generate_separation_report.py",
+        "to": "scripts/generate_separation_report.py"
+      },
+      {
+        "from": "public/assets/app.ico",
+        "to": "assets/app.ico"
+      },
+      {
+        "from": "public/assets/icon.png",
+        "to": "assets/icon.png"
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "msi",
+        "msix"
+      ],
+      "icon": "public/assets/app.ico",
+      "legalTrademarks": "BSFrameWorks MediaFlow",
+      "publisherName": "BSFrameWorks"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "MediaFlow Studio",
+      "uninstallDisplayName": "MediaFlow Studio v4.1",
+      "runAfterFinish": true,
+      "installerIcon": "public/assets/app.ico",
+      "uninstallerIcon": "public/assets/app.ico",
+      "installerHeader": "build/installerHeader.bmp",
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/uninstallerSidebar.bmp",
+      "artifactName": "${productName} Setup 4.1.${ext}"
+    },
+    "msi": {
+      "oneClick": false,
+      "shortcutName": "MediaFlow Studio",
+      "artifactName": "${productName} 4.1.${ext}"
+    },
+    "msix": {
+      "identityName": "BSFrameWorks.MediaFlow.Studio",
+      "publisherDisplayName": "BSFrameWorks",
+      "publisher": "CN=YOUR-MICROSOFT-PUBLISHER-ID",
+      "applicationId": "MediaFlowStudio",
+      "displayName": "MediaFlow Studio",
+      "languages": ["en-US"],
+      "backgroundColor": "#07080d",
+      "showNameOnTiles": true,
+      "capabilities": [
+        "runFullTrust"
+      ],
+      "artifactName": "${productName}_Store_V${version}.${ext}",
+      "autoUpdate": false
+    }
+  }
+}

@@ -1,0 +1,2 @@
+# Dependencies for Photo Status Matcher & Renamer
+Pillow>=9.5.0

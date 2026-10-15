@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DataFlow Studio v4.0 — Creative Liquid Media Ingestion & Fusion Suite</title>
+  <meta name="description" content="DataFlow Studio is a professional desktop suite for high-speed media ingestion, multi-camera video synchronization, and Python-powered Excel report fusion.">
+  <link rel="icon" type="image/png" href="assets/icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <script>
+    // Configurable GitHub Repository endpoint for live MSI & EXE updates
+    window.DATAFLOW_CONFIG = {
+      githubOwner: "BSFrameWorks",
+      githubRepo: "dataflow-studio"
+    };
+  </script>
+</head>
+<body>
+  <!-- Ambient Aurora Glows -->
+  <div class="aurora-bg">
+    <div class="aurora-circle-1"></div>
+    <div class="aurora-circle-2"></div>
+  </div>
+
+  <!-- Sticky Navbar -->
+  <nav class="navbar">
+    <div class="container nav-container">
+      <div class="brand">
+        <img src="assets/icon.png" alt="DataFlow Studio" class="brand-icon">
+        <span class="brand-title">DATAFLOW STUDIO</span>
+        <span class="brand-badge">v4.0 PRO</span>
+      </div>
+
+      <div class="nav-links">
+        <a href="#pipeline">Pipeline Stages</a>
+        <a href="#updates">Live Updates</a>
+        <a href="#gallery">Screenshots</a>
+        <a href="#specs">Requirements</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="#download" class="btn-nav-download">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Get v4.0
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="hero">
+    <div class="container">
+      <div class="pill-version">
+        <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#00e5ff; box-shadow:0 0 8px #00e5ff;"></span>
+        <span id="release-version-badge">v4.0.0 Production Release</span>
+      </div>
+
+      <h1 class="hero-title">
+        The Creative Liquid Media Ingestion<br>&amp; Report Fusion Suite
+      </h1>
+
+      <p class="hero-sub">
+        Engineered for studio editors, event videographers, and post-production houses. Segregate mixed RAW/JPG dumps, synchronize multi-camera footage, and fuse complex Excel manifests with 32-thread atomic speed.
+      </p>
+
+      <!-- Primary Download Hub Card -->
+      <div class="download-card" id="download">
+        <div class="download-buttons">
+          <!-- Direct MSI Installer Download Button -->
+          <a id="btn-download-msi" href="#" class="btn-cta btn-msi">
+            <span class="cta-main">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M3 9h18"/></svg>
+              Download Windows MSI Installer
+            </span>
+            <span class="cta-sub">Enterprise MSI Package &bull; <span id="msi-size-info">98.6 MB</span></span>
+          </a>
+
+          <!-- Direct Setup EXE Download Button -->
+          <a id="btn-download-exe" href="#" class="btn-cta btn-exe">
+            <span class="cta-main">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download Setup EXE
+            </span>
+            <span class="cta-sub">Interactive Setup Wizard &bull; <span id="exe-size-info">89.6 MB</span></span>
+          </a>
+        </div>
+
+        <div class="download-meta">
+          <span>🛡️ Verified Windows 10 &amp; 11 (x64)</span>
+          <span class="github-badge">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            Updates synchronized from GitHub
+          </span>
+          <span id="release-date-info">Verified Production Release</span>
+        </div>
+      </div>
+
+      <!-- Hero Poster Showcase -->
+      <div class="hero-image-wrap">
+        <img src="assets/PosterArt_2400x1200.png" alt="DataFlow Studio v4.0 Interface Banner">
+      </div>
+    </div>
+  </header>
+
+  <!-- Live GitHub Updates Section -->
+  <section class="section" id="updates" style="background: rgba(14, 19, 31, 0.4);">
+    <div class="container">
+      <h2 class="section-title">GitHub Release &amp; Auto-Update Stream</h2>
+      <p class="section-sub">
+        MSI packages and updates are delivered directly from GitHub Releases. Connected repository:
+        <strong id="current-repo-indicator" style="color:var(--accent-cyan); font-family:var(--font-mono);">BSFrameWorks/dataflow-studio</strong>
+        &bull; <a href="#" id="btn-configure-repo" style="color:var(--accent-cyan); text-decoration:underline; font-size:0.9rem;">Change Repo</a>
+      </p>
+
+      <div class="feature-card" style="max-width:820px; margin:0 auto; border-color:var(--border-glow);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border-subtle); padding-bottom:12px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            <span style="font-weight:700; font-size:1.1rem;">Latest GitHub Assets &amp; Release Notes</span>
+          </div>
+          <span style="font-family:var(--font-mono); font-size:0.8rem; color:var(--accent-green); background:rgba(16,185,129,0.1); border:1px solid var(--accent-green); padding:2px 8px; border-radius:999px;">
+            ● Certified Live Feed
+          </span>
+        </div>
+
+        <div id="release-changelog-content" style="font-size:0.92rem; line-height:1.7;">
+          <p><strong>DataFlow Studio v4.0.0 Production Release Highlights:</strong></p>
+          <ul style="padding-left:20px; margin-top:8px;">
+            <li><strong>Enterprise Windows MSI:</strong> Native Windows Installer package (<code>DataFlow Studio 4.0.msi</code>) built for direct deployment.</li>
+            <li><strong>Professional Setup Wizard:</strong> Customizable NSIS installer with desktop shortcuts and Start Menu integration.</li>
+            <li><strong>Python Excel Fusion:</strong> Deep style cloning engine via openpyxl with cell borders and formula preservation.</li>
+            <li><strong>32-Thread Concurrency:</strong> Instant atomic rename and moving operations across local NVMe/SSD storage.</li>
+            <li><strong>100% Local Privacy:</strong> Zero cloud lock-in, zero telemetry, full offline functionality.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Key Architecture Features -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title">Engineered for Production Demands</h2>
+      <p class="section-sub">Eliminate human errors and transfer bottlenecks with an atomic, transactional architecture.</p>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3 class="feature-title">32-Thread Concurrency</h3>
+          <p class="feature-desc">Perform instantaneous atomic moves and renames across local storage volumes without data duplication or locking latency.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h3 class="feature-title">Python openpyxl Fusion</h3>
+          <p class="feature-desc">Deep-style cloning duplicates cell fills, custom fonts, borders, and complex formula calculations with 1:1 precision across workbooks.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🎬</div>
+          <h3 class="feature-title">Multi-Camera Video Sync</h3>
+          <p class="feature-desc">High-throughput 8 MB streaming buffer matches multi-camera clip prefixes (CAM1, C0001, 01-Q) into synchronized timeline structures.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🛡️</div>
+          <h3 class="feature-title">Pre-Flight Disk Safety Probe</h3>
+          <p class="feature-desc">Scans target drive headroom before initiating large ingestion tasks to guarantee you never encounter a disk-full crash.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🔒</div>
+          <h3 class="feature-title">100% Offline &amp; Local Privacy</h3>
+          <p class="feature-desc">Air-gapped by design. Media assets stay strictly on your computer with zero telemetry collection and no mandatory cloud accounts.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🎨</div>
+          <h3 class="feature-title">Aurora Liquid Glass UI</h3>
+          <p class="feature-desc">High-DPI crisp typography, customizable dark presets (Obsidian Pro, Sunset Glow, Hyper Emerald), and instant keyboard shortcuts.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Pipeline Showcase -->
+  <section class="section" id="pipeline" style="background: rgba(14, 19, 31, 0.4);">
+    <div class="container">
+      <h2 class="section-title">The 8-Stage Production Pipeline</h2>
+      <p class="section-sub">From card ingestion to final report delivery, each stage is isolated, verifiable, and lightning fast.</p>
+
+      <div class="stage-tabs">
+        <button class="stage-tab-btn active" data-stage="overview">Overview Hub</button>
+        <button class="stage-tab-btn" data-stage="pv">Stage 00 • PV Separator</button>
+        <button class="stage-tab-btn" data-stage="upload">Stage 01 • Upload Structure</button>
+        <button class="stage-tab-btn" data-stage="photo">Stage 02 • Photo Matcher</button>
+        <button class="stage-tab-btn" data-stage="video">Stage 05 • Video Transfer</button>
+        <button class="stage-tab-btn" data-stage="excel">Stage 07 • Excel Merger</button>
+        <button class="stage-tab-btn" data-stage="tools">Production Tools</button>
+      </div>
+
+      <!-- Panels -->
+      <div class="stage-panel active" id="panel-overview">
+        <div>
+          <h3 style="font-size:1.5rem; margin-bottom:12px; color:var(--accent-cyan);">Workspace Overview &amp; Health Hub</h3>
+          <p style="color:var(--text-secondary); margin-bottom:16px;">
+            The command center provides instant status on physical storage drives, recent ingestion sessions, active pipeline stages, and global hardware telemetry.
+          </p>
+          <ul style="color:var(--text-secondary); padding-left:20px; font-size:0.95rem;">
+            <li>Real-time drive space headroom visualization</li>
+            <li>One-click navigation into any pipeline phase</li>
+            <li>Activity logs and deletion audit records</li>
+          </ul>
+        </div>
+        <img src="assets/screenshots/Screenshot_1_Workspace_Overview.png" alt="Workspace Overview">
+      </div>
+
+      <div class="stage-panel" id="panel-pv">
+        <div>
+          <h3 style="font-size:1.5rem; margin-bottom:12px; color:var(--accent-cyan);">Stage 00 • PV Separator</h3>
+          <p style="color:var(--text-secondary); margin-bottom:16px;">
+            Atomically bifurcates RAW &amp; JPEG photos from video clips in seconds. Automatically generates deletion audit manifests and verifies file sizes before purge operations.
+          </p>
+          <ul style="color:var(--text-secondary); padding-left:20px; font-size:0.95rem;">
+            <li>Supports CR2, CR3, ARW, NEF, DNG, JPG, MP4, MOV, MXF</li>
+            <li>Safe purge mode with dual-confirmation safeguards</li>
+            <li>Excel audit manifest export with timestamp verification</li>
+          </ul>
+        </div>
+        <img src="assets/screenshots/Screenshot_2_PVSeparator_Engine.png" alt="PV Separator">
+      </div>
+
+      <div class="stage-panel" id="panel-upload">
+        <div>
+          <h3 style="font-size:1.5rem; margin-bottom:12px; color:var(--accent-cyan);">Stage 01 • Upload Structure Generator</h3>
+          <p style="color:var(--text-secondary); margin-bottom:16px;">
+            Generates standardized studio hierarchy trees for client archives, sub-events, and cloud uploads with a single click.
+          </p>
+        </div>
+        <img src="assets/screenshots/Screenshot_3_Upload_Folder_Generator.png" alt="Upload Structure">
+      </div>
+
+      <div class="stage-panel" id="panel-photo">
+        <div>
+          <h3 style="font-size:1.5rem; margin-bottom:12px; color:var(--accent-cyan);">Stage 02 • Photo Status Tagger &amp; Matcher</h3>
+          <p style="color:var(--text-secondary); margin-bottom:16px;">
+            Matches camera shots against master shooting rosters, identifying selected frames, missing numbers, and category tags.
+          </p>
+        </div>
+        <img src="assets/screenshots/Screenshot_4_Photo_Status_Tagger.png" alt="Photo Matcher">
+      </div>
+
+      <div class="stage-panel" id="panel-video">
+        <div>
+          <h3 style="font-size:1.5rem; margin-bottom:12px; color:var(--accent-cyan);">Stage 05 • Multi-Camera Video Transfer</h3>
+          <p style="color:var(--text-secondary); margin-bottom:16px;">
+            High-throughput 8 MB chunk streaming engine that copies multi-camera footage directly into synchronized timeline directories.
+          </p>
+        </div>
+        <img src="assets/screenshots/Screenshot_5_MultiCamera_Video_Transfer.png" alt="Video Transfer">
+      </div>
+
+      <div class="stage-panel" id="panel-excel">
+        <div>
+          <h3 style="font-size:1.5rem; margin-bottom:12px; color:var(--accent-cyan);">Stage 07 • Deep-Style Excel Report Merger</h3>
+          <p style="color:var(--text-secondary); margin-bottom:16px;">
+            Python-powered workbook fusion engine that unites disparate inventory and camera reports while flawlessly preserving styling and formulas.
+          </p>
+        </div>
+        <img src="assets/screenshots/Screenshot_7_Excel_Report_Merger.png" alt="Excel Merger">
+      </div>
+
+      <div class="stage-panel" id="panel-tools">
+        <div>
+          <h3 style="font-size:1.5rem; margin-bottom:12px; color:var(--accent-cyan);">Production Standalone Tools</h3>
+          <p style="color:var(--text-secondary); margin-bottom:16px;">
+            Utilities for compound extension normalization (.CR3.jpg), video thumbnail tagging (_V), and pre-flight storage capacity checks.
+          </p>
+        </div>
+        <img src="assets/screenshots/Screenshot_8_Standalone_Production_Tools.png" alt="Production Tools">
+      </div>
+    </div>
+  </section>
+
+  <!-- Screenshots Gallery Section -->
+  <section class="section" id="gallery">
+    <div class="container">
+      <h2 class="section-title">Visual Showcase</h2>
+      <p class="section-sub">Click any screenshot to inspect the high-resolution 1920x1080 interface.</p>
+
+      <div class="gallery-grid">
+        <div class="screenshot-thumb" data-full="assets/screenshots/Screenshot_1_Workspace_Overview.png" data-title="Workspace Overview Dashboard">
+          <img src="assets/screenshots/Screenshot_1_Workspace_Overview.png" alt="Overview" loading="lazy">
+          <div class="screenshot-overlay">Workspace Overview</div>
+        </div>
+
+        <div class="screenshot-thumb" data-full="assets/screenshots/Screenshot_2_PVSeparator_Engine.png" data-title="PV Separator Engine">
+          <img src="assets/screenshots/Screenshot_2_PVSeparator_Engine.png" alt="PV Separator" loading="lazy">
+          <div class="screenshot-overlay">PV Separator</div>
+        </div>
+
+        <div class="screenshot-thumb" data-full="assets/screenshots/Screenshot_3_Upload_Folder_Generator.png" data-title="Upload Structure Generator">
+          <img src="assets/screenshots/Screenshot_3_Upload_Folder_Generator.png" alt="Upload Structure" loading="lazy">
+          <div class="screenshot-overlay">Upload Structure</div>
+        </div>
+
+        <div class="screenshot-thumb" data-full="assets/screenshots/Screenshot_4_Photo_Status_Tagger.png" data-title="Photo Status Tagger & Verification">
+          <img src="assets/screenshots/Screenshot_4_Photo_Status_Tagger.png" alt="Photo Matcher" loading="lazy">
+          <div class="screenshot-overlay">Photo Status Tagger</div>
+        </div>
+
+        <div class="screenshot-thumb" data-full="assets/screenshots/Screenshot_5_MultiCamera_Video_Transfer.png" data-title="Multi-Camera Video Transfer Engine">
+          <img src="assets/screenshots/Screenshot_5_MultiCamera_Video_Transfer.png" alt="Video Transfer" loading="lazy">
+          <div class="screenshot-overlay">Video Transfer Engine</div>
+        </div>
+
+        <div class="screenshot-thumb" data-full="assets/screenshots/Screenshot_6_Event_Image_Distributor.png" data-title="Event Image Distributor">
+          <img src="assets/screenshots/Screenshot_6_Event_Image_Distributor.png" alt="Event Distributor" loading="lazy">
+          <div class="screenshot-overlay">Event Image Distributor</div>
+        </div>
+
+        <div class="screenshot-thumb" data-full="assets/screenshots/Screenshot_7_Excel_Report_Merger.png" data-title="Deep-Style Excel Report Merger">
+          <img src="assets/screenshots/Screenshot_7_Excel_Report_Merger.png" alt="Excel Merger" loading="lazy">
+          <div class="screenshot-overlay">Excel Report Merger</div>
+        </div>
+
+        <div class="screenshot-thumb" data-full="assets/screenshots/Screenshot_8_Standalone_Production_Tools.png" data-title="Standalone Production Utilities">
+          <img src="assets/screenshots/Screenshot_8_Standalone_Production_Tools.png" alt="Tools" loading="lazy">
+          <div class="screenshot-overlay">Standalone Tools</div>
+        </div>
+
+        <div class="screenshot-thumb" data-full="assets/screenshots/Screenshot_9_Hardware_Concurrency_Preferences.png" data-title="Hardware Concurrency & Aurora Themes">
+          <img src="assets/screenshots/Screenshot_9_Hardware_Concurrency_Preferences.png" alt="Preferences" loading="lazy">
+          <div class="screenshot-overlay">Preferences & Concurrency</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Technical Specifications -->
+  <section class="section" id="specs" style="background: rgba(14, 19, 31, 0.4);">
+    <div class="container">
+      <h2 class="section-title">System Requirements</h2>
+      <p class="section-sub">Built natively for 64-bit Windows environments.</p>
+
+      <div class="spec-table-wrap">
+        <table class="spec-table">
+          <thead>
+            <tr>
+              <th>Specification</th>
+              <th>Minimum</th>
+              <th>Recommended</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Operating System</strong></td>
+              <td>Windows 10 x64 (Build 18362+)</td>
+              <td>Windows 11 x64 (22H2 / 24H2)</td>
+            </tr>
+            <tr>
+              <td><strong>Architecture</strong></td>
+              <td>64-bit Intel / AMD processor</td>
+              <td>64-bit Multi-core processor</td>
+            </tr>
+            <tr>
+              <td><strong>Memory (RAM)</strong></td>
+              <td>4 GB RAM</td>
+              <td>8 GB or 16 GB RAM</td>
+            </tr>
+            <tr>
+              <td><strong>Disk Storage</strong></td>
+              <td>300 MB free space for app</td>
+              <td>Fast NVMe SSD for media operations</td>
+            </tr>
+            <tr>
+              <td><strong>Display</strong></td>
+              <td>1280 x 800</td>
+              <td>1920 x 1080 (High-DPI) or 4K</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+          <img src="assets/icon.png" alt="DataFlow" style="width:24px; height:24px; border-radius:6px;">
+          <strong style="color:#fff;">DataFlow Studio v4.0</strong>
+        </div>
+        <p>&copy; 2026 BSFrameWorks. All rights reserved. Commercial Creative Liquid Production Suite.</p>
+      </div>
+
+      <div class="footer-links">
+        <a href="#download">Download MSI</a>
+        <a href="#updates">GitHub Updates</a>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms of Service</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Lightbox Modal -->
+  <div class="modal" id="lightbox-modal">
+    <div class="modal-content" style="max-width:1400px; padding:16px;">
+      <button class="modal-close" id="close-lightbox">&times;</button>
+      <img id="lightbox-img" src="" alt="Enlarged Screenshot" style="width:100%; max-height:80vh; object-fit:contain; border-radius:10px; display:block;">
+      <div id="lightbox-caption" style="margin-top:12px; font-weight:700; color:var(--text-primary); text-align:center;"></div>
+    </div>
+  </div>
+
+  <!-- GitHub Repo Config Modal -->
+  <div class="modal" id="config-modal">
+    <div class="modal-content" style="max-width:480px; width:100%;">
+      <button class="modal-close" id="close-config-modal">&times;</button>
+      <h3 style="font-size:1.3rem; margin-bottom:8px; color:#fff;">Configure GitHub Repository</h3>
+      <p style="color:var(--text-secondary); font-size:0.88rem; margin-bottom:20px;">
+        Point the website updater to your GitHub repository to fetch your published <code>.msi</code> and <code>.exe</code> release assets in real time.
+      </p>
+
+      <form id="repo-config-form">
+        <div style="margin-bottom:14px;">
+          <label style="display:block; font-size:0.85rem; color:var(--text-secondary); margin-bottom:6px;">GitHub Owner / Organization:</label>
+          <input type="text" id="repo-owner-input" placeholder="e.g. BSFrameWorks" required style="width:100%; padding:10px 14px; background:rgba(0,0,0,0.5); border:1px solid var(--border-glow); border-radius:8px; color:#fff; font-family:var(--font-mono);">
+        </div>
+
+        <div style="margin-bottom:20px;">
+          <label style="display:block; font-size:0.85rem; color:var(--text-secondary); margin-bottom:6px;">Repository Name:</label>
+          <input type="text" id="repo-name-input" placeholder="e.g. dataflow-studio" required style="width:100%; padding:10px 14px; background:rgba(0,0,0,0.5); border:1px solid var(--border-glow); border-radius:8px; color:#fff; font-family:var(--font-mono);">
+        </div>
+
+        <div style="display:flex; justify-content:space-between; gap:12px;">
+          <button type="button" id="btn-reset-repo" style="background:transparent; border:1px solid var(--border-subtle); color:var(--text-muted); padding:10px 16px; border-radius:8px; cursor:pointer;">
+            Reset Default
+          </button>
+          <button type="submit" style="background:linear-gradient(135deg, #00e5ff, #0284c7); border:none; color:#000; font-weight:700; padding:10px 20px; border-radius:8px; cursor:pointer;">
+            Save &amp; Check Releases
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/github-updater.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

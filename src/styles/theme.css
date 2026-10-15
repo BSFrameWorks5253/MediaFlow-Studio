@@ -1,0 +1,201 @@
+/* ============================================================
+   DataFlow Studio — Cyber Liquid Glass & Studio Semantic System
+   Next-Generation High-Tech Creative Production Desktop Suite
+   ============================================================ */
+
+:root {
+  /* Dynamic Liquid Aurora Palette (Default: Obsidian Matrix) */
+  --liquid-violet: #8b5cf6;
+  --liquid-cyan: #00f2fe;
+  --liquid-rose: #ff2e93;
+  --liquid-emerald: #10e79d;
+  --liquid-amber: #ff9f0a;
+
+  /* Typography Stacks */
+  --font-display: 'Plus Jakarta Sans', 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-system: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+
+  /* Transition timings */
+  --transition-fast: 140ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-spring: 340ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition-bounce: 400ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* 5 Dynamic Liquid Aurora Presets */
+[data-aurora="obsidian"] {
+  --liquid-violet: #8b5cf6;
+  --liquid-cyan: #00f2fe;
+  --liquid-rose: #ff2e93;
+  --liquid-emerald: #10e79d;
+  --aurora-primary: #00f2fe;
+  --aurora-secondary: #8b5cf6;
+  --aurora-glow: rgba(0, 242, 254, 0.28);
+}
+
+[data-aurora="sunset"] {
+  --liquid-violet: #ff9f0a;
+  --liquid-cyan: #ff6b00;
+  --liquid-rose: #ff2d55;
+  --liquid-emerald: #c026d3;
+  --aurora-primary: #ff6b00;
+  --aurora-secondary: #ff2d55;
+  --aurora-glow: rgba(255, 107, 0, 0.28);
+}
+
+[data-aurora="aurora"] {
+  --liquid-violet: #10e79d;
+  --liquid-cyan: #34d399;
+  --liquid-rose: #00f2fe;
+  --liquid-emerald: #0284c7;
+  --aurora-primary: #10e79d;
+  --aurora-secondary: #00f2fe;
+  --aurora-glow: rgba(16, 231, 157, 0.28);
+}
+
+[data-aurora="titanium"] {
+  --liquid-violet: #64748b;
+  --liquid-cyan: #94a3b8;
+  --liquid-rose: #475569;
+  --liquid-emerald: #334155;
+  --aurora-primary: #94a3b8;
+  --aurora-secondary: #64748b;
+  --aurora-glow: rgba(148, 163, 184, 0.2);
+}
+
+[data-aurora="stealth"] {
+  --liquid-violet: #1e1b4b;
+  --liquid-cyan: #0f172a;
+  --liquid-rose: #311042;
+  --liquid-emerald: #022c22;
+  --aurora-primary: #38bdf8;
+  --aurora-secondary: #818cf8;
+  --aurora-glow: rgba(56, 189, 248, 0.16);
+}
+
+/* ============================================================
+   Dark Mode (Refined Studio Slate — Softened & Easy on the Eyes)
+   ============================================================ */
+[data-theme="dark"] {
+  --system-bg: #131722;
+  --secondary-system-bg: #1a202e;
+  --tertiary-system-bg: #222a3d;
+  --system-grouped-bg: #0f121a;
+
+  --sidebar-bg: rgba(22, 28, 41, 0.88);
+  --surface: rgba(26, 33, 49, 0.84);
+  --surface-elevated: rgba(34, 43, 63, 0.92);
+  --surface-glass: rgba(22, 29, 43, 0.82);
+  --surface-glass-elevated: rgba(32, 41, 60, 0.9);
+  --surface-card: rgba(26, 34, 50, 0.82);
+  --surface-card-hover: rgba(36, 46, 68, 0.92);
+
+  --label: #f1f5f9;
+  --secondary-label: #cbd5e1;
+  --tertiary-label: #94a3b8;
+  --quaternary-label: #64748b;
+
+  --border: rgba(255, 255, 255, 0.12);
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-hover: rgba(255, 255, 255, 0.25);
+  --border-glass: rgba(255, 255, 255, 0.12);
+  --border-glow: rgba(0, 242, 254, 0.35);
+
+  --glass-specular-top: rgba(255, 255, 255, 0.18);
+  --glass-inner-shadow: rgba(255, 255, 255, 0.03);
+  --glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.01) 100%);
+
+  /* Apple & Neon Cyber Tokens */
+  --system-blue: #0a84ff;
+  --system-indigo: #6366f1;
+  --system-purple: #a855f7;
+  --system-green: #10b981;
+  --system-orange: #f59e0b;
+  --system-red: #ef4444;
+  --system-yellow: #eab308;
+  --system-teal: #14b8a6;
+  --system-cyan: #06b6d4;
+  --system-pink: #ec4899;
+
+  --accent: #00f2fe;
+  --accent-soft: rgba(0, 242, 254, 0.15);
+  --accent-glow: rgba(0, 242, 254, 0.35);
+  --accent-gradient: linear-gradient(135deg, #00f2fe 0%, #8b5cf6 100%);
+  --success: #10e79d;
+  --success-soft: rgba(16, 231, 157, 0.15);
+  --warning: #ff9f0a;
+  --warning-soft: rgba(255, 159, 10, 0.15);
+  --danger: #ff453a;
+  --danger-soft: rgba(255, 69, 58, 0.15);
+  --info: #00f2fe;
+  --info-soft: rgba(0, 242, 254, 0.15);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 4px 18px -2px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--border);
+  --shadow-elevated: 0 16px 36px -8px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--border);
+  --shadow-glow: 0 0 25px -5px rgba(0, 242, 254, 0.3);
+}
+
+/* ============================================================
+   Light Mode (Soothing Studio Off-White — Soft on Eyes & Low Glare)
+   ============================================================ */
+[data-theme="light"] {
+  --system-bg: #eceff5;
+  --secondary-system-bg: #f4f6fa;
+  --tertiary-system-bg: #e2e6ef;
+  --system-grouped-bg: #e5eaf2;
+
+  --sidebar-bg: rgba(244, 246, 251, 0.94);
+  --surface: rgba(249, 250, 253, 0.94);
+  --surface-elevated: #f3f5f9;
+  --surface-glass: rgba(246, 248, 252, 0.88);
+  --surface-glass-elevated: rgba(253, 254, 255, 0.96);
+  --surface-card: rgba(252, 253, 255, 0.94);
+  --surface-card-hover: #ffffff;
+
+  --label: #1e293b;
+  --secondary-label: #475569;
+  --tertiary-label: #64748b;
+  --quaternary-label: #94a3b8;
+
+  --border: rgba(203, 213, 225, 0.85);
+  --border-subtle: rgba(226, 232, 240, 0.75);
+  --border-hover: rgba(148, 163, 184, 0.7);
+  --border-glass: rgba(203, 213, 225, 0.75);
+  --border-glow: rgba(2, 132, 199, 0.22);
+
+  --glass-specular-top: rgba(255, 255, 255, 0.85);
+  --glass-inner-shadow: rgba(0, 0, 0, 0.02);
+  --glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.1) 100%);
+
+  /* Apple Light Tokens */
+  --system-blue: #007aff;
+  --system-indigo: #5856d6;
+  --system-purple: #af52de;
+  --system-green: #16a34a;
+  --system-orange: #ea580c;
+  --system-red: #dc2626;
+  --system-yellow: #ca8a04;
+  --system-teal: #0d9488;
+  --system-cyan: #0284c7;
+  --system-pink: #db2777;
+
+  --accent: #0284c7;
+  --accent-soft: rgba(2, 132, 199, 0.12);
+  --accent-glow: rgba(2, 132, 199, 0.25);
+  --accent-gradient: linear-gradient(135deg, #0284c7 0%, #6366f1 100%);
+  --success: #16a34a;
+  --success-soft: rgba(22, 163, 74, 0.12);
+  --warning: #ea580c;
+  --warning-soft: rgba(234, 88, 12, 0.12);
+  --danger: #dc2626;
+  --danger-soft: rgba(220, 38, 38, 0.12);
+  --info: #0284c7;
+  --info-soft: rgba(2, 132, 199, 0.12);
+
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05);
+  --shadow-card: 0 3px 12px -2px rgba(15, 23, 42, 0.06), 0 0 0 1px var(--border);
+  --shadow-elevated: 0 12px 30px -6px rgba(15, 23, 42, 0.1), 0 0 0 1px var(--border);
+  --shadow-glow: 0 0 15px -3px rgba(2, 132, 199, 0.2);
+}
