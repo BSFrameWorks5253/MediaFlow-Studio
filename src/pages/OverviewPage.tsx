@@ -7,7 +7,6 @@ import {
   Layers,
   FileSpreadsheet,
   ArrowRight,
-  Cloud,
   FolderPlus,
   FolderX,
   Zap,
@@ -25,7 +24,7 @@ interface OverviewPageProps {
   onNavigate: (page: PageKey) => void;
 }
 
-const STAGE_CAPABILITIES: Record<PageKey, string> = {
+const STAGE_CAPABILITIES: Record<string, string> = {
   pvSeparator: '32-Thread Parallel RAW',
   uploadStructure: '3-Folder Generation',
   photoMatcher: 'Exact Numeric Match',
@@ -36,7 +35,6 @@ const STAGE_CAPABILITIES: Record<PageKey, string> = {
   doNotUpload: 'Quarantine Shield',
   excelMerger: 'Format-Preserving Excel',
   overview: 'Command Matrix',
-  googleDrive: 'Cloud Sync',
   activity: 'Audit Ledger',
   tools: 'Utility Suite',
 };
@@ -128,12 +126,12 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigate }) => {
           tag="EXACT MATCH"
         />
         <StatCard
-          label="Workspace Storage"
-          value="Drive Synchronized"
-          subValue="Local and cloud pipeline wired"
-          icon={<Cloud size={18} />}
+          label="Data Integrity"
+          value="100% Lossless"
+          subValue="Zero byte corruption verified"
+          icon={<CheckCircle2 size={18} />}
           accentColor="#38BDF8"
-          tag="CONNECTED"
+          tag="VERIFIED"
         />
       </div>
 
@@ -389,168 +387,35 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* Operations & Cloud Deck */}
-      <div style={{ display: 'grid', gridTemplateColumns: '66% 34%', gap: 18 }}>
-        {/* Left: Recent Production Operations */}
-        <div
-          className="glass-card"
-          style={{
-            padding: '22px 24px',
-            borderRadius: 20,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 16,
-            minHeight: 250,
-            background: 'var(--surface-card)',
-            boxShadow: 'var(--shadow-card)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-              <div
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 8,
-                  backgroundColor: 'rgba(0, 242, 254, 0.15)',
-                  border: '1px solid rgba(0, 242, 254, 0.35)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Activity size={15} color="#00F2FE" />
-              </div>
-              <span
-                style={{
-                  fontSize: 12,
-                  fontWeight: 900,
-                  letterSpacing: 1.2,
-                  fontFamily: 'var(--font-mono)',
-                  color: 'var(--label)',
-                }}
-              >
-                LIVE PRODUCTION AUDIT LOG
-              </span>
-            </div>
-            <button
-              onClick={() => onNavigate('activity')}
-              className="btn-tactile"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#00F2FE',
-                fontSize: 12,
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-              }}
-            >
-              <span>Full Audit Ledger</span>
-              <ArrowRight size={13} />
-            </button>
-          </div>
-
-          {/* Activity List */}
-          {activities.length === 0 ? (
-            <div
-              style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                padding: '28px 0',
-              }}
-            >
-              <Box size={28} color="var(--tertiary-label)" />
-              <span style={{ fontSize: 12, color: 'var(--tertiary-label)' }}>
-                No operations recorded in this session.
-              </span>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto' }}>
-              {activities.map((act) => (
-                <div
-                  key={act.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    padding: '11px 14px',
-                    borderRadius: 11,
-                    backgroundColor: 'var(--surface-elevated)',
-                    border: '1px solid var(--border-subtle)',
-                    fontSize: 12,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      color: 'var(--tertiary-label)',
-                      fontSize: 10.5,
-                      fontWeight: 600,
-                    }}
-                  >
-                    {new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-
-                  <span
-                    style={{
-                      fontSize: 9.5,
-                      fontWeight: 800,
-                      padding: '2px 8px',
-                      borderRadius: 5,
-                      backgroundColor: 'rgba(0, 242, 254, 0.12)',
-                      border: '1px solid rgba(0, 242, 254, 0.35)',
-                      color: '#00F2FE',
-                      textTransform: 'uppercase',
-                      fontFamily: 'var(--font-mono)',
-                    }}
-                  >
-                    {act.stage}
-                  </span>
-
-                  <span style={{ color: 'var(--label)', fontWeight: 600, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {act.action} — <span style={{ color: 'var(--secondary-label)' }}>{act.summary}</span>
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Right: Cloud & Export Sinks */}
-        <div
-          className="glass-card"
-          style={{
-            padding: '22px 24px',
-            borderRadius: 20,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 16,
-            minHeight: 250,
-            background: 'var(--surface-card)',
-            boxShadow: 'var(--shadow-card)',
-          }}
-        >
+      {/* Operations Audit Log Deck */}
+      <div
+        className="glass-card"
+        style={{
+          padding: '24px 26px',
+          borderRadius: 20,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+          minHeight: 250,
+          background: 'var(--surface-card)',
+          boxShadow: 'var(--shadow-card)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
             <div
               style={{
                 width: 28,
                 height: 28,
                 borderRadius: 8,
-                backgroundColor: 'rgba(56, 189, 248, 0.15)',
-                border: '1px solid rgba(56, 189, 248, 0.35)',
+                backgroundColor: 'rgba(0, 242, 254, 0.15)',
+                border: '1px solid rgba(0, 242, 254, 0.35)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <Cloud size={15} color="#38BDF8" />
+              <Activity size={15} color="#00F2FE" />
             </div>
             <span
               style={{
@@ -561,114 +426,97 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigate }) => {
                 color: 'var(--label)',
               }}
             >
-              CLOUD & EXPORT SINKS
+              LIVE PRODUCTION AUDIT LOG
             </span>
           </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {/* Main Google Drive */}
-            <div
-              onClick={() => onNavigate('googleDrive')}
-              className="glass-card"
-              style={{
-                padding: '15px 16px',
-                borderRadius: 14,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                border: '1px solid var(--border-subtle)',
-                transition: 'all 0.18s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = 'var(--system-blue)';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 8px 20px -4px rgba(10, 132, 255, 0.18)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'var(--border-subtle)';
-                e.currentTarget.style.transform = 'translateY(0px)';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
-            >
-              <div
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 11,
-                  backgroundColor: 'rgba(10, 132, 255, 0.18)',
-                  border: '1px solid rgba(10, 132, 255, 0.35)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 2px 8px rgba(10, 132, 255, 0.2)',
-                  flexShrink: 0,
-                }}
-              >
-                <Cloud size={19} color="#0A84FF" />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--label)' }}>
-                  Main Google Drive
-                </span>
-                <span style={{ fontSize: 11, color: 'var(--secondary-label)' }}>
-                  Production cloud sync & package ingest
-                </span>
-              </div>
-            </div>
-
-            {/* Reference Google Drive */}
-            <div
-              onClick={() => onNavigate('googleDrive')}
-              className="glass-card"
-              style={{
-                padding: '15px 16px',
-                borderRadius: 14,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                border: '1px solid var(--border-subtle)',
-                transition: 'all 0.18s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#10E79D';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 8px 20px -4px rgba(16, 231, 157, 0.18)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'var(--border-subtle)';
-                e.currentTarget.style.transform = 'translateY(0px)';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
-            >
-              <div
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 11,
-                  backgroundColor: 'rgba(16, 231, 157, 0.18)',
-                  border: '1px solid rgba(16, 231, 157, 0.35)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 2px 8px rgba(16, 231, 157, 0.2)',
-                  flexShrink: 0,
-                }}
-              >
-                <Cloud size={19} color="#10E79D" />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--label)' }}>
-                  Reference Google Drive
-                </span>
-                <span style={{ fontSize: 11, color: 'var(--secondary-label)' }}>
-                  Reference photos, proofs & badges
-                </span>
-              </div>
-            </div>
-          </div>
+          <button
+            onClick={() => onNavigate('activity')}
+            className="btn-tactile"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#00F2FE',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+            }}
+          >
+            <span>Full Audit Ledger</span>
+            <ArrowRight size={13} />
+          </button>
         </div>
+
+        {/* Activity List */}
+        {activities.length === 0 ? (
+          <div
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              padding: '28px 0',
+            }}
+          >
+            <Box size={28} color="var(--tertiary-label)" />
+            <span style={{ fontSize: 12, color: 'var(--tertiary-label)' }}>
+              No operations recorded in this session.
+            </span>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto' }}>
+            {activities.map((act) => (
+              <div
+                key={act.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '11px 14px',
+                  borderRadius: 11,
+                  backgroundColor: 'var(--surface-elevated)',
+                  border: '1px solid var(--border-subtle)',
+                  fontSize: 12,
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    color: 'var(--tertiary-label)',
+                    fontSize: 10.5,
+                    fontWeight: 600,
+                  }}
+                >
+                  {new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+
+                <span
+                  style={{
+                    fontSize: 9.5,
+                    fontWeight: 800,
+                    padding: '2px 8px',
+                    borderRadius: 5,
+                    backgroundColor: 'rgba(0, 242, 254, 0.12)',
+                    border: '1px solid rgba(0, 242, 254, 0.35)',
+                    color: '#00F2FE',
+                    textTransform: 'uppercase',
+                    fontFamily: 'var(--font-mono)',
+                  }}
+                >
+                  {act.stage}
+                </span>
+
+                <span style={{ color: 'var(--label)', fontWeight: 600, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {act.action} — <span style={{ color: 'var(--secondary-label)' }}>{act.summary}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -29,7 +29,6 @@ import {
   EventDistributorPage,
   DoNotUploadPage,
   ExcelMergerPage,
-  GoogleDrivePage,
   ActivityPage,
   StandaloneToolsPage,
 } from './pages';
@@ -205,8 +204,6 @@ const AppContent: React.FC = () => {
         return <DoNotUploadPage onNavigate={setActivePage} onShowToast={showToast} />;
       case 'excelMerger':
         return <ExcelMergerPage onNavigate={setActivePage} onShowToast={showToast} />;
-      case 'googleDrive':
-        return <GoogleDrivePage onShowToast={showToast} />;
       case 'activity':
         return <ActivityPage />;
       case 'tools':

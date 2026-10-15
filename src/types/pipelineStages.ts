@@ -47,7 +47,6 @@ export const PIPELINE_NAV_ORDER: PageKey[] = [
 
 export const SYSTEM_NAV_ORDER: PageKey[] = [
   'overview',             // Command Overview
-  'googleDrive',          // Google Drive Cloud
   'activity',             // Activity & Audit Log
   'tools',                // Automation Utilities
 ];
