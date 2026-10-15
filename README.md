@@ -115,21 +115,21 @@ Unlike generic file managers, MediaFlow Studio operates with **zero accidental d
     <tr>
       <td width="50%" align="center">
         <b>Workspace Overview & Pipeline Navigator</b><br/>
-        <img src="microsoft_store_assets/images/screenshots/Screenshot_1_Workspace_Overview.png" width="100%" alt="Workspace Overview" />
+        <img src="https://raw.githubusercontent.com/BSFrameWorks5253/MediaFlow-Studio/main/microsoft_store_assets/images/screenshots/Screenshot_1_Workspace_Overview.png" width="100%" alt="Workspace Overview" />
       </td>
       <td width="50%" align="center">
         <b>Multi-Threaded PV Separator Engine</b><br/>
-        <img src="microsoft_store_assets/images/screenshots/Screenshot_2_PVSeparator_Engine.png" width="100%" alt="PV Separator" />
+        <img src="https://raw.githubusercontent.com/BSFrameWorks5253/MediaFlow-Studio/main/microsoft_store_assets/images/screenshots/Screenshot_2_PVSeparator_Engine.png" width="100%" alt="PV Separator" />
       </td>
     </tr>
     <tr>
       <td width="50%" align="center">
         <b>Upload Structure & Safar Generator</b><br/>
-        <img src="microsoft_store_assets/images/screenshots/Screenshot_3_Upload_Folder_Generator.png" width="100%" alt="Folder Generator" />
+        <img src="https://raw.githubusercontent.com/BSFrameWorks5253/MediaFlow-Studio/main/microsoft_store_assets/images/screenshots/Screenshot_3_Upload_Folder_Generator.png" width="100%" alt="Folder Generator" />
       </td>
       <td width="50%" align="center">
         <b>Excel Fusion & Inventory Collector</b><br/>
-        <img src="microsoft_store_assets/images/screenshots/Screenshot_8_Excel_Report_Merger.png" width="100%" alt="Excel Merger" />
+        <img src="https://raw.githubusercontent.com/BSFrameWorks5253/MediaFlow-Studio/main/microsoft_store_assets/images/screenshots/Screenshot_8_Excel_Report_Merger.png" width="100%" alt="Excel Merger" />
       </td>
     </tr>
   </table>
