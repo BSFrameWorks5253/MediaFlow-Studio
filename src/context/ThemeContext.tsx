@@ -23,6 +23,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const params = new URLSearchParams(window.location.search);
       const t = params.get('theme');
       if (t === 'light' || t === 'dark') return t;
+      const stored = localStorage.getItem('theme');
+      if (stored === 'light' || stored === 'dark') return stored;
     }
     return 'dark';
   });
@@ -61,6 +63,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const setTheme = (newTheme: ThemeMode) => {
     setThemeState(newTheme);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('theme', newTheme);
+      } catch (e) {}
+    }
     if (window.electronAPI) window.electronAPI.saveConfig({ theme: newTheme });
   };
 

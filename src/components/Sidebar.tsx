@@ -114,7 +114,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
               border: '1px solid rgba(0, 242, 254, 0.3)',
             }}
           >
-            v4.1
+            v5.0
           </span>
         </div>
       </div>

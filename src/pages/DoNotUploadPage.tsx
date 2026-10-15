@@ -15,6 +15,7 @@ import { PageKey } from '../types/pipelineStages';
 import { usePipeline } from '../context/PipelineContext';
 import { DoNotUploadItem } from '../../electron/engines/productionTools';
 import { OperationLoadingOverlay } from '../components/OperationLoadingOverlay';
+import { toUserErrorMessage } from '../utils/errorSanitizer';
 
 interface DoNotUploadPageProps {
   onShowToast: (text: string, type: 'info' | 'success' | 'warning' | 'danger') => void;
@@ -102,7 +103,7 @@ export const DoNotUploadPage: React.FC<DoNotUploadPageProps> = ({ onShowToast, o
         onShowToast('No folders matching "Contributor" or "Documents" found.', 'info');
       }
     } catch (e: any) {
-      onShowToast(`Scan failed: ${e.message}`, 'danger');
+      onShowToast(toUserErrorMessage(e, 'Failed to scan folders for isolation. Please check directory permissions.'), 'danger');
     } finally {
       setDnuScanning(false);
     }
@@ -125,7 +126,7 @@ export const DoNotUploadPage: React.FC<DoNotUploadPageProps> = ({ onShowToast, o
         scanDirectory(dnuDir);
       }
     } catch (e: any) {
-      onShowToast(`Execution failed: ${e.message}`, 'danger');
+      onShowToast(toUserErrorMessage(e, 'Failed to isolate quarantine folders. Please verify write permissions.'), 'danger');
     } finally {
       setDnuExecuting(false);
     }
@@ -198,7 +199,7 @@ export const DoNotUploadPage: React.FC<DoNotUploadPageProps> = ({ onShowToast, o
               </span>
             </div>
             <div style={{ fontSize: 12, color: 'var(--secondary-label)', marginTop: 2 }}>
-              Scans media tree for <code>Contributor</code> &amp; <code>Documents</code> folders and moves them into <code>DO NOT UPLOAD</code> organized date-wise before final Report Merger.
+              Scans media tree for <code>Contributor</code> &amp; <code>Documents</code> folders and moves them into <code>DO NOT UPLOAD</code> organized date-wise before Event Image Shifter &amp; final Report Merger.
             </div>
           </div>
         </div>
@@ -371,9 +372,21 @@ export const DoNotUploadPage: React.FC<DoNotUploadPageProps> = ({ onShowToast, o
                 Isolation complete! Target folders organized into 'DO NOT UPLOAD' date-wise.
               </span>
             </div>
-            <StudioButton variant="glass" size="sm" icon={<FolderOpen size={12} />} onClick={handleOpenDnuFolder}>
-              Open 'DO NOT UPLOAD'
-            </StudioButton>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <StudioButton variant="glass" size="sm" icon={<FolderOpen size={12} />} onClick={handleOpenDnuFolder}>
+                Open 'DO NOT UPLOAD'
+              </StudioButton>
+              {onNavigate && (
+                <StudioButton
+                  variant="primary"
+                  size="sm"
+                  onClick={() => onNavigate('eventDistributor')}
+                  style={{ backgroundColor: '#6366F1' }}
+                >
+                  Proceed to Event Image Shifter →
+                </StudioButton>
+              )}
+            </div>
           </div>
         )}
       </div>

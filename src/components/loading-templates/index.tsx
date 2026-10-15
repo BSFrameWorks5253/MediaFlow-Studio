@@ -1,5 +1,6 @@
 import React from 'react';
 import { LoadingTemplateId, LoadingTemplateProps } from './types';
+import { OntoKineticStudioLoader } from './OntoKineticStudioLoader';
 import { DataflowFlagshipLoader } from './DataflowFlagshipLoader';
 import { AstralFrontierLoader } from './AstralFrontierLoader';
 import { WalbiKineticLoader } from './WalbiKineticLoader';
@@ -10,6 +11,7 @@ import { MobbinMinimalSheetLoader } from './MobbinMinimalSheetLoader';
 
 export * from './types';
 export {
+  OntoKineticStudioLoader,
   DataflowFlagshipLoader,
   AstralFrontierLoader,
   WalbiKineticLoader,
@@ -25,6 +27,8 @@ export const renderLoadingTemplate = (
   props: LoadingTemplateProps
 ): React.ReactElement => {
   switch (templateId) {
+    case 'onto':
+      return <OntoKineticStudioLoader {...props} />;
     case 'astral':
       return <AstralFrontierLoader {...props} />;
     case 'walbi':
@@ -39,6 +43,6 @@ export const renderLoadingTemplate = (
       return <MobbinMinimalSheetLoader {...props} />;
     case 'flagship':
     default:
-      return <DataflowFlagshipLoader {...props} />;
+      return <OntoKineticStudioLoader {...props} />;
   }
 };

@@ -201,13 +201,13 @@ export class PhotoMatcherEngine {
     const secondExists = fs.existsSync(cleanSecond);
 
     if (!firstExists && !secondExists) {
-      throw new Error(`Both directories do not exist:\n• Selected Photos: "${cleanFirst}"\n• All Photos: "${cleanSecond}"`);
+      throw new Error('Both selected photo directories could not be found. Please verify the folder locations.');
     }
     if (!firstExists) {
-      throw new Error(`First path (Selected Photos) does not exist: "${cleanFirst}"`);
+      throw new Error('The Selected Photos directory could not be found. Please verify the folder location.');
     }
     if (!secondExists) {
-      throw new Error(`Second path (All Photos) does not exist: "${cleanSecond}"`);
+      throw new Error('The All Photos directory could not be found. Please verify the folder location.');
     }
 
     const matchByOrder = options?.matchByOrder !== false; // Default true
@@ -390,7 +390,7 @@ export class PhotoMatcherEngine {
   async scanDirectory(dirPath: string): Promise<PhotoMatchScanResult> {
     const cleanPath = path.resolve(dirPath.replace(/^file:\/\/\/?/, ''));
     if (!fs.existsSync(cleanPath)) {
-      throw new Error(`Directory does not exist: ${cleanPath}`);
+      throw new Error('Target directory could not be found. Please verify the folder location.');
     }
 
     this.isScanning = true;

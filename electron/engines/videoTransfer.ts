@@ -11,6 +11,12 @@ export const THUMB_EXTS = new Set([
   '.jpg', '.jpeg', '.png', '.webp', '.thm', '.bmp', '.tiff', '.tif', '.heic'
 ]);
 
+export const ALL_PHOTO_EXTS = new Set([
+  '.jpg', '.jpeg', '.jpe', '.png', '.heic', '.heif', '.hif', '.webp',
+  '.tif', '.tiff', '.bmp', '.dib', '.raw', '.arw', '.cr2', '.cr3',
+  '.nef', '.nrw', '.dng', '.orf', '.rw2', '.pef', '.raf', '.srw'
+]);
+
 export interface SequenceParseResult {
   raw: string;
   cleanName: string;
@@ -65,6 +71,17 @@ export interface PhotoFolderUnmatchedItem {
   videoFolderPath?: string;
 }
 
+export interface EmptyPhotoFolderItem {
+  id: string;
+  folderName: string;
+  folderPath: string;
+  dateFolder: string;
+  subfolderCount: number;
+  photoCount: number;
+  totalFileCount: number;
+  reason: string;
+}
+
 export interface ScanIssue {
   type: 'error' | 'warning' | 'info';
   category: 'path' | 'date' | 'clip' | 'folder';
@@ -78,6 +95,7 @@ export interface VideoScanResult {
   matched: VideoMatchedPair[];
   unmatched: VideoUnmatchedItem[];
   unmatchedPhotoFolders: PhotoFolderUnmatchedItem[];
+  emptyPhotoFolders: EmptyPhotoFolderItem[];
   dateMismatch: boolean;
   videoDates: string[];
   photoDates: string[];
@@ -180,13 +198,13 @@ export class VideoTransferEngine {
     const photoExists = fs.existsSync(cleanPhoto);
 
     if (!vidExists && !photoExists) {
-      throw new Error(`Both directories do not exist:\n• Video folder: "${cleanVid}"\n• Photo folder: "${cleanPhoto}"`);
+      throw new Error('Both selected video and photo directories could not be found. Please verify the folder paths.');
     }
     if (!vidExists) {
-      throw new Error(`Video folder does not exist:\n"${cleanVid}"`);
+      throw new Error('The selected video folder could not be found. Please verify the folder path.');
     }
     if (!photoExists) {
-      throw new Error(`Photo folder does not exist:\n"${cleanPhoto}"`);
+      throw new Error('The selected photo folder could not be found. Please verify the folder path.');
     }
 
     this.isScanning = true;
@@ -259,6 +277,7 @@ export class VideoTransferEngine {
     }
 
     const photoFoldersByDate: Record<string, { name: string; path: string; parsed: SequenceParseResult }[]> = {};
+    const emptyPhotoFolders: EmptyPhotoFolderItem[] = [];
 
     // Scan photo subfolders
     const scanPhotoTree = async (currentDir: string, dateTag: string) => {
@@ -269,13 +288,49 @@ export class VideoTransferEngine {
           if (isDateFolder(ent.name)) {
             await scanPhotoTree(sub, ent.name);
           } else {
-            if (!photoFoldersByDate[dateTag]) photoFoldersByDate[dateTag] = [];
-            photoFoldersByDate[dateTag].push({
-              name: ent.name,
-              path: sub,
-              parsed: VideoTransferEngine.parseSequenceName(ent.name),
+            let subEnts: fs.Dirent[] = [];
+            try {
+              subEnts = await fs.promises.readdir(sub, { withFileTypes: true });
+            } catch {}
+
+            const childDirs = subEnts.filter((e) => e.isDirectory());
+            const photoFiles = subEnts.filter((e) => {
+              if (!e.isFile()) return false;
+              const ext = path.extname(e.name).toLowerCase();
+              return ALL_PHOTO_EXTS.has(ext) || THUMB_EXTS.has(ext);
             });
-            await scanPhotoTree(sub, dateTag);
+
+            // "if a folder has folder in it means that folder is not empty it in it"
+            if (childDirs.length > 0) {
+              if (!photoFoldersByDate[dateTag]) photoFoldersByDate[dateTag] = [];
+              photoFoldersByDate[dateTag].push({
+                name: ent.name,
+                path: sub,
+                parsed: VideoTransferEngine.parseSequenceName(ent.name),
+              });
+              await scanPhotoTree(sub, dateTag);
+            } else {
+              // Leaf folder with 0 subfolders: check if it has photos
+              if (photoFiles.length === 0) {
+                emptyPhotoFolders.push({
+                  id: `empty-${ent.name}-${emptyPhotoFolders.length + 1}`,
+                  folderName: ent.name,
+                  folderPath: sub,
+                  dateFolder: dateTag || path.basename(cleanPhoto),
+                  subfolderCount: 0,
+                  photoCount: 0,
+                  totalFileCount: subEnts.filter((e) => e.isFile()).length,
+                  reason: 'There are no photos in this folder',
+                });
+              } else {
+                if (!photoFoldersByDate[dateTag]) photoFoldersByDate[dateTag] = [];
+                photoFoldersByDate[dateTag].push({
+                  name: ent.name,
+                  path: sub,
+                  parsed: VideoTransferEngine.parseSequenceName(ent.name),
+                });
+              }
+            }
           }
         }
       }
@@ -439,6 +494,41 @@ export class VideoTransferEngine {
       }
     }
 
+    // Also check if any date folder itself is empty of subfolders and photos
+    for (const dName of photoDates) {
+      const dPath = path.join(cleanPhoto, dName);
+      try {
+        const dEnts = await fs.promises.readdir(dPath, { withFileTypes: true });
+        const dDirs = dEnts.filter((e) => e.isDirectory());
+        const dPhotos = dEnts.filter(
+          (e) =>
+            e.isFile() &&
+            (ALL_PHOTO_EXTS.has(path.extname(e.name).toLowerCase()) ||
+              THUMB_EXTS.has(path.extname(e.name).toLowerCase()))
+        );
+        if (dDirs.length === 0 && dPhotos.length === 0) {
+          emptyPhotoFolders.push({
+            id: `empty-date-${dName}`,
+            folderName: dName,
+            folderPath: dPath,
+            dateFolder: dName,
+            subfolderCount: 0,
+            photoCount: 0,
+            totalFileCount: dEnts.filter((e) => e.isFile()).length,
+            reason: 'Date folder contains no subfolders and no photos',
+          });
+        }
+      } catch {}
+    }
+
+    if (emptyPhotoFolders.length > 0) {
+      issues.push({
+        type: 'warning',
+        category: 'folder',
+        message: `Found ${emptyPhotoFolders.length} empty folder(s) containing no photos in the photo directory.`,
+      });
+    }
+
     this.isScanning = false;
 
     // Convert photoFoldersByDate to clean output
@@ -454,6 +544,7 @@ export class VideoTransferEngine {
       matched,
       unmatched,
       unmatchedPhotoFolders,
+      emptyPhotoFolders,
       dateMismatch: hasDateMismatch,
       videoDates: Array.from(videoDates),
       photoDates: Array.from(photoDates),
@@ -569,7 +660,7 @@ export class VideoTransferEngine {
   }
 
   async undoTransfer(manifestPath: string): Promise<{ restored: number; unlinked: number }> {
-    if (!fs.existsSync(manifestPath)) throw new Error(`Manifest not found: ${manifestPath}`);
+    if (!fs.existsSync(manifestPath)) throw new Error('Transfer session manifest could not be found.');
     const records: UndoRecord[] = JSON.parse(await fs.promises.readFile(manifestPath, 'utf-8'));
 
     let restored = 0;

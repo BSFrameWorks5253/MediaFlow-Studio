@@ -58,7 +58,7 @@ export class RemainingCollectorEngine {
 
   async scanDirectories(sourceDir: string, destDir?: string): Promise<RemainingScanResult> {
     const cleanSource = path.resolve(sourceDir.replace(/^file:\/\/\/?/, ''));
-    if (!fs.existsSync(cleanSource)) throw new Error(`Directory does not exist: ${cleanSource}`);
+    if (!fs.existsSync(cleanSource)) throw new Error('Source remaining directory could not be found. Please verify the folder.');
 
     this.isScanning = true;
     const foundItems: RemainingFolderItem[] = [];
@@ -196,7 +196,7 @@ export class RemainingCollectorEngine {
   }
 
   async undoShift(manifestPath: string): Promise<{ restored: number; failed: number }> {
-    if (!fs.existsSync(manifestPath)) throw new Error(`Manifest not found: ${manifestPath}`);
+    if (!fs.existsSync(manifestPath)) throw new Error('Shift session manifest could not be found.');
     const records: ShiftManifestRecord[] = JSON.parse(await fs.promises.readFile(manifestPath, 'utf-8'));
 
     let restored = 0;

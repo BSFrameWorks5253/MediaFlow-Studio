@@ -94,12 +94,16 @@ export const StatCard: React.FC<StatCardProps> = ({
           </div>
           <span
             style={{
-              fontSize: 12,
+              fontSize: 11.5,
               fontWeight: 700,
               color: 'var(--secondary-label)',
-              letterSpacing: '0.02em',
+              letterSpacing: '0.04em',
               textTransform: 'uppercase',
               fontFamily: 'var(--font-mono)',
+              lineHeight: 1.3,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
             }}
           >
             {label}

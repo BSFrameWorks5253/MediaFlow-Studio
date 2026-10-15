@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { StudioButton } from '../components/StudioButton';
 import { DoNotUploadItem, InventoryReportItem } from '../../electron/engines/productionTools';
+import { toUserErrorMessage } from '../utils/errorSanitizer';
 
 interface StandaloneToolsPageProps {
   onShowToast: (text: string, type: 'success' | 'danger' | 'warning' | 'info') => void;
@@ -103,7 +104,8 @@ export const StandaloneToolsPage: React.FC<StandaloneToolsPageProps> = ({ onShow
         onShowToast('No _Inventory_Report.xlsx files found in Document directories.', 'info');
       }
     } catch (e: any) {
-      onShowToast(`Scan error: ${e.message}`, 'danger');
+      console.error('Inventory report scan failed:', e);
+      onShowToast(toUserErrorMessage(e, 'Failed to scan inventory reports. Please check permissions and try again.'), 'danger');
     } finally {
       setIrScanning(false);
     }
@@ -129,7 +131,8 @@ export const StandaloneToolsPage: React.FC<StandaloneToolsPageProps> = ({ onShow
         setIrItems((prev) => prev.map((item) => ({ ...item, status: 'Copied' })));
       }
     } catch (e: any) {
-      onShowToast(`Execution error: ${e.message}`, 'danger');
+      console.error('Inventory report execution failed:', e);
+      onShowToast(toUserErrorMessage(e, 'Failed to collect inventory reports. Please check file permissions and disk space.'), 'danger');
     } finally {
       setIrExecuting(false);
     }
@@ -167,7 +170,8 @@ export const StandaloneToolsPage: React.FC<StandaloneToolsPageProps> = ({ onShow
         'success'
       );
     } catch (e: any) {
-      onShowToast(`Normalizer error: ${e.message}`, 'danger');
+      console.error('Normalize extensions failed:', e);
+      onShowToast(toUserErrorMessage(e, 'Failed to normalize file extensions. Please verify files are not in use.'), 'danger');
     } finally {
       setNormLoading(false);
     }
@@ -201,7 +205,8 @@ export const StandaloneToolsPage: React.FC<StandaloneToolsPageProps> = ({ onShow
       onShowToast(`Tagged ${res.success} photos with '_P' suffix (${res.skipped} skipped).`, 'success');
       setTagFiles([]);
     } catch (e: any) {
-      onShowToast(`Tagger error: ${e.message}`, 'danger');
+      console.error('Tag photos failed:', e);
+      onShowToast(toUserErrorMessage(e, 'Failed to tag photos. Please check file permissions and try again.'), 'danger');
     } finally {
       setTagLoading(false);
     }
@@ -218,7 +223,8 @@ export const StandaloneToolsPage: React.FC<StandaloneToolsPageProps> = ({ onShow
       onShowToast(`Tagged ${res.success} video thumbnails with '_V' suffix (${res.skipped} skipped).`, 'success');
       setTagFiles([]);
     } catch (e: any) {
-      onShowToast(`Tagger error: ${e.message}`, 'danger');
+      console.error('Tag video thumbnails failed:', e);
+      onShowToast(toUserErrorMessage(e, 'Failed to tag video thumbnails. Please check file permissions and try again.'), 'danger');
     } finally {
       setTagLoading(false);
     }
@@ -248,7 +254,8 @@ export const StandaloneToolsPage: React.FC<StandaloneToolsPageProps> = ({ onShow
         onShowToast('No folders matching "Contributor" or "Documents" found.', 'info');
       }
     } catch (e: any) {
-      onShowToast(`Scan failed: ${e.message}`, 'danger');
+      console.error('Scan DO NOT UPLOAD failed:', e);
+      onShowToast(toUserErrorMessage(e, 'Failed to scan directory for isolation. Please check permissions and try again.'), 'danger');
     } finally {
       setDnuScanning(false);
     }
@@ -271,7 +278,8 @@ export const StandaloneToolsPage: React.FC<StandaloneToolsPageProps> = ({ onShow
         scanDnuDirectory(dnuDir);
       }
     } catch (e: any) {
-      onShowToast(`Execution failed: ${e.message}`, 'danger');
+      console.error('Execute DO NOT UPLOAD failed:', e);
+      onShowToast(toUserErrorMessage(e, 'Failed to isolate folders. Please verify files are not in use and try again.'), 'danger');
     } finally {
       setDnuExecuting(false);
     }

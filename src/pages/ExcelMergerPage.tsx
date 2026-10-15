@@ -21,6 +21,7 @@ import { PageKey } from '../types/pipelineStages';
 import { ExcelInspectItem, ExcelMergeStats } from '../../electron/engines/excelMerger';
 import { InventoryReportItem } from '../../electron/engines/productionTools';
 import { OperationLoadingOverlay } from '../components/OperationLoadingOverlay';
+import { toUserErrorMessage } from '../utils/errorSanitizer';
 
 interface ExcelMergerPageProps {
   onShowToast: (text: string, type: 'success' | 'danger' | 'warning' | 'info') => void;
@@ -160,7 +161,7 @@ export const ExcelMergerPage: React.FC<ExcelMergerPageProps> = ({ onShowToast, o
         'success'
       );
     } catch (e: any) {
-      onShowToast(`Excel merge failed: ${e.message}`, 'danger');
+      onShowToast(toUserErrorMessage(e, 'Excel merge failed. Please check that the input spreadsheets are valid and not open in Excel.'), 'danger');
     } finally {
       setIsMerging(false);
     }
@@ -206,7 +207,7 @@ export const ExcelMergerPage: React.FC<ExcelMergerPageProps> = ({ onShowToast, o
         onShowToast('No _Inventory_Report.xlsx files found in Document directories.', 'info');
       }
     } catch (e: any) {
-      onShowToast(`Scan error: ${e.message}`, 'danger');
+      onShowToast(toUserErrorMessage(e, 'Failed to scan for inventory reports. Please verify the folder path.'), 'danger');
     } finally {
       setCollectorScanning(false);
     }
@@ -232,7 +233,7 @@ export const ExcelMergerPage: React.FC<ExcelMergerPageProps> = ({ onShowToast, o
         setCollectorItems((prev) => prev.map((item) => ({ ...item, status: 'Copied' })));
       }
     } catch (e: any) {
-      onShowToast(`Execution error: ${e.message}`, 'danger');
+      onShowToast(toUserErrorMessage(e, 'Failed to collect inventory reports. Please check write permissions.'), 'danger');
     } finally {
       setCollectorExecuting(false);
     }

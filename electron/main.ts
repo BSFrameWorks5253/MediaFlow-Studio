@@ -337,7 +337,7 @@ function setupIpcHandlers() {
     const cleanTarget = path.resolve((targetMainDataDir || '').replace(/^file:\/\/\/?/, ''));
 
     if (!fs.existsSync(cleanSource)) {
-      throw new Error(`Source photo/video directory does not exist: ${cleanSource}`);
+      throw new Error('The source photo/video directory could not be found.');
     }
 
     if (cleanSource.toLowerCase() === cleanTarget.toLowerCase()) {
@@ -428,6 +428,21 @@ function setupIpcHandlers() {
 
   ipcMain.handle('video:undo-transfer', async (_, manifestPath: string) => {
     return await videoEngine.undoTransfer(manifestPath);
+  });
+
+  ipcMain.handle('folder:delete-empty', async (_, folderPath: string) => {
+    if (!folderPath) throw new Error('Path is required');
+    const cleanPath = path.resolve(folderPath.replace(/^file:\/\/\/?/, ''));
+    if (!fs.existsSync(cleanPath)) {
+      return { success: true, message: 'Folder already removed' };
+    }
+    try {
+      await shell.trashItem(cleanPath);
+      return { success: true, trashed: true };
+    } catch {
+      await fs.promises.rm(cleanPath, { recursive: true, force: true });
+      return { success: true, trashed: false };
+    }
   });
 
   // 4. Thumbnail Separator
@@ -579,12 +594,14 @@ function setupIpcHandlers() {
           });
         });
         req.on('error', (err) => {
-          resolve({ success: false, error: err.message, currentVersion: '4.0.0' });
+          console.error('[GitHub Update Check Error]:', err);
+          resolve({ success: false, error: 'Unable to check for updates. Please check your network connection.', currentVersion: '4.0.0' });
         });
         req.end();
       });
     } catch (e: any) {
-      return { success: false, error: e.message, currentVersion: '4.0.0' };
+      console.error('[GitHub Update Check Exception]:', e);
+      return { success: false, error: 'Unable to check for updates at this time.', currentVersion: '4.0.0' };
     }
   });
 
@@ -610,7 +627,7 @@ function setupIpcHandlers() {
       return { success: true };
     } catch (e: any) {
       console.error('[AUTO_UPDATER] Install failed:', e);
-      return { success: false, error: e?.message || String(e) };
+      return { success: false, error: 'Update installation could not be completed. Please try again.' };
     }
   });
 }

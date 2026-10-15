@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { X, Sparkles, Download, ArrowRight, AlertCircle, RefreshCw } from 'lucide-react';
+import { toUserErrorMessage } from '../utils/errorSanitizer';
 import './UpdateModal.css';
 
 export interface UpdatePayload {
@@ -60,11 +61,13 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ forcedUpdate, onClose 
     try {
       const res = await window.electronAPI.installUpdate(update);
       if (res && !res.success) {
-        setErrorMsg(res.error || 'Failed to install update.');
+        console.error('Update install error:', res.error);
+        setErrorMsg(toUserErrorMessage(res.error, 'Failed to install update. Please check network connection and try again.'));
         setIsDownloading(false);
       }
     } catch (e: any) {
-      setErrorMsg(e?.message || 'Error occurred during update installation.');
+      console.error('Update install exception:', e);
+      setErrorMsg(toUserErrorMessage(e, 'Error occurred during update installation. Please try again later.'));
       setIsDownloading(false);
     }
   };

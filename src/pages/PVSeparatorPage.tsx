@@ -27,6 +27,7 @@ import {
   SeparationTarget,
   PVSeparationSummary,
 } from '../../electron/engines/pvSeparator';
+import { toUserErrorMessage } from '../utils/errorSanitizer';
 
 interface PVSeparatorPageProps {
   onShowToast: (text: string, type: 'success' | 'danger' | 'warning' | 'info') => void;
@@ -184,7 +185,8 @@ export const PVSeparatorPage: React.FC<PVSeparatorPageProps> = ({ onShowToast, o
         },
       ]);
     } catch (e: any) {
-      onShowToast(`Scan failed: ${e.message}`, 'danger');
+      console.error('PV scan failed:', e);
+      onShowToast(toUserErrorMessage(e, 'Failed to scan media directory. Please check permissions and try again.'), 'danger');
     } finally {
       setIsScanning(false);
     }
@@ -234,8 +236,8 @@ export const PVSeparatorPage: React.FC<PVSeparatorPageProps> = ({ onShowToast, o
       ...prev,
       {
         text: mode === 'delete'
-          ? `Starting PERMANENT DELETION of ${scanResult?.target_count} ${targetLabel} from ${sourceDir}...`
-          : `Starting ${mode.toUpperCase()} separation of ${scanResult?.target_count} ${targetLabel} to ${destDir}...`,
+          ? `Starting PERMANENT DELETION of ${scanResult?.target_count} ${targetLabel}...`
+          : `Starting ${mode.toUpperCase()} separation of ${scanResult?.target_count} ${targetLabel}...`,
         type: mode === 'delete' ? 'warning' : 'info',
         time: new Date().toLocaleTimeString(),
       },
@@ -269,7 +271,7 @@ export const PVSeparatorPage: React.FC<PVSeparatorPageProps> = ({ onShowToast, o
         setLogs((prev) => [
           ...prev,
           {
-            text: `Generated Audit Report: ${summary.report_path}`,
+            text: `Generated Audit Report successfully`,
             type: 'success',
             time: new Date().toLocaleTimeString(),
           },
@@ -281,11 +283,18 @@ export const PVSeparatorPage: React.FC<PVSeparatorPageProps> = ({ onShowToast, o
         handleScan();
       }
     } catch (e: any) {
-      onShowToast(`${mode === 'delete' ? 'Deletion' : 'Separation'} error: ${e.message}`, 'danger');
+      console.error('PV separation failed:', e);
+      const friendlyMsg = toUserErrorMessage(
+        e,
+        mode === 'delete'
+          ? 'Failed to delete selected media files. Please verify files are not in use.'
+          : 'Failed to complete media separation. Please verify permissions and disk space.'
+      );
+      onShowToast(friendlyMsg, 'danger');
       setLogs((prev) => [
         ...prev,
         {
-          text: `Error: ${e.message}`,
+          text: `Error: ${friendlyMsg}`,
           type: 'danger',
           time: new Date().toLocaleTimeString(),
         },
@@ -471,7 +480,28 @@ export const PVSeparatorPage: React.FC<PVSeparatorPageProps> = ({ onShowToast, o
         />
 
         {/* Storage Headroom Bar (Only when moving/copying to a destination) */}
-        {mode !== 'delete' && <StorageHeadroomBar headroom={headroom} />}
+        {mode !== 'delete' && (
+          <StorageHeadroomBar
+            headroom={headroom}
+            destPath={destDir}
+            sourcePath={sourceDir}
+            transferMode={mode}
+            payloadBytes={
+              target === 'video'
+                ? scanResult?.video_bytes
+                : target === 'photo'
+                ? scanResult?.photo_bytes
+                : (scanResult ? (scanResult.photo_bytes + scanResult.video_bytes) : 0)
+            }
+            payloadFileCount={
+              target === 'video'
+                ? scanResult?.total_videos
+                : target === 'photo'
+                ? scanResult?.total_photos
+                : (scanResult ? (scanResult.total_videos + scanResult.total_photos) : 0)
+            }
+          />
+        )}
 
         {/* Transfer Options & Execution Bar */}
         <div

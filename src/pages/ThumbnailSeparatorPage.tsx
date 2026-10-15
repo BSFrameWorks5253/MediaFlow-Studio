@@ -5,6 +5,7 @@ import { PageKey } from '../types/pipelineStages';
 import { ThumbnailScanResult } from '../../electron/engines/thumbnailSeparator';
 import { usePipeline } from '../context/PipelineContext';
 import { OperationLoadingOverlay } from '../components/OperationLoadingOverlay';
+import { toUserErrorMessage } from '../utils/errorSanitizer';
 
 interface ThumbnailSeparatorPageProps {
   onShowToast: (text: string, type: 'success' | 'danger' | 'warning' | 'info') => void;
@@ -54,7 +55,8 @@ export const ThumbnailSeparatorPage: React.FC<ThumbnailSeparatorPageProps> = ({ 
         'success'
       );
     } catch (e: any) {
-      onShowToast(`Scan failed: ${e.message}`, 'danger');
+      console.error('Thumbnail scan failed:', e);
+      onShowToast(toUserErrorMessage(e, 'Failed to scan thumbnails. Please check permissions and try again.'), 'danger');
     } finally {
       setIsScanning(false);
     }
@@ -76,7 +78,8 @@ export const ThumbnailSeparatorPage: React.FC<ThumbnailSeparatorPageProps> = ({ 
       onShowToast(`Separation complete: ${summary.success_count} thumbnails mirrored!`, 'success');
       handleScan();
     } catch (e: any) {
-      onShowToast(`Separation error: ${e.message}`, 'danger');
+      console.error('Thumbnail separation failed:', e);
+      onShowToast(toUserErrorMessage(e, 'Failed to separate thumbnails. Please check file permissions and disk space.'), 'danger');
     } finally {
       setIsProcessing(false);
     }

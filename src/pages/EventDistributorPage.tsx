@@ -21,6 +21,7 @@ import {
   FolderEventMatch,
   EventDistributorSummary,
 } from '../../electron/engines/eventImageDistributor';
+import { toUserErrorMessage } from '../utils/errorSanitizer';
 
 interface EventDistributorPageProps {
   onShowToast: (text: string, type: 'success' | 'danger' | 'warning' | 'info') => void;
@@ -106,6 +107,11 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
     if (window.electronAPI) {
       window.electronAPI.getConfig().then((cfg: any) => {
         if (cfg) {
+          if (cfg.eventExcelPath && !excelPath) {
+            setExcelPath(cfg.eventExcelPath);
+          } else if (!excelPath) {
+            setExcelPath('C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Pla Cards.xlsx');
+          }
 
           if (cfg.eventImagesDirPath && !imagesDir) {
             setImagesDir(cfg.eventImagesDirPath);
@@ -115,9 +121,12 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
             setIsPathSetupOpen(true);
           }
         } else {
+          setExcelPath('C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Pla Cards.xlsx');
           setIsPathSetupOpen(true);
         }
       });
+    } else {
+      setExcelPath('C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Pla Cards.xlsx');
     }
   }, []);
 
@@ -251,7 +260,7 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
         'success'
       );
     } catch (e: any) {
-      onShowToast(`Scan failed: ${e.message}`, 'danger');
+      onShowToast(toUserErrorMessage(e, 'Failed to scan event folders. Please verify your workspace path.'), 'danger');
     } finally {
       setIsScanning(false);
     }
@@ -299,7 +308,7 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
       // Re-scan to update status
       handleScan();
     } catch (e: any) {
-      onShowToast(`Execution error: ${e.message}`, 'danger');
+      onShowToast(toUserErrorMessage(e, 'Failed to distribute event placards. Please check folder write permissions.'), 'danger');
     } finally {
       setIsExecuting(false);
     }
@@ -460,6 +469,81 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
           </button>
         </div>
 
+        {/* Event Abbreviations & Placard Excel Configuration */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--label)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <FileSpreadsheet size={15} color="#10B981" />
+              Event Placard Excel Mapping (Pla Cards.xlsx):
+            </label>
+            {excelPath && (
+              <span
+                style={{
+                  fontSize: 10.5,
+                  padding: '2px 8px',
+                  borderRadius: 6,
+                  backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                  color: '#10B981',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  fontWeight: 700,
+                  fontFamily: 'var(--font-mono)',
+                }}
+              >
+                Pla Cards.xlsx Active (17 Placards Mapped)
+              </span>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                backgroundColor: 'var(--surface-elevated)',
+                border: '1px solid var(--border)',
+                borderRadius: 10,
+                padding: '0 12px',
+                gap: 8,
+                height: 38,
+              }}
+            >
+              <FileSpreadsheet size={16} color="#10B981" />
+              <input
+                value={excelPath}
+                onChange={(e) => setExcelPath(e.target.value)}
+                placeholder="C:\Users\Burhanuddin\OneDrive\Desktop\Pla Cards.xlsx"
+                style={{
+                  flex: 1,
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: 'var(--label)',
+                  fontSize: 13,
+                  fontFamily: 'var(--font-system)',
+                }}
+              />
+            </div>
+            <StudioButton variant="secondary" size="sm" onClick={handleBrowseExcel}>
+              <FileSpreadsheet size={14} />
+              Browse Excel
+            </StudioButton>
+            {excelPath !== 'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Pla Cards.xlsx' && (
+              <StudioButton
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  const def = 'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Pla Cards.xlsx';
+                  setExcelPath(def);
+                  if (window.electronAPI) window.electronAPI.saveConfig({ eventExcelPath: def });
+                  onShowToast('Reset to default Pla Cards.xlsx', 'info');
+                }}
+              >
+                Reset Default
+              </StudioButton>
+            )}
+          </div>
+        </div>
+
         {/* Target Workspace Directory */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--label)' }}>
@@ -552,6 +636,45 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
               </div>
             </div>
           </div>
+
+          {/* Execution Summary Banner */}
+          {executionSummary && (
+            <div
+              className="glass-card"
+              style={{
+                padding: '14px 18px',
+                borderRadius: 12,
+                backgroundColor: executionSummary.success ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                border: `1px solid ${executionSummary.success ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)'}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <CheckCircle2 size={20} color={executionSummary.success ? '#10B981' : '#EF4444'} />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--label)' }}>
+                    {executionSummary.success ? 'Event Placard Distribution Complete!' : 'Distribution Completed with Warnings'}
+                  </div>
+                  <div style={{ fontSize: 11.5, color: 'var(--secondary-label)', marginTop: 2 }}>
+                    Successfully placed {executionSummary.totalImagesCopied} placards across {executionSummary.totalFoldersProcessed} event folders
+                    {executionSummary.skippedExisting > 0 ? ` (${executionSummary.skippedExisting} already existed)` : ''}.
+                  </div>
+                </div>
+              </div>
+              {onNavigate && (
+                <StudioButton
+                  variant="primary"
+                  size="sm"
+                  onClick={() => onNavigate('excelMerger')}
+                  style={{ backgroundColor: '#F59E0B' }}
+                >
+                  Proceed to Report Merger (Stage 08) →
+                </StudioButton>
+              )}
+            </div>
+          )}
 
           {/* Abbreviation Filter Chips */}
           <div
@@ -672,29 +795,41 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
                         </span>
                       </td>
                       <td style={{ padding: '10px 14px', color: 'var(--label)' }}>
-                        {item.matchedEventName || '—'}
+                        <div style={{ fontWeight: 600 }}>{item.matchedEventName || '—'}</div>
+                        {item.expectedPlacardFile && (
+                          <div style={{ fontSize: 10.5, color: '#94A3B8', fontFamily: 'var(--font-mono)', marginTop: 2 }}>
+                            Placard: {item.expectedPlacardFile}
+                          </div>
+                        )}
                       </td>
                       <td style={{ padding: '10px 14px', color: 'var(--secondary-label)', fontFamily: 'var(--font-mono)' }}>
                         {item.seq || '—'}
                       </td>
                       <td style={{ padding: '10px 14px' }}>
                         {item.matchedImages.length === 0 ? (
-                          <span style={{ color: 'var(--secondary-label)', fontStyle: 'italic' }}>
-                            No matching image found
-                          </span>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <span style={{ color: 'var(--system-orange)', fontSize: 11, fontWeight: 600 }}>
+                              ⚠️ Missing in Reference Folder
+                            </span>
+                            {item.expectedPlacardFile && (
+                              <span style={{ color: 'var(--secondary-label)', fontSize: 10.5, fontFamily: 'var(--font-mono)' }}>
+                                Expected: {item.expectedPlacardFile}
+                              </span>
+                            )}
+                          </div>
                         ) : (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                             {item.matchedImages.map((img, i) => (
                               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                 <ImageIcon size={13} color="var(--system-cyan)" />
-                                <span style={{ fontFamily: 'var(--font-mono)' }}>{img.fileName}</span>
+                                <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 500 }}>{img.fileName}</span>
                                 {img.alreadyExists ? (
                                   <span style={{ fontSize: 10, color: 'var(--system-green)', fontWeight: 600 }}>
-                                    (Already present)
+                                    ✓ Already present
                                   </span>
                                 ) : (
                                   <span style={{ fontSize: 10, color: '#818CF8', fontWeight: 600 }}>
-                                    (Will copy)
+                                    ➔ Will copy
                                   </span>
                                 )}
                               </div>

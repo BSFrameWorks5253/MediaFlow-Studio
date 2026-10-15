@@ -1,6 +1,6 @@
 {
   "name": "mediaflow-studio",
-  "version": "5.0.0",
+  "version": "5.2.0",
   "description": "DataFlow Studio \u2014 Professional Media Ingestion, Synchronization and Report Fusion Desktop Suite",
   "main": "dist-electron/main.js",
   "author": "BSFrameWorks",
@@ -19,14 +19,16 @@
     "package:msix": "npm run build && electron-builder --win appx",
     "package:all": "npm run build && electron-builder --win nsis msi appx",
     "package:portable": "npm run build && electron-builder --win portable",
+    "package:publish": "npm run build && electron-builder --win nsis msi --publish always",
     "analyze:context": "python scripts/codebase_analyzer.py",
     "builder:gui": "python scripts/release_builder_gui.py",
     "start": "npx electron dist-electron/main.js",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.electron.json --noEmit"
   },
   "dependencies": {
-    "clsx": "^2.1.1",
     "canvas-confetti": "^1.9.4",
+    "clsx": "^2.1.1",
+    "gsap": "^3.15.0",
     "lucide-react": "^1.16.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
@@ -57,13 +59,16 @@
       "dist/**/*",
       "dist-electron/**/*"
     ],
+    "asarUnpack": [
+      "dist-electron/engines/scripts/**/*"
+    ],
     "extraResources": [
       {
-        "from": "dist-electron/engines/scripts/excel_merger.py",
+        "from": "electron/engines/scripts/excel_merger.py",
         "to": "scripts/excel_merger.py"
       },
       {
-        "from": "dist-electron/engines/scripts/generate_separation_report.py",
+        "from": "electron/engines/scripts/generate_separation_report.py",
         "to": "scripts/generate_separation_report.py"
       },
       {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Folder, Cpu, ShieldCheck, Check, ArrowRight, Zap, HardDrive } from 'lucide-react';
+import { toUserErrorMessage } from '../utils/errorSanitizer';
 import './SetupWizard.css';
 
 interface SetupWizardProps {
@@ -34,7 +35,8 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onDone }) => {
         setError('');
       }
     } catch (e: any) {
-      setError(e?.message || 'Failed to open directory browser');
+      console.error('Directory browser error in SetupWizard:', e);
+      setError(toUserErrorMessage(e, 'Failed to open directory browser.'));
     }
   };
 
@@ -54,7 +56,8 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onDone }) => {
       localStorage.setItem('mediaflow_first_run_done', 'true');
       onDone();
     } catch (e: any) {
-      setError(e?.message || 'Error saving workstation configuration.');
+      console.error('Config save error in SetupWizard:', e);
+      setError(toUserErrorMessage(e, 'Failed to save workstation configuration. Please check permissions.'));
     } finally {
       setBusy(false);
     }

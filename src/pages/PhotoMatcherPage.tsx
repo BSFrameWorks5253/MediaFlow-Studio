@@ -20,6 +20,7 @@ import { usePipeline } from '../context/PipelineContext';
 import { PageKey } from '../components/Sidebar';
 import { StudioFolderInput } from '../components/StudioFolderInput';
 import { OperationLoadingOverlay } from '../components/OperationLoadingOverlay';
+import { toUserErrorMessage } from '../utils/errorSanitizer';
 
 interface PhotoMatcherPageProps {
   onShowToast: (text: string, type: 'success' | 'danger' | 'warning' | 'info') => void;
@@ -176,7 +177,7 @@ export const PhotoMatcherPage: React.FC<PhotoMatcherPageProps> = ({ onShowToast,
     try {
       const check = await window.electronAPI.checkPathExists(targetDir.trim());
       if (!check.exists) {
-        onShowToast(`Directory does not exist: "${targetDir}"`, 'danger');
+        onShowToast('The selected folder does not exist or cannot be reached. Please check the path and try again.', 'danger');
         setIsScanning(false);
         return;
       }
@@ -189,7 +190,8 @@ export const PhotoMatcherPage: React.FC<PhotoMatcherPageProps> = ({ onShowToast,
         'success'
       );
     } catch (e: any) {
-      onShowToast(`Scan failed: ${e.message}`, 'danger');
+      console.error('Photo Matcher scan failed:', e);
+      onShowToast(toUserErrorMessage(e, 'Scan failed. Please check folder permissions and try again.'), 'danger');
     } finally {
       setIsScanning(false);
     }
@@ -211,14 +213,15 @@ export const PhotoMatcherPage: React.FC<PhotoMatcherPageProps> = ({ onShowToast,
         );
       } else {
         onShowToast(
-          `Renamed ${summary.success_count} files successfully! Report: ${summary.report_path}`,
+          `Renamed ${summary.success_count} files successfully!`,
           'success'
         );
         // Refresh scan to update status
         handleScan();
       }
     } catch (e: any) {
-      onShowToast(`Rename error: ${e.message}`, 'danger');
+      console.error('Photo rename execution error:', e);
+      onShowToast(toUserErrorMessage(e, 'Rename execution failed. Please verify files are not in use.'), 'danger');
     } finally {
       setIsRenaming(false);
     }

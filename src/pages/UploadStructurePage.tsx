@@ -14,6 +14,7 @@ import {
 import { StudioButton } from '../components/StudioButton';
 import { usePipeline } from '../context/PipelineContext';
 import { PageKey } from '../types/pipelineStages';
+import { toUserErrorMessage } from '../utils/errorSanitizer';
 
 interface UploadStructurePageProps {
   onNavigate: (page: PageKey) => void;
@@ -117,7 +118,8 @@ export const UploadStructurePage: React.FC<UploadStructurePageProps> = ({
         onShowToast(`Upload structure created for "${cleanSafar}"! Outputs are auto-linked.`, 'success');
       }
     } catch (e: any) {
-      onShowToast(`Failed to create folders: ${e.message}`, 'danger');
+      console.error('Failed to create upload structure:', e);
+      onShowToast(toUserErrorMessage(e, 'Failed to create upload folder structure. Please check drive permissions and free space.'), 'danger');
     } finally {
       setIsCreating(false);
     }
@@ -439,7 +441,7 @@ export const UploadStructurePage: React.FC<UploadStructurePageProps> = ({
               <FolderArchive size={13} color="#2DD4BF" />
               <span style={{ color: '#2DD4BF', fontWeight: 600 }}>{cleanSafar || '[Safar Name]'}\</span>
               <span style={{ color: '#2DD4BF', fontSize: 10.5, fontWeight: 600 }}>
-                ➔ Connected to Thumbnail Shifter (Stage 06)
+                ➔ Connected to Thumbnail Shifter (Stage 05)
               </span>
             </div>
 

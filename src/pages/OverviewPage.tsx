@@ -1,24 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
-  Image as ImageIcon,
-  Video,
-  FolderArchive,
-  Layers,
-  FileSpreadsheet,
-  ArrowRight,
-  FolderPlus,
-  FolderX,
   Zap,
   Activity,
   Sparkles,
   Play,
+  RotateCcw,
   CheckCircle2,
   Cpu,
+  AlertCircle,
+  ArrowRight,
+  Inbox,
 } from 'lucide-react';
 import { PageKey, PIPELINE_NAV_ORDER, getStageMeta, getStageNumber } from '../types/pipelineStages';
 import { ActivityItem } from '../../electron/managers/activityReportsManager';
 import { StatCard } from '../components/StatCard';
+import { usePipeline } from '../context/PipelineContext';
 
 interface OverviewPageProps {
   onNavigate: (page: PageKey) => void;
@@ -43,6 +39,14 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigate }) => {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [hoveredStage, setHoveredStage] = useState<string | null>(null);
 
+  const {
+    stageStates,
+    vitals,
+    triggerAutomatedSequence,
+    stopAutomatedSequence,
+    resetAllStages,
+  } = usePipeline();
+
   useEffect(() => {
     const isDemo = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === 'true';
 
@@ -50,8 +54,8 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigate }) => {
     const sampleActs: ActivityItem[] = [
       { id: '1', timestamp: new Date(now - 8 * 60 * 1000).toISOString(), stage: 'Stage 00 • PV Separator', action: '32-Thread Parallel Extraction', count: 2420, summary: 'Ingested 2,420 RAW media files from D:\\DCIM\\CARD_A to D:\\RAW\\PV', type: 'success' },
       { id: '2', timestamp: new Date(now - 25 * 60 * 1000).toISOString(), stage: 'Stage 02 • Photo Tagger', action: '_U and _R Status Applied', count: 1840, summary: 'Tagged 1,840 photos with sequence numeric matching', type: 'success' },
-      { id: '3', timestamp: new Date(now - 42 * 60 * 1000).toISOString(), stage: 'Stage 05 • Sequence Sync', action: 'Multi-Camera Alignment', count: 348, summary: 'Paired 348 video clips across 18 photo event subfolders', type: 'success' },
-      { id: '4', timestamp: new Date(now - 65 * 60 * 1000).toISOString(), stage: 'Stage 07 • DO NOT UPLOAD', action: 'Quarantine Rules Executed', count: 12, summary: 'Isolated Contributor & Documents into DO NOT UPLOAD hierarchy', type: 'info' },
+      { id: '3', timestamp: new Date(now - 42 * 60 * 1000).toISOString(), stage: 'Stage 04 • Sequence Sync', action: 'Multi-Camera Alignment', count: 348, summary: 'Paired 348 video clips across 18 photo event subfolders', type: 'success' },
+      { id: '4', timestamp: new Date(now - 65 * 60 * 1000).toISOString(), stage: 'Stage 06 • DO NOT UPLOAD', action: 'Quarantine Rules Executed', count: 12, summary: 'Isolated Contributor & Documents into DO NOT UPLOAD hierarchy', type: 'info' },
       { id: '5', timestamp: new Date(now - 110 * 60 * 1000).toISOString(), stage: 'Stage 08 • Report Merger', action: 'Excel Package Compiled', count: 1, summary: 'Compiled delivery workbook with full formatting preservation', type: 'success' },
     ];
 
@@ -104,22 +108,22 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigate }) => {
         <StatCard
           label="Pipeline Modules"
           value="9 Active Stages"
-          subValue="End-to-end media automation"
+          subValue={vitals.isRunningSequence ? `Stage ${vitals.activeStageKey || 'Processing'} Active` : "End-to-end media automation"}
           icon={<Zap size={18} />}
           accentColor="#00F2FE"
-          tag="ONLINE"
+          tag={vitals.isRunningSequence ? "PROCESSING" : "ONLINE"}
         />
         <StatCard
           label="Ingestion Engine"
           value="High-Speed NVMe"
-          subValue="Parallel RAW media extraction"
+          subValue={`${vitals.realTimeThroughputMbps.toFixed(0)} MB/s Real-time I/O`}
           icon={<Cpu size={18} />}
           accentColor="#10E79D"
-          tag="VERIFIED"
+          tag={`${vitals.activeWorkerThreads} THREADS`}
         />
         <StatCard
           label="Sequence Matching"
-          value="100% Precision"
+          value={`${vitals.processingPrecisionPct.toFixed(0)}% Precision`}
           subValue="Numeric & status code alignment"
           icon={<CheckCircle2 size={18} />}
           accentColor="#8B5CF6"
@@ -127,7 +131,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigate }) => {
         />
         <StatCard
           label="Data Integrity"
-          value="100% Lossless"
+          value={`${vitals.losslessIntegrityPct.toFixed(0)}% Lossless`}
           subValue="Zero byte corruption verified"
           icon={<CheckCircle2 size={18} />}
           accentColor="#38BDF8"
@@ -173,7 +177,61 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigate }) => {
               PIPELINE EXECUTION MATRIX
             </span>
             <div style={{ flex: 1, height: 1, backgroundColor: 'var(--border-subtle)' }} />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (vitals.isRunningSequence) {
+                    stopAutomatedSequence();
+                  } else {
+                    triggerAutomatedSequence();
+                  }
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '5px 12px',
+                  borderRadius: 8,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  fontFamily: 'var(--font-mono)',
+                  backgroundColor: vitals.isRunningSequence ? '#F43F5E' : 'rgba(0, 242, 254, 0.15)',
+                  color: vitals.isRunningSequence ? '#ffffff' : '#00F2FE',
+                  border: `1px solid ${vitals.isRunningSequence ? '#F43F5E' : 'rgba(0, 242, 254, 0.4)'}`,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <Play size={11} fill={vitals.isRunningSequence ? '#ffffff' : '#00F2FE'} />
+                <span>{vitals.isRunningSequence ? 'STOPPING...' : 'AUTO SEQUENCE'}</span>
+              </button>
+
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  resetAllStages();
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  padding: '5px 10px',
+                  borderRadius: 8,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  fontFamily: 'var(--font-mono)',
+                  backgroundColor: 'var(--surface-elevated)',
+                  color: 'var(--secondary-label)',
+                  border: '1px solid var(--border)',
+                  cursor: 'pointer',
+                }}
+                title="Reset Stage States"
+              >
+                <RotateCcw size={11} />
+                <span>RESET</span>
+              </button>
+
               <span
                 style={{
                   fontSize: 10.5,
@@ -182,7 +240,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigate }) => {
                   color: '#00F2FE',
                   whiteSpace: 'nowrap',
                   backgroundColor: 'rgba(0, 242, 254, 0.12)',
-                  padding: '3px 10px',
+                  padding: '4px 10px',
                   borderRadius: 6,
                   border: '1px solid rgba(0, 242, 254, 0.35)',
                 }}
@@ -204,6 +262,15 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigate }) => {
           {pipelineStages.map((stage) => {
             const Icon = stage.icon;
             const isHovered = hoveredStage === stage.key;
+            const stageState = stageStates[stage.key] || {
+              status: 'IDLE',
+              progress: 0,
+              processedCount: 0,
+              error: null,
+              quarantinedCount: 0,
+              throughputMbps: 0,
+              elapsedSec: 0,
+            };
 
             return (
               <div
@@ -269,10 +336,23 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigate }) => {
                           width: 6,
                           height: 6,
                           borderRadius: '50%',
-                          backgroundColor: '#10E79D',
-                          boxShadow: '0 0 6px rgba(16, 231, 157, 0.6)',
+                          backgroundColor:
+                            stageState.status === 'PROCESSING'
+                              ? '#00F2FE'
+                              : stageState.status === 'SUCCESS'
+                              ? '#10E79D'
+                              : stageState.status === 'FAILED'
+                              ? '#F43F5E'
+                              : '#10E79D',
+                          boxShadow: `0 0 6px ${
+                            stageState.status === 'PROCESSING'
+                              ? '#00F2FE'
+                              : stageState.status === 'FAILED'
+                              ? '#F43F5E'
+                              : '#10E79D'
+                          }`,
                         }}
-                        title="Module Active"
+                        title={`Module Status: ${stageState.status}`}
                       />
                     </div>
                     <span
@@ -332,6 +412,30 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigate }) => {
                   >
                     {stage.desc}
                   </div>
+
+                  {/* Live Progress Bar if Processing */}
+                  {stageState.status === 'PROCESSING' && (
+                    <div
+                      style={{
+                        width: '100%',
+                        height: 3,
+                        backgroundColor: 'var(--border-subtle)',
+                        borderRadius: 2,
+                        overflow: 'hidden',
+                        marginTop: 10,
+                      }}
+                    >
+                      <div
+                        style={{
+                          height: '100%',
+                          width: `${stageState.progress}%`,
+                          backgroundColor: stage.color,
+                          borderRadius: 2,
+                          transition: 'width 0.2s ease',
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Tactile Launch Action Chip */}
@@ -370,16 +474,73 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigate }) => {
                     />
                   </div>
 
-                  <span
-                    style={{
-                      fontSize: 10,
-                      fontFamily: 'var(--font-mono)',
-                      color: 'var(--tertiary-label)',
-                      fontWeight: 600,
-                    }}
-                  >
-                    READY
-                  </span>
+                  {/* Stage-Gate Status Flag */}
+                  <div>
+                    {stageState.status === 'PROCESSING' && (
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontFamily: 'var(--font-mono)',
+                          color: '#00F2FE',
+                          fontWeight: 800,
+                          backgroundColor: 'rgba(0, 242, 254, 0.12)',
+                          padding: '2px 6px',
+                          borderRadius: 4,
+                          border: '1px solid rgba(0, 242, 254, 0.3)',
+                        }}
+                      >
+                        RUNNING [{stageState.progress}%]
+                      </span>
+                    )}
+                    {stageState.status === 'SUCCESS' && (
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontFamily: 'var(--font-mono)',
+                          color: '#10E79D',
+                          fontWeight: 800,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 3,
+                          backgroundColor: 'rgba(16, 231, 157, 0.12)',
+                          padding: '2px 6px',
+                          borderRadius: 4,
+                          border: '1px solid rgba(16, 231, 157, 0.3)',
+                        }}
+                      >
+                        <CheckCircle2 size={11} />
+                        VERIFIED
+                      </span>
+                    )}
+                    {stageState.status === 'FAILED' && (
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontFamily: 'var(--font-mono)',
+                          color: '#F43F5E',
+                          fontWeight: 800,
+                          backgroundColor: 'rgba(244, 63, 94, 0.12)',
+                          padding: '2px 6px',
+                          borderRadius: 4,
+                          border: '1px solid rgba(244, 63, 94, 0.3)',
+                        }}
+                      >
+                        ISOLATED
+                      </span>
+                    )}
+                    {stageState.status === 'IDLE' && (
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontFamily: 'var(--font-mono)',
+                          color: 'var(--tertiary-label)',
+                          fontWeight: 600,
+                        }}
+                      >
+                        READY
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -462,7 +623,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({ onNavigate }) => {
               padding: '28px 0',
             }}
           >
-            <Box size={28} color="var(--tertiary-label)" />
+            <Inbox size={28} color="var(--tertiary-label)" />
             <span style={{ fontSize: 12, color: 'var(--tertiary-label)' }}>
               No operations recorded in this session.
             </span>

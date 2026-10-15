@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Folder, Layers, RefreshCw, Play, RotateCcw } from 'lucide-react';
 import { StudioButton } from '../components/StudioButton';
+import { StorageHeadroomBar } from '../components/StorageHeadroomBar';
 import { PageKey } from '../types/pipelineStages';
 import { RemainingFolderItem, RemainingScanResult } from '../../electron/engines/remainingCollector';
 import { usePipeline } from '../context/PipelineContext';
 import { OperationLoadingOverlay } from '../components/OperationLoadingOverlay';
+import { toUserErrorMessage } from '../utils/errorSanitizer';
 
 interface RemainingCollectorPageProps {
   onShowToast: (text: string, type: 'success' | 'danger' | 'warning' | 'info') => void;
@@ -28,6 +30,7 @@ export const RemainingCollectorPage: React.FC<RemainingCollectorPageProps> = ({ 
   const [isShifting, setIsShifting] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
   const [lastManifest, setLastManifest] = useState('');
+  const [canProceedShift, setCanProceedShift] = useState(true);
 
   const handleBrowseSource = async () => {
     if (!window.electronAPI) return;
@@ -52,7 +55,8 @@ export const RemainingCollectorPage: React.FC<RemainingCollectorPageProps> = ({ 
       setScanResult(res);
       onShowToast(`Scan complete: Found ${res.totalFolders} remaining folders (${res.totalPhotos} photos)`, 'success');
     } catch (e: any) {
-      onShowToast(`Scan failed: ${e.message}`, 'danger');
+      console.error('Remaining scan error:', e);
+      onShowToast(toUserErrorMessage(e, 'Failed to scan remaining folders. Please check folder permissions and try again.'), 'danger');
     } finally {
       setIsScanning(false);
     }
@@ -75,7 +79,8 @@ export const RemainingCollectorPage: React.FC<RemainingCollectorPageProps> = ({ 
       onShowToast(`Shift complete: ${summary.success_count} folders relocated successfully!`, 'success');
       handleScan();
     } catch (e: any) {
-      onShowToast(`Shift error: ${e.message}`, 'danger');
+      console.error('Remaining shift error:', e);
+      onShowToast(toUserErrorMessage(e, 'Failed to relocate remaining folders. Please check disk space and file permissions.'), 'danger');
     } finally {
       setIsShifting(false);
     }
@@ -92,7 +97,8 @@ export const RemainingCollectorPage: React.FC<RemainingCollectorPageProps> = ({ 
       onShowToast(`Undo complete: Restored ${res.restored} folders to their original trees.`, 'success');
       handleScan();
     } catch (e: any) {
-      onShowToast(`Undo failed: ${e.message}`, 'danger');
+      console.error('Remaining undo error:', e);
+      onShowToast(toUserErrorMessage(e, 'Failed to restore folders to their original locations.'), 'danger');
     } finally {
       setIsUndoing(false);
     }
@@ -230,6 +236,18 @@ export const RemainingCollectorPage: React.FC<RemainingCollectorPageProps> = ({ 
           </div>
         )}
 
+        {/* Storage Headroom & Drive Fit Bar */}
+        {destDir.trim() && (
+          <StorageHeadroomBar
+            destPath={destDir}
+            sourcePath={sourceDir}
+            transferMode="move"
+            payloadBytes={scanResult?.totalBytes || 0}
+            payloadFileCount={scanResult?.items.length}
+            onCanProceedChange={setCanProceedShift}
+          />
+        )}
+
         {/* Action Row */}
         <div
           style={{
@@ -256,7 +274,8 @@ export const RemainingCollectorPage: React.FC<RemainingCollectorPageProps> = ({ 
             loading={isShifting}
             icon={<Play size={14} />}
             onClick={handleExecute}
-            disabled={!scanResult || scanResult.items.length === 0}
+            disabled={!scanResult || scanResult.items.length === 0 || !canProceedShift}
+            title={!canProceedShift ? 'Consolidation blocked: Insufficient space on target drive' : undefined}
           >
             Consolidate Folders
           </StudioButton>

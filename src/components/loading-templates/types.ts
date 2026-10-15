@@ -9,6 +9,7 @@ export interface LoadingTemplateProps {
 }
 
 export type LoadingTemplateId =
+  | 'onto'
   | 'flagship'
   | 'astral'
   | 'walbi'
@@ -28,6 +29,15 @@ export interface LoadingTemplateInfo {
 }
 
 export const LOADING_TEMPLATES_CATALOG: LoadingTemplateInfo[] = [
+  {
+    id: 'onto',
+    name: 'Onto Kinetic Studio',
+    subtitle: 'Monolithic Typography & Pipeline Morph',
+    inspiration: 'Onto Cinematic Studio (onto.mp4)',
+    description: 'Ultra-bold geometric typography carving out MediaFlow, morphing into interlocking dual-capsule ingestion loops and an elegant architectural studio reveal.',
+    accentColor: '#007AFF',
+    badge: 'CINEMATIC FLAGSHIP',
+  },
   {
     id: 'flagship',
     name: 'DataFlow Flagship Studio',

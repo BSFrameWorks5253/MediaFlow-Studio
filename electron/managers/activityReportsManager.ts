@@ -99,7 +99,7 @@ export class ActivityReportsManager {
     if (fs.existsSync(clean)) {
       return await shell.openPath(clean);
     }
-    throw new Error(`File does not exist: ${clean}`);
+    throw new Error('The requested file or directory could not be found.');
   }
 
   showItemInFolder(targetPath: string) {

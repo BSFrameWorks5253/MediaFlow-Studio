@@ -28,7 +28,7 @@ export class ThumbnailSeparatorEngine {
   async scanDirectory(sourceDir: string, destDir?: string): Promise<ThumbnailScanResult> {
     const cleanSource = path.resolve(sourceDir.replace(/^file:\/\/\/?/, ''));
     if (!fs.existsSync(cleanSource)) {
-      throw new Error(`Directory does not exist: ${cleanSource}`);
+      throw new Error('Source media directory could not be found. Please verify the folder.');
     }
 
     this.isScanning = true;

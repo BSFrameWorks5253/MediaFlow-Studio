@@ -8,7 +8,7 @@ export class ProductionToolsEngine {
     dryRun = false
   ): Promise<{ processed: number; renamed: number; items: { old: string; new: string; path: string }[] }> {
     const cleanDir = path.resolve(targetDir.replace(/^file:\/\/\/?/, ''));
-    if (!fs.existsSync(cleanDir)) throw new Error(`Directory does not exist: ${cleanDir}`);
+    if (!fs.existsSync(cleanDir)) throw new Error('Target directory could not be found. Please verify the folder.');
 
     const items: { old: string; new: string; path: string }[] = [];
     let processed = 0;
@@ -175,7 +175,7 @@ export class ProductionToolsEngine {
   // 4. DO NOT UPLOAD Isolator (Contributer & Documents)
   async scanDoNotUpload(targetDir: string): Promise<DoNotUploadItem[]> {
     const cleanDir = path.resolve(targetDir.replace(/^file:\/\/\/?/, ''));
-    if (!fs.existsSync(cleanDir)) throw new Error(`Directory does not exist: ${cleanDir}`);
+    if (!fs.existsSync(cleanDir)) throw new Error('Target directory could not be found. Please verify the folder.');
 
     const results: DoNotUploadItem[] = [];
     const doNotUploadFolder = path.join(cleanDir, 'DO NOT UPLOAD');
@@ -313,12 +313,13 @@ export class ProductionToolsEngine {
         });
       } catch (err: any) {
         failed++;
-        errors.push(`${item.name}: ${err.message}`);
+        console.error(`[DoNotUpload Isolation Error] ${item.name}:`, err);
+        errors.push(`${item.name}: Isolation failed (file is locked or access denied).`);
         manifestRows.push({
           source: item.source,
           destination: item.destination,
           dateFolder: item.dateFolder,
-          status: `Error: ${err.message}`,
+          status: 'Failed (Locked or Access Denied)',
         });
       }
     }
@@ -343,7 +344,7 @@ export class ProductionToolsEngine {
   // 5. All Inventory Reports Collector
   async scanInventoryReports(sourceDir: string, destDir?: string): Promise<InventoryReportItem[]> {
     const cleanSource = path.resolve((sourceDir || '').replace(/^file:\/\/\/?/, ''));
-    if (!fs.existsSync(cleanSource)) throw new Error(`Source directory does not exist: ${cleanSource}`);
+    if (!fs.existsSync(cleanSource)) throw new Error('Source directory could not be found. Please verify the folder.');
 
     const cleanDest = destDir ? path.resolve(destDir.replace(/^file:\/\/\/?/, '')) : '';
     const allReportsDir = cleanDest ? path.join(cleanDest, 'All Inventory Reports') : '';
@@ -517,12 +518,13 @@ export class ProductionToolsEngine {
         });
       } catch (err: any) {
         failed++;
-        errors.push(`${item.filename}: ${err.message}`);
+        console.error(`[InventoryReports Collection Error] ${item.filename}:`, err);
+        errors.push(`${item.filename}: Collection failed (file is locked or access denied).`);
         manifestRows.push({
           source: item.sourcePath,
           destination: targetFilePath,
           shoot: item.shootFolder,
-          status: `Error: ${err.message}`,
+          status: 'Failed (Locked or Access Denied)',
         });
       }
     }

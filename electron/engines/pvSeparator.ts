@@ -182,7 +182,7 @@ export class PVSeparatorEngine {
   async scanDirectory(sourceDir: string, target: SeparationTarget = 'video'): Promise<PVScanResult> {
     const cleanSource = path.resolve(sourceDir.replace(/^file:\/\/\/?/, ''));
     if (!fs.existsSync(cleanSource)) {
-      throw new Error(`Directory does not exist: ${cleanSource}`);
+      throw new Error('Source media directory could not be found. Please verify the folder location.');
     }
 
     const itemsToProcess: PVScanResult['items_to_process'] = [];
@@ -363,6 +363,7 @@ export class PVSeparatorEngine {
             status: 'Permanently Deleted',
           });
         } catch (delErr: any) {
+          console.error('[PVSeparator Delete Error]:', delErr);
           manifestItems.push({
             filename: path.basename(item.sourcePath),
             relPath: item.relPath,
@@ -370,7 +371,7 @@ export class PVSeparatorEngine {
             size: fileSize,
             sourcePath: item.sourcePath,
             targetPath: '[DELETED FROM MASTER DATA]',
-            status: `Failed to Delete: ${delErr.message}`,
+            status: 'Failed to Delete (File is in use or access denied)',
           });
         }
       } else {
@@ -480,9 +481,19 @@ export class PVSeparatorEngine {
         reportPath = expectedCsv;
 
         // Try Python openpyxl for formatted Excel workbook
-        const pyScriptDev = path.join(__dirname, 'scripts', 'generate_separation_report.py');
-        const pyScriptProd = path.join(process.resourcesPath || '', 'scripts', 'generate_separation_report.py');
-        const pyScript = fs.existsSync(pyScriptDev) ? pyScriptDev : pyScriptProd;
+        const scriptName = 'generate_separation_report.py';
+        const scriptCandidates = [
+          path.join(process.resourcesPath || '', 'scripts', scriptName),
+          path.join(process.resourcesPath || '', 'app.asar.unpacked', 'dist-electron', 'engines', 'scripts', scriptName),
+          path.join(__dirname, 'scripts', scriptName).replace('app.asar', 'app.asar.unpacked'),
+          path.join(process.cwd(), 'electron', 'engines', 'scripts', scriptName),
+          path.join(process.cwd(), 'dist-electron', 'engines', 'scripts', scriptName),
+        ];
+
+        let pyScript = scriptCandidates.find((c) => !c.includes('app.asar') && fs.existsSync(c)) || '';
+        if (!pyScript && fs.existsSync(path.join(process.resourcesPath || '', 'scripts', scriptName))) {
+          pyScript = path.join(process.resourcesPath || '', 'scripts', scriptName);
+        }
 
         if (fs.existsSync(pyScript)) {
           const payload = {
