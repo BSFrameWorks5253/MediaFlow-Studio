@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { LoadingTemplateProps } from './types';
-import { Layers, Cpu, Database, ArrowDown, CheckCircle2 } from 'lucide-react';
+import { Layers, Video, Database, ArrowDown, CheckCircle2, Sparkles, HardDrive } from 'lucide-react';
 
 /**
  * High-frequency numeric roll-up counter hook
@@ -51,20 +51,18 @@ export const OntoKineticStudioLoader: React.FC<LoadingTemplateProps> = ({
   isFadingOut,
   onComplete,
 }) => {
-  // Theme-adaptive luxury design tokens
-  const bgColor = isLight ? '#FFFFFF' : '#06080F';
-  const blockColor = isLight ? '#000000' : '#FFFFFF';
-  const cutoutBg = bgColor;
-  const fgColor = isLight ? '#0A0D14' : '#F8FAFC';
-  const subColor = isLight ? '#64748B' : '#94A3B8';
+  // Theme-adaptive luxury design tokens with crisp contrast
+  const bgColor = isLight ? '#F8FAFC' : '#07090E';
+  const fgColor = isLight ? '#0B0F19' : '#F8FAFC';
+  const subColor = isLight ? '#475569' : '#94A3B8';
   const accentColor = isLight ? '#007AFF' : '#00F2FE';
-  const cardBg = isLight ? 'rgba(255, 255, 255, 0.88)' : 'rgba(15, 23, 42, 0.55)';
-  const cardBorder = isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.16)';
-  const cardTopBorder = isLight ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.45)';
+  const cardBg = isLight ? '#FFFFFF' : 'rgba(15, 23, 42, 0.76)';
+  const cardBorder = isLight ? 'rgba(226, 232, 240, 0.95)' : 'rgba(255, 255, 255, 0.12)';
+  const cardTopBorder = isLight ? 'rgba(255, 255, 255, 1)' : 'rgba(255, 255, 255, 0.35)';
   const cardShadow = isLight
-    ? '0 20px 45px -10px rgba(0, 0, 0, 0.09), 0 4px 14px rgba(0, 0, 0, 0.03)'
-    : '0 30px 70px -10px rgba(0, 0, 0, 0.85), inset 0 1px 2px rgba(255, 255, 255, 0.2)';
-  const launchBtnBg = isLight ? '#0A0D14' : 'rgba(15, 23, 42, 0.85)';
+    ? '0 18px 38px -12px rgba(15, 23, 42, 0.08), 0 2px 8px rgba(15, 23, 42, 0.03)'
+    : '0 28px 65px -14px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.15)';
+  const launchBtnBg = isLight ? '#0B0F19' : 'rgba(15, 23, 42, 0.9)';
   const launchBtnFg = '#FFFFFF';
 
   // Prevent any progress or phase regression (e.g. during exit/dismiss)
@@ -74,37 +72,32 @@ export const OntoKineticStudioLoader: React.FC<LoadingTemplateProps> = ({
   }
   const effectiveProgress = isFadingOut ? 100 : Math.max(progress, maxProgressRef.current);
 
-  // 3 Master Cinematic Phases:
-  // Phase 1 (0% - 50%): The Signature ONTO Wordmark (Blank Black Space -> Inversion to White)
-  // Phase 2 (50% - 92%): Liquid Glass Showcase with Staggered Cards & Rolling Numbers
-  // Phase 3 (92% - 100%): Iris Aperture Horizon Expansion & Exit
+  // 2 Master High-Precision Cinematic Phases:
+  // Phase 1 (0% - 35%): The Signature Cutout Wordmark Intro (Blank Black -> White Inversion)
+  // Phase 2 (35% - 100%): Pristine Executive Studio Deck & Shimmering Launch Capsule
   const phase = useMemo(() => {
-    if (isFadingOut) return 3;
-    if (effectiveProgress < 50) return 1;
-    if (effectiveProgress < 92) return 2;
-    return 3;
+    if (isFadingOut) return 2;
+    if (effectiveProgress < 35) return 1;
+    return 2;
   }, [effectiveProgress, isFadingOut]);
 
   const phaseProgress = useMemo(() => {
     if (isFadingOut) return 1;
-    if (phase === 1) return Math.min(1, effectiveProgress / 50);
-    if (phase === 2) return Math.min(1, (effectiveProgress - 50) / 42);
-    return Math.min(1, (effectiveProgress - 92) / 8);
+    if (phase === 1) return Math.min(1, effectiveProgress / 35);
+    return Math.min(1, (effectiveProgress - 35) / 65);
   }, [phase, effectiveProgress, isFadingOut]);
 
-  // Rolling numbers for Phase 2 (Liquid Glass Cards Showcase)
+  // Rolling numbers for Phase 2
   const isCardShowcaseActive = phase >= 2;
-  const numPv = useRollUpNumber(842, isCardShowcaseActive, 1200);
-  const numMatch = useRollUpNumber(100, isCardShowcaseActive, 1000);
-  const numStreams = useRollUpNumber(102, isCardShowcaseActive, 1300);
+  const numPv = useRollUpNumber(842, isCardShowcaseActive, 1000);
+  const numMatch = useRollUpNumber(100, isCardShowcaseActive, 900);
+  const numStreams = useRollUpNumber(102, isCardShowcaseActive, 1100);
 
-  // Inversion calculations for Phase 1:
-  // Starts in pure blank black space with white cutout text
-  // Then smoothly inverts: background turns white, text turns black!
+  // Inversion calculations for Phase 1
   const invertProgress = useMemo(() => {
     if (phase > 1) return 1;
-    if (phaseProgress < 0.42) return 0;
-    return Math.min(1, (phaseProgress - 0.42) / 0.24);
+    if (phaseProgress < 0.40) return 0;
+    return Math.min(1, (phaseProgress - 0.40) / 0.30);
   }, [phase, phaseProgress]);
 
   const easedInvert = 1 - Math.pow(1 - invertProgress, 3);
@@ -112,20 +105,20 @@ export const OntoKineticStudioLoader: React.FC<LoadingTemplateProps> = ({
   const currentCanvasBg = useMemo(() => {
     if (!isLight) return bgColor;
     if (phase > 1) return bgColor;
-    // Invert from #06080F (rgb 6, 8, 15) to #FFFFFF (rgb 255, 255, 255)
-    const r = Math.round(6 + easedInvert * (255 - 6));
-    const g = Math.round(8 + easedInvert * (255 - 8));
-    const b = Math.round(15 + easedInvert * (255 - 15));
+    // Invert from #07090E to #F8FAFC
+    const r = Math.round(7 + easedInvert * (248 - 7));
+    const g = Math.round(9 + easedInvert * (250 - 9));
+    const b = Math.round(14 + easedInvert * (252 - 14));
     return `rgb(${r}, ${g}, ${b})`;
   }, [isLight, phase, bgColor, easedInvert]);
 
   const phase1TextColor = useMemo(() => {
     if (!isLight) return fgColor;
     if (phase > 1) return fgColor;
-    // Invert from white (rgb 255, 255, 255) to black (rgb 10, 13, 20)
-    const r = Math.round(255 - easedInvert * (255 - 10));
-    const g = Math.round(255 - easedInvert * (255 - 13));
-    const b = Math.round(255 - easedInvert * (255 - 20));
+    // Invert from pure white to #0B0F19
+    const r = Math.round(255 - easedInvert * (255 - 11));
+    const g = Math.round(255 - easedInvert * (255 - 15));
+    const b = Math.round(255 - easedInvert * (255 - 25));
     return `rgb(${r}, ${g}, ${b})`;
   }, [isLight, phase, fgColor, easedInvert]);
 
@@ -146,12 +139,12 @@ export const OntoKineticStudioLoader: React.FC<LoadingTemplateProps> = ({
         overflow: 'hidden',
         cursor: 'pointer',
         userSelect: 'none',
-        transition: 'background-color 0.15s ease',
+        transition: 'background-color 0.2s ease',
       }}
       title="Click or press Space to launch studio immediately"
     >
       {/* =================================================================== */}
-      {/* 1. FLUID SHIFTING PLASMA AURA BACKGROUND (ADAPTS TO LIGHT/DARK)    */}
+      {/* 1. HIGH-CONTRAST AMBIENT MESH AURA (NON-WASHED-OUT)                 */}
       {/* =================================================================== */}
       <div
         style={{
@@ -161,48 +154,29 @@ export const OntoKineticStudioLoader: React.FC<LoadingTemplateProps> = ({
           pointerEvents: 'none',
           zIndex: 0,
           opacity: phase === 1 ? easedInvert : 1,
-          transition: 'opacity 0.2s ease',
+          transition: 'opacity 0.3s ease',
         }}
       >
-        {/* Soft Azure Plasma Orb */}
+        {/* Soft Indigo Studio Light */}
         <div
           style={{
             position: 'absolute',
-            width: '65vw',
-            height: '65vw',
-            maxWidth: 850,
-            maxHeight: 850,
+            width: '60vw',
+            height: '60vw',
+            maxWidth: 750,
+            maxHeight: 750,
             borderRadius: '50%',
-            top: '-20%',
-            left: '-15%',
+            top: '-15%',
+            left: '-10%',
             background: isLight
-              ? 'radial-gradient(circle, rgba(0, 122, 255, 0.09) 0%, rgba(56, 189, 248, 0.03) 50%, transparent 75%)'
-              : 'radial-gradient(circle, rgba(0, 122, 255, 0.24) 0%, rgba(14, 165, 233, 0.08) 50%, transparent 75%)',
-            filter: 'blur(90px)',
+              ? 'radial-gradient(circle, rgba(0, 122, 255, 0.07) 0%, rgba(56, 189, 248, 0.02) 60%, transparent 80%)'
+              : 'radial-gradient(circle, rgba(0, 122, 255, 0.18) 0%, rgba(14, 165, 233, 0.06) 60%, transparent 80%)',
+            filter: 'blur(80px)',
             animation: 'plasmaDrift1 14s infinite alternate ease-in-out',
           }}
         />
 
-        {/* Electric Cyan Plasma Orb */}
-        <div
-          style={{
-            position: 'absolute',
-            width: '55vw',
-            height: '55vw',
-            maxWidth: 750,
-            maxHeight: 750,
-            borderRadius: '50%',
-            bottom: '-15%',
-            right: '-10%',
-            background: isLight
-              ? 'radial-gradient(circle, rgba(0, 242, 254, 0.08) 0%, rgba(99, 102, 241, 0.03) 50%, transparent 70%)'
-              : 'radial-gradient(circle, rgba(0, 242, 254, 0.2) 0%, rgba(99, 102, 241, 0.09) 50%, transparent 70%)',
-            filter: 'blur(100px)',
-            animation: 'plasmaDrift2 18s infinite alternate ease-in-out',
-          }}
-        />
-
-        {/* Liquid Ambient Core */}
+        {/* Soft Cyan Studio Fill Light */}
         <div
           style={{
             position: 'absolute',
@@ -211,53 +185,53 @@ export const OntoKineticStudioLoader: React.FC<LoadingTemplateProps> = ({
             maxWidth: 650,
             maxHeight: 650,
             borderRadius: '50%',
-            top: '25%',
-            left: '25%',
+            bottom: '-10%',
+            right: '-8%',
             background: isLight
-              ? 'radial-gradient(circle, rgba(14, 165, 233, 0.06) 0%, transparent 70%)'
-              : 'radial-gradient(circle, rgba(56, 189, 248, 0.16) 0%, rgba(30, 58, 138, 0.12) 60%, transparent 80%)',
-            filter: 'blur(110px)',
-            animation: 'plasmaDrift3 22s infinite alternate ease-in-out',
+              ? 'radial-gradient(circle, rgba(0, 242, 254, 0.06) 0%, rgba(99, 102, 241, 0.03) 60%, transparent 75%)'
+              : 'radial-gradient(circle, rgba(0, 242, 254, 0.16) 0%, rgba(99, 102, 241, 0.07) 60%, transparent 75%)',
+            filter: 'blur(90px)',
+            animation: 'plasmaDrift2 16s infinite alternate ease-in-out',
           }}
         />
 
-        {/* Ambient Vignette */}
+        {/* Subtle Ambient Vignette */}
         <div
           style={{
             position: 'absolute',
             inset: 0,
             background: isLight
-              ? 'radial-gradient(ellipse at center, transparent 40%, rgba(240, 243, 248, 0.5) 100%)'
-              : 'radial-gradient(ellipse at center, transparent 35%, rgba(6, 8, 15, 0.8) 100%)',
+              ? 'radial-gradient(ellipse at center, transparent 55%, rgba(241, 245, 249, 0.8) 100%)'
+              : 'radial-gradient(ellipse at center, transparent 45%, rgba(7, 9, 14, 0.85) 100%)',
           }}
         />
       </div>
 
-      {/* Editorial Corner Crosshairs [+] & Metadata */}
+      {/* Top Left Header Brand Pill */}
       <div
         style={{
           position: 'absolute',
           top: 32,
-          left: 40,
+          left: 36,
           display: 'flex',
           alignItems: 'center',
-          gap: 12,
+          gap: 10,
           zIndex: 10,
-          opacity: phase >= 2 ? 1 : (phase === 1 ? easedInvert * 0.45 : 0.45),
-          transition: 'opacity 0.5s ease',
+          opacity: phase >= 2 ? 1 : easedInvert * 0.7,
+          transition: 'opacity 0.4s ease',
         }}
       >
         <div
           style={{
-            fontSize: 12,
+            fontSize: 11.5,
             fontFamily: "'JetBrains Mono', monospace",
             fontWeight: 700,
-            letterSpacing: '0.14em',
+            letterSpacing: '0.12em',
             textTransform: 'uppercase',
             color: fgColor,
             display: 'flex',
             alignItems: 'center',
-            gap: 8,
+            gap: 7,
           }}
         >
           <span style={{ color: accentColor, fontSize: 13 }}>✦</span>
@@ -265,17 +239,18 @@ export const OntoKineticStudioLoader: React.FC<LoadingTemplateProps> = ({
         </div>
       </div>
 
+      {/* Top Right Telemetry Engine Pip */}
       <div
         style={{
           position: 'absolute',
           top: 32,
-          right: 40,
+          right: 36,
           display: 'flex',
           alignItems: 'center',
-          gap: 14,
+          gap: 12,
           zIndex: 10,
-          opacity: phase >= 2 ? 1 : (phase === 1 ? easedInvert * 0.45 : 0.45),
-          transition: 'opacity 0.5s ease',
+          opacity: phase >= 2 ? 1 : easedInvert * 0.7,
+          transition: 'opacity 0.4s ease',
         }}
       >
         <span
@@ -283,32 +258,31 @@ export const OntoKineticStudioLoader: React.FC<LoadingTemplateProps> = ({
             fontSize: 11,
             fontFamily: "'JetBrains Mono', monospace",
             fontWeight: 600,
-            letterSpacing: '0.15em',
+            letterSpacing: '0.14em',
             textTransform: 'uppercase',
             color: subColor,
           }}
         >
-          CORE ENGINE // V5.0
+          CORE ENGINE // V5.2
         </span>
-        {/* Asymmetric Organic Breathing Dot */}
         <div
           style={{
-            width: 8,
-            height: 8,
+            width: 7,
+            height: 7,
             borderRadius: '50%',
-            backgroundColor: '#10E79D',
-            boxShadow: '0 0 10px rgba(16, 231, 157, 0.8)',
-            animation: 'asymmetricBreathe 2.3s infinite ease-in-out',
+            backgroundColor: '#10B981',
+            boxShadow: '0 0 10px rgba(16, 185, 129, 0.8)',
+            animation: 'asymmetricBreathe 2.4s infinite ease-in-out',
           }}
         />
       </div>
 
-      {/* Main Kinetic Center Stage */}
+      {/* Main Center Stage */}
       <div
         style={{
           position: 'relative',
           width: '100%',
-          maxWidth: 1100,
+          maxWidth: 980,
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
@@ -316,10 +290,11 @@ export const OntoKineticStudioLoader: React.FC<LoadingTemplateProps> = ({
           justifyContent: 'center',
           zIndex: 2,
           pointerEvents: isFadingOut ? 'none' : 'auto',
+          padding: '0 24px',
         }}
       >
-{/* =================================================================== */}
-        {/* PHASE 1: BLANK BLACK SPACE CUTOUT -> INVERSION TO WHITE (ONTO STYLE)*/}
+        {/* =================================================================== */}
+        {/* PHASE 1: HIGH-IMPACT ONTO CUTOUT TYPOGRAPHY (0% - 35%)              */}
         {/* =================================================================== */}
         {phase === 1 && (
           <div
@@ -329,51 +304,41 @@ export const OntoKineticStudioLoader: React.FC<LoadingTemplateProps> = ({
               alignItems: 'center',
               justifyContent: 'center',
               width: '100%',
-              padding: '0 24px',
               position: 'relative',
             }}
           >
-            {/* Top Micro Eyebrow */}
             <div
               style={{
-                fontSize: 12,
+                fontSize: 11,
                 fontFamily: "'JetBrains Mono', monospace",
                 fontWeight: 700,
-                letterSpacing: '0.36em',
+                letterSpacing: '0.34em',
                 textTransform: 'uppercase',
-                color: isLight ? `rgba(100, 116, 139, ${easedInvert})` : subColor,
-                marginBottom: 32,
-                opacity: easedInvert > 0.35 ? Math.min(1, (easedInvert - 0.35) * 2.2) : 0,
-                transform: `translateY(${(1 - easedInvert) * 14}px)`,
-                transition: 'opacity 0.25s ease, transform 0.25s ease',
-                userSelect: 'none',
+                color: isLight ? `rgba(71, 85, 105, ${easedInvert})` : subColor,
+                marginBottom: 28,
+                opacity: easedInvert > 0.3 ? Math.min(1, (easedInvert - 0.3) * 2.5) : 0,
+                transform: `translateY(${(1 - easedInvert) * 12}px)`,
+                transition: 'opacity 0.2s ease, transform 0.2s ease',
               }}
             >
-              The Autonomous Creative Pipeline
+              The Next-Gen Creative Pipeline
             </div>
 
-            {/* MASTER TYPOGRAPHIC WORDMARK: MEDIA FLOW */}
+            {/* Master Cutout Wordmark: MEDIA FLOW */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 'clamp(14px, 2.4vw, 36px)',
+                gap: 'clamp(12px, 2.2vw, 32px)',
                 position: 'relative',
-                minHeight: 'clamp(70px, 9.5vw, 110px)',
+                minHeight: 'clamp(64px, 8.5vw, 100px)',
               }}
             >
-              {/* MEDIA Word Group */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 'clamp(4px, 0.7vw, 10px)',
-                }}
-              >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(4px, 0.6vw, 8px)' }}>
                 {['M', 'E', 'D', 'I', 'A'].map((char, idx) => {
-                  const riseStart = idx * 0.038;
-                  const riseRaw = Math.min(1, Math.max(0, (phaseProgress - riseStart) / 0.20));
+                  const riseStart = idx * 0.04;
+                  const riseRaw = Math.min(1, Math.max(0, (phaseProgress - riseStart) / 0.22));
                   const easedRise = 1 - Math.pow(1 - riseRaw, 3);
 
                   return (
@@ -381,18 +346,15 @@ export const OntoKineticStudioLoader: React.FC<LoadingTemplateProps> = ({
                       key={idx}
                       style={{
                         display: 'inline-block',
-                        fontSize: 'clamp(54px, 8.2vw, 92px)',
+                        fontSize: 'clamp(52px, 7.8vw, 88px)',
                         fontWeight: 900,
                         fontFamily: "'Syne', 'Inter', -apple-system, sans-serif",
                         lineHeight: 1,
-                        letterSpacing: '-0.02em',
+                        letterSpacing: '-0.03em',
                         textTransform: 'uppercase',
                         color: phase1TextColor,
-                        transform: `translateY(${(1 - easedRise) * 45}px) scale(${0.88 + easedRise * 0.12})`,
+                        transform: `translateY(${(1 - easedRise) * 35}px) scale(${0.9 + easedRise * 0.1})`,
                         opacity: easedRise,
-                        userSelect: 'none',
-                        textShadow: isLight && easedInvert < 0.5 ? '0 0 24px rgba(255, 255, 255, 0.45)' : 'none',
-                        transition: 'color 0.08s linear, text-shadow 0.2s ease',
                       }}
                     >
                       {char}
@@ -401,345 +363,258 @@ export const OntoKineticStudioLoader: React.FC<LoadingTemplateProps> = ({
                 })}
               </div>
 
-              {/* Optical Glowing Cyan Beacon between MEDIA and FLOW */}
+              {/* Glowing Beacon */}
               <div
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 'clamp(16px, 2.2vw, 32px)',
-                  height: 'clamp(16px, 2.2vw, 32px)',
-                  flexShrink: 0,
-                }}
-              >
-                <div
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: '50%',
-                    backgroundColor: accentColor,
-                    boxShadow: `0 0 16px 4px ${accentColor}`,
-                    opacity: Math.min(1, Math.max(0, (phaseProgress - 0.20) * 4)),
-                    transform: `scale(${Math.min(1, Math.max(0, (phaseProgress - 0.20) * 4))})`,
-                    animation: phaseProgress > 0.4 ? 'asymmetricBreathe 2s infinite ease-in-out' : 'none',
-                  }}
-                />
-              </div>
-
-              {/* FLOW Word Group */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 'clamp(4px, 0.7vw, 10px)',
-                }}
-              >
-                {['F', 'L', 'O', 'W'].map((char, idx) => {
-                  const globalIdx = 5 + idx;
-                  const riseStart = globalIdx * 0.038;
-                  const riseRaw = Math.min(1, Math.max(0, (phaseProgress - riseStart) / 0.20));
-                  const easedRise = 1 - Math.pow(1 - riseRaw, 3);
-
-                  return (
-                    <span
-                      key={idx}
-                      style={{
-                        display: 'inline-block',
-                        fontSize: 'clamp(54px, 8.2vw, 92px)',
-                        fontWeight: 900,
-                        fontFamily: "'Syne', 'Inter', -apple-system, sans-serif",
-                        lineHeight: 1,
-                        letterSpacing: '-0.02em',
-                        textTransform: 'uppercase',
-                        color: phase1TextColor,
-                        transform: `translateY(${(1 - easedRise) * 45}px) scale(${0.88 + easedRise * 0.12})`,
-                        opacity: easedRise,
-                        userSelect: 'none',
-                        textShadow: isLight && easedInvert < 0.5 ? '0 0 24px rgba(255, 255, 255, 0.45)' : 'none',
-                        transition: 'color 0.08s linear, text-shadow 0.2s ease',
-                      }}
-                    >
-                      {char}
-                    </span>
-                  );
-                })}
-              </div>
-
-              {/* Shimmer Light Beam Across Letters (once inverted on white) */}
-              {phaseProgress > 0.65 && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    inset: '-12px -24px',
-                    pointerEvents: 'none',
-                    background: isLight
-                      ? 'linear-gradient(105deg, transparent 35%, rgba(0, 122, 255, 0.28) 50%, transparent 65%)'
-                      : 'linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.45) 50%, transparent 65%)',
-                    mixBlendMode: isLight ? 'multiply' : 'screen',
-                    animation: 'shimmerSweep 2.2s infinite',
-                  }}
-                />
-              )}
-            </div>
-
-            {/* Architectural Baseline Progress Rule */}
-            <div
-              style={{
-                marginTop: 36,
-                width: '100%',
-                maxWidth: 540,
-                height: 2,
-                backgroundColor: isLight
-                  ? `rgba(0, 0, 0, ${easedInvert * 0.08})`
-                  : 'rgba(255, 255, 255, 0.1)',
-                borderRadius: 2,
-                overflow: 'hidden',
-                position: 'relative',
-                opacity: easedInvert > 0.45 ? Math.min(1, (easedInvert - 0.45) * 2.2) : 0,
-                transform: `translateY(${(1 - easedInvert) * 12}px)`,
-                transition: 'opacity 0.25s ease, transform 0.25s ease',
-              }}
-            >
-              <div
-                style={{
-                  height: '100%',
-                  width: `${Math.min(100, phaseProgress * 100)}%`,
-                  background: isLight
-                    ? 'linear-gradient(90deg, #0A0D14 0%, #007AFF 70%, #00F2FE 100%)'
-                    : 'linear-gradient(90deg, #00F2FE, #38BDF8)',
-                  borderRadius: 2,
-                  boxShadow: `0 0 14px ${accentColor}`,
-                  transition: 'width 0.05s linear',
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  backgroundColor: accentColor,
+                  boxShadow: `0 0 16px 4px ${accentColor}`,
+                  opacity: Math.min(1, Math.max(0, (phaseProgress - 0.2) * 4)),
+                  transform: `scale(${Math.min(1, Math.max(0, (phaseProgress - 0.2) * 4))})`,
                 }}
               />
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(4px, 0.6vw, 8px)' }}>
+                {['F', 'L', 'O', 'W'].map((char, idx) => {
+                  const globalIdx = 5 + idx;
+                  const riseStart = globalIdx * 0.04;
+                  const riseRaw = Math.min(1, Math.max(0, (phaseProgress - riseStart) / 0.22));
+                  const easedRise = 1 - Math.pow(1 - riseRaw, 3);
+
+                  return (
+                    <span
+                      key={idx}
+                      style={{
+                        display: 'inline-block',
+                        fontSize: 'clamp(52px, 7.8vw, 88px)',
+                        fontWeight: 900,
+                        fontFamily: "'Syne', 'Inter', -apple-system, sans-serif",
+                        lineHeight: 1,
+                        letterSpacing: '-0.03em',
+                        textTransform: 'uppercase',
+                        color: phase1TextColor,
+                        transform: `translateY(${(1 - easedRise) * 35}px) scale(${0.9 + easedRise * 0.1})`,
+                        opacity: easedRise,
+                      }}
+                    >
+                      {char}
+                    </span>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
 
         {/* =================================================================== */}
-        {/* PHASE 2 & 3: LIQUID GLASS SHOWCASE WITH STAGGERED FLUID CARDS        */}
+        {/* PHASE 2: HIGH-END EXECUTIVE STUDIO DECK (35% - 100%)                */}
         {/* =================================================================== */}
-        {(phase === 2 || phase === 3) && (
+        {phase >= 2 && (
           <div
             style={{
-              width: '100%',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              justifyContent: 'center',
-              animation: 'ontoDeckSlideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-              transform: phase === 4 && !isFadingOut ? `scale(${1 + phaseProgress * 0.08})` : 'scale(1)',
-              transition: 'transform 0.4s ease',
+              width: '100%',
+              position: 'relative',
+              animation: isFadingOut
+                ? 'deckExitSmooth 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards'
+                : 'deckEntranceSmooth 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards',
             }}
           >
-            {/* Top Kinetic MediaFlow Crest */}
+            {/* Top Luminous Eyebrow Pill */}
             <div
               style={{
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
-                gap: 12,
+                gap: 8,
+                padding: '5px 14px',
+                borderRadius: 20,
+                backgroundColor: isLight ? 'rgba(0, 122, 255, 0.08)' : 'rgba(0, 242, 254, 0.1)',
+                border: `1px solid ${isLight ? 'rgba(0, 122, 255, 0.22)' : 'rgba(0, 242, 254, 0.25)'}`,
                 marginBottom: 16,
-                padding: '6px 14px 6px 10px',
-                borderRadius: 24,
-                backgroundColor: isLight ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.06)',
-                border: isLight ? '1px solid rgba(0, 0, 0, 0.08)' : '1px solid rgba(255, 255, 255, 0.12)',
-                boxShadow: isLight
-                  ? '0 2px 10px rgba(0, 0, 0, 0.04)'
-                  : '0 4px 20px rgba(0, 0, 0, 0.4)',
-                animation: isFadingOut ? 'studioHeaderExit 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'none',
               }}
             >
-              {/* Dual-Stream Icon Token */}
-              <div
+              <Sparkles size={12} color={accentColor} />
+              <span
                 style={{
-                  width: 26,
-                  height: 26,
-                  borderRadius: '50%',
-                  background: isLight
-                    ? 'linear-gradient(135deg, #0A0D14 0%, #007AFF 100%)'
-                    : 'linear-gradient(135deg, #00F2FE 0%, #38BDF8 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: `0 0 12px ${accentColor}80`,
+                  fontSize: 10.5,
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontWeight: 700,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  color: accentColor,
                 }}
               >
-                <div
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: 2,
-                    border: '2px solid #FFFFFF',
-                    transform: 'rotate(45deg)',
-                  }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 900,
-                    fontFamily: "'Syne', -apple-system, sans-serif",
-                    letterSpacing: '0.24em',
-                    textTransform: 'uppercase',
-                    color: fgColor,
-                  }}
-                >
-                  MEDIAFLOW
-                </span>
-                <span
-                  style={{
-                    fontSize: 9,
-                    fontWeight: 700,
-                    fontFamily: "'JetBrains Mono', monospace",
-                    letterSpacing: '0.08em',
-                    padding: '2px 6px',
-                    borderRadius: 4,
-                    backgroundColor: isLight ? 'rgba(0, 122, 255, 0.1)' : 'rgba(0, 242, 254, 0.15)',
-                    color: accentColor,
-                    border: `1px solid ${accentColor}40`,
-                  }}
-                >
-                  STUDIO SUITE V3.0
-                </span>
-              </div>
+                AUTONOMOUS PRODUCTION WORKSTATION
+              </span>
             </div>
 
-            {/* World-Class Modern Studio Title */}
+            {/* Master Studio Headline */}
             <h1
               style={{
-                fontSize: 'clamp(32px, 4.4vw, 52px)',
-                fontWeight: 800,
-                fontFamily: "'Syne', 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif",
+                fontSize: 'clamp(34px, 4.6vw, 54px)',
+                fontWeight: 900,
+                fontFamily: "'Syne', 'Outfit', -apple-system, sans-serif",
                 letterSpacing: '-0.035em',
                 margin: '0 0 10px 0',
-                color: fgColor,
                 textAlign: 'center',
-                lineHeight: 1.15,
+                lineHeight: 1.12,
+                color: fgColor,
                 background: isLight
-                  ? 'linear-gradient(180deg, #0A0D14 0%, #1E293B 100%)'
-                  : 'linear-gradient(180deg, #FFFFFF 0%, #E2E8F0 60%, #94A3B8 100%)',
+                  ? 'linear-gradient(180deg, #090D16 0%, #1E293B 100%)'
+                  : 'linear-gradient(180deg, #FFFFFF 0%, #E2E8F0 65%, #94A3B8 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
-                filter: isLight ? 'none' : 'drop-shadow(0 4px 24px rgba(0, 242, 254, 0.2))',
-                animation: isFadingOut ? 'studioHeaderExit 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'none',
               }}
             >
-              The Creative Pipeline Studio
+              MediaFlow Studio
             </h1>
 
-            {/* Subtext lightened to slate gray for high contrast */}
+            {/* High-Contrast Subtitle */}
             <p
               style={{
                 fontSize: 14,
                 fontWeight: 500,
                 color: subColor,
-                margin: '0 0 34px 0',
+                margin: '0 0 32px 0',
                 textAlign: 'center',
-                maxWidth: 520,
-                lineHeight: 1.55,
+                maxWidth: 580,
+                lineHeight: 1.5,
                 letterSpacing: '-0.01em',
-                animation: isFadingOut ? 'studioHeaderExit 0.4s 0.04s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'none',
               }}
             >
-              Autonomous photo & video separation, biometric pairing, and multi-sheet report fusion.
+              Autonomous photo & video separation, sequence pairing, and multi-sheet report fusion.
             </p>
 
-            {/* FANNED LIQUID GLASS CARDS WITH NUMERIC ROLL-UP (RESPONSIVE & UNBLOCKED) */}
+            {/* =============================================================== */}
+            {/* 3 BALANCED HORIZONTAL GLASS POWER CARDS (NO AWKWARD TILT)       */}
+            {/* =============================================================== */}
             <div
               style={{
-                position: 'relative',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: 16,
                 width: '100%',
-                maxWidth: 880,
-                height: 165,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: 36,
+                maxWidth: 820,
+                marginBottom: 34,
               }}
             >
-              {/* Left Fanned Card: Photo & Video Separator */}
+              {/* Card 1: P/V Separator */}
               <div
                 style={{
-                  position: 'absolute',
-                  width: 236,
-                  height: 140,
                   borderRadius: 18,
                   backgroundColor: cardBg,
-                  backdropFilter: 'blur(28px) saturate(190%)',
-                  WebkitBackdropFilter: 'blur(28px) saturate(190%)',
+                  backdropFilter: 'blur(24px) saturate(190%)',
+                  WebkitBackdropFilter: 'blur(24px) saturate(190%)',
                   border: `1px solid ${cardBorder}`,
                   borderTop: `1px solid ${cardTopBorder}`,
-                  padding: '16px 18px',
+                  padding: '20px 22px',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
                   boxShadow: cardShadow,
-                  transform: 'translateX(-240px) rotate(-4.5deg)',
-                  zIndex: 1,
-                  animation: isFadingOut
-                    ? 'fluidCardExit1 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards'
-                    : 'fluidCardEntrance1 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                  minHeight: 146,
+                  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Layers size={16} color={accentColor} />
-                  <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: fgColor }}>
+                  <div
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 8,
+                      backgroundColor: isLight ? 'rgba(0, 122, 255, 0.1)' : 'rgba(0, 242, 254, 0.15)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Layers size={15} color={accentColor} />
+                  </div>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 800,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      color: fgColor,
+                    }}
+                  >
                     P/V SEPARATOR
                   </span>
                 </div>
 
-                {/* Rolling Number Display */}
-                <div
-                  style={{
-                    fontSize: 24,
-                    fontWeight: 800,
-                    fontFamily: "'JetBrains Mono', monospace",
-                    color: numPv.isLocked ? accentColor : fgColor,
-                    textShadow: numPv.isLocked ? `0 0 14px ${accentColor}80` : 'none',
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  {numPv.value}{' '}
-                  <span style={{ fontSize: 11, fontWeight: 500, color: subColor }}>MB/s</span>
+                {/* Rolling Number */}
+                <div style={{ margin: '14px 0 10px' }}>
+                  <div
+                    style={{
+                      fontSize: 26,
+                      fontWeight: 900,
+                      fontFamily: "'JetBrains Mono', monospace",
+                      color: numPv.isLocked ? accentColor : fgColor,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {numPv.value}{' '}
+                    <span style={{ fontSize: 12, fontWeight: 600, color: subColor }}>MB/s</span>
+                  </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: subColor }}>
-                  <CheckCircle2 size={12} color="#10E79D" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: subColor, fontWeight: 500 }}>
+                  <CheckCircle2 size={13} color="#10B981" />
                   <span>32 Workers Ready</span>
                 </div>
               </div>
 
-              {/* Center Fanned Card: Biometric Matcher (Elevated & Focal) */}
+              {/* Card 2: Sequence Sync (Centerpiece Focal Card) */}
               <div
                 style={{
-                  position: 'absolute',
-                  width: 258,
-                  height: 154,
                   borderRadius: 20,
                   backgroundColor: cardBg,
-                  backdropFilter: 'blur(32px) saturate(200%)',
-                  WebkitBackdropFilter: 'blur(32px) saturate(200%)',
-                  border: `1.5px solid ${accentColor}60`,
+                  backdropFilter: 'blur(28px) saturate(200%)',
+                  WebkitBackdropFilter: 'blur(28px) saturate(200%)',
+                  border: isLight ? '1.5px solid #007AFF' : '1.5px solid #00F2FE',
                   borderTop: `1.5px solid ${cardTopBorder}`,
-                  padding: '18px 20px',
+                  padding: '20px 22px',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  boxShadow: cardShadow,
-                  transform: 'translateY(-14px) scale(1.02)',
-                  zIndex: 3,
-                  animation: isFadingOut
-                    ? 'fluidCardExit2 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards'
-                    : 'fluidCardEntrance2 0.85s 0.08s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                  boxShadow: isLight
+                    ? '0 22px 42px -10px rgba(0, 122, 255, 0.14), 0 2px 8px rgba(0, 0, 0, 0.04)'
+                    : '0 30px 70px -12px rgba(0, 242, 254, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.2)',
+                  minHeight: 146,
+                  transform: 'translateY(-6px)',
+                  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Cpu size={18} color={accentColor} />
-                    <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: fgColor }}>
-                      PHOTO MATCHER
+                    <div
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 8,
+                        backgroundColor: isLight ? 'rgba(0, 122, 255, 0.15)' : 'rgba(0, 242, 254, 0.2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Video size={15} color={accentColor} />
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 800,
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                        color: fgColor,
+                      }}
+                    >
+                      SEQUENCE SYNC
                     </span>
                   </div>
                   <span
@@ -748,95 +623,108 @@ export const OntoKineticStudioLoader: React.FC<LoadingTemplateProps> = ({
                       fontWeight: 800,
                       padding: '2px 7px',
                       borderRadius: 4,
-                      backgroundColor: `${accentColor}18`,
-                      border: `1px solid ${accentColor}40`,
+                      backgroundColor: isLight ? 'rgba(0, 122, 255, 0.1)' : 'rgba(0, 242, 254, 0.15)',
                       color: accentColor,
-                      boxShadow: `0 0 8px ${accentColor}30`,
                     }}
                   >
                     AI CORE
                   </span>
                 </div>
 
-                {/* Rolling Number Display */}
-                <div
-                  style={{
-                    fontSize: 26,
-                    fontWeight: 800,
-                    fontFamily: "'JetBrains Mono', monospace",
-                    color: numMatch.isLocked ? accentColor : fgColor,
-                    textShadow: numMatch.isLocked ? `0 0 20px ${accentColor}90` : 'none',
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  {numMatch.value}%{' '}
-                  <span style={{ fontSize: 12, fontWeight: 500, color: subColor }}>MATCH</span>
+                {/* Rolling Number */}
+                <div style={{ margin: '14px 0 10px' }}>
+                  <div
+                    style={{
+                      fontSize: 26,
+                      fontWeight: 900,
+                      fontFamily: "'JetBrains Mono', monospace",
+                      color: numMatch.isLocked ? accentColor : fgColor,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {numMatch.value}%{' '}
+                    <span style={{ fontSize: 12, fontWeight: 600, color: subColor }}>MATCH</span>
+                  </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: subColor }}>
-                  <CheckCircle2 size={12} color="#10E79D" />
-                  <span>Timecode & Facial Alignment</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: subColor, fontWeight: 500 }}>
+                  <CheckCircle2 size={13} color="#10B981" />
+                  <span>Timecode & Photo Align</span>
                 </div>
               </div>
 
-              {/* Right Fanned Card: Excel Fusion Matrix */}
+              {/* Card 3: Report Fusion */}
               <div
                 style={{
-                  position: 'absolute',
-                  width: 236,
-                  height: 140,
                   borderRadius: 18,
                   backgroundColor: cardBg,
-                  backdropFilter: 'blur(28px) saturate(190%)',
-                  WebkitBackdropFilter: 'blur(28px) saturate(190%)',
+                  backdropFilter: 'blur(24px) saturate(190%)',
+                  WebkitBackdropFilter: 'blur(24px) saturate(190%)',
                   border: `1px solid ${cardBorder}`,
                   borderTop: `1px solid ${cardTopBorder}`,
-                  padding: '16px 18px',
+                  padding: '20px 22px',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
                   boxShadow: cardShadow,
-                  transform: 'translateX(240px) rotate(4.5deg)',
-                  zIndex: 1,
-                  animation: isFadingOut
-                    ? 'fluidCardExit3 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards'
-                    : 'fluidCardEntrance3 0.8s 0.16s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                  minHeight: 146,
+                  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Database size={16} color={isLight ? '#7C3AED' : '#818CF8'} />
-                  <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: fgColor }}>
+                  <div
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 8,
+                      backgroundColor: isLight ? 'rgba(124, 58, 237, 0.1)' : 'rgba(167, 139, 250, 0.18)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Database size={15} color={isLight ? '#7C3AED' : '#A78BFA'} />
+                  </div>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 800,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      color: fgColor,
+                    }}
+                  >
                     REPORT FUSION
                   </span>
                 </div>
 
-                {/* Rolling Number Display */}
-                <div
-                  style={{
-                    fontSize: 24,
-                    fontWeight: 800,
-                    fontFamily: "'JetBrains Mono', monospace",
-                    color: numStreams.isLocked ? (isLight ? '#7C3AED' : '#A5B4FC') : fgColor,
-                    textShadow: numStreams.isLocked ? `0 0 14px ${isLight ? '#7C3AED' : '#A5B4FC'}80` : 'none',
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  {numStreams.value}{' '}
-                  <span style={{ fontSize: 11, fontWeight: 500, color: subColor }}>STREAMS</span>
+                {/* Rolling Number */}
+                <div style={{ margin: '14px 0 10px' }}>
+                  <div
+                    style={{
+                      fontSize: 26,
+                      fontWeight: 900,
+                      fontFamily: "'JetBrains Mono', monospace",
+                      color: numStreams.isLocked ? (isLight ? '#7C3AED' : '#A78BFA') : fgColor,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {numStreams.value}{' '}
+                    <span style={{ fontSize: 12, fontWeight: 600, color: subColor }}>STREAMS</span>
+                  </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: subColor }}>
-                  <CheckCircle2 size={12} color="#10E79D" />
-                  <span>Zero-Loss Matrix Engine</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: subColor, fontWeight: 500 }}>
+                  <CheckCircle2 size={13} color="#10B981" />
+                  <span>Zero-Loss Excel Matrix</span>
                 </div>
               </div>
             </div>
 
             {/* =============================================================== */}
-            {/* 2. THE SHIMMERING LIQUID GLASS "LAUNCH STUDIO" BUTTON            */}
+            {/* 3. SHIMMERING LAUNCH STUDIO CAPSULE WITH FLUID PROGRESS TRACK    */}
             {/* =============================================================== */}
             <div
-              className="premium-launch-btn"
               onClick={(e) => {
                 e.stopPropagation();
                 onComplete?.();
@@ -846,54 +734,46 @@ export const OntoKineticStudioLoader: React.FC<LoadingTemplateProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 gap: 12,
-                padding: '13px 32px',
-                borderRadius: 30,
+                padding: '13px 34px',
+                borderRadius: 32,
                 backgroundColor: launchBtnBg,
                 backdropFilter: 'blur(20px)',
                 WebkitBackdropFilter: 'blur(20px)',
-                border: isLight ? '1px solid rgba(0, 0, 0, 0.2)' : '1px solid rgba(255, 255, 255, 0.22)',
-                borderTop: isLight ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid rgba(255, 255, 255, 0.45)',
+                border: isLight ? '1px solid rgba(11, 15, 25, 0.12)' : '1px solid rgba(255, 255, 255, 0.22)',
                 color: launchBtnFg,
                 fontWeight: 700,
                 fontSize: 13,
-                letterSpacing: '0.05em',
+                letterSpacing: '0.04em',
                 boxShadow: isLight
-                  ? '0 12px 28px rgba(0, 0, 0, 0.2)'
-                  : '0 15px 35px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.3)',
+                  ? '0 12px 28px rgba(11, 15, 25, 0.16)'
+                  : '0 16px 36px rgba(0, 0, 0, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.25)',
                 overflow: 'hidden',
                 cursor: 'pointer',
-                animation: isFadingOut ? 'studioBtnExit 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'none',
                 transition: 'transform 0.15s ease, box-shadow 0.2s ease',
-              }}
-              onMouseDown={(e) => {
-                (e.currentTarget as HTMLElement).style.transform = 'scale(0.97)';
-              }}
-              onMouseUp={(e) => {
-                (e.currentTarget as HTMLElement).style.transform = 'scale(1.03)';
               }}
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLElement).style.transform = 'scale(1.03)';
-                (e.currentTarget as HTMLElement).style.boxShadow = `0 18px 40px ${accentColor}40`;
+                (e.currentTarget as HTMLElement).style.boxShadow = `0 16px 36px ${accentColor}40`;
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLElement).style.transform = 'scale(1)';
                 (e.currentTarget as HTMLElement).style.boxShadow = isLight
-                  ? '0 12px 28px rgba(0, 0, 0, 0.2)'
-                  : '0 15px 35px rgba(0, 0, 0, 0.5)';
+                  ? '0 12px 28px rgba(11, 15, 25, 0.16)'
+                  : '0 16px 36px rgba(0, 0, 0, 0.55)';
               }}
             >
-              {/* Shimmer Light-Ray Sweep */}
+              {/* Shimmer Light Ray */}
               <div
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.28) 50%, transparent 100%)',
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.25) 50%, transparent 100%)',
                   animation: 'shimmerSweep 2.8s infinite',
                   pointerEvents: 'none',
                 }}
               />
 
-              {/* Internal Smooth Filling Horizontal Progress Line */}
+              {/* Progress Line */}
               <div
                 style={{
                   position: 'absolute',
@@ -921,14 +801,14 @@ export const OntoKineticStudioLoader: React.FC<LoadingTemplateProps> = ({
                   backgroundColor: 'rgba(255, 255, 255, 0.16)',
                 }}
               >
-                <ArrowDown size={12} color={isLight ? '#FFFFFF' : '#00F2FE'} />
+                <ArrowDown size={12} color="#FFFFFF" />
               </span>
               <span
                 style={{
                   fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 12,
+                  fontSize: 12.5,
                   color: isLight ? '#38BDF8' : '#00F2FE',
-                  fontWeight: 700,
+                  fontWeight: 800,
                   marginLeft: 4,
                 }}
               >
@@ -936,66 +816,25 @@ export const OntoKineticStudioLoader: React.FC<LoadingTemplateProps> = ({
               </span>
             </div>
 
-            {/* Micro Live Subsystem Caption below Pill */}
+            {/* Live Subsystem Boot Status */}
             <div
               style={{
                 marginTop: 18,
-                fontSize: 11,
+                fontSize: 11.5,
                 fontFamily: "'JetBrains Mono', monospace",
-                letterSpacing: '0.08em',
+                letterSpacing: '0.06em',
                 color: subColor,
-                opacity: 0.85,
-                animation: isFadingOut ? 'studioHeaderExit 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 7,
               }}
             >
-              {statusLabel}
+              <span style={{ color: accentColor }}>●</span>
+              <span>{statusLabel}</span>
             </div>
           </div>
         )}
       </div>
-
-      {/* Cinematic Warp Horizon & Optical Shutter Beam on Exit or Phase 4 */}
-      {(phase === 3 || isFadingOut) && (
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            pointerEvents: 'none',
-            zIndex: 100,
-          }}
-        >
-          {/* Anamorphic Laser Flare Beam (Horizontal Expansion) */}
-          <div
-            style={{
-              position: 'absolute',
-              width: '100%',
-              height: 3,
-              background: isLight
-                ? 'linear-gradient(90deg, transparent 0%, rgba(0, 122, 255, 0.95) 50%, transparent 100%)'
-                : 'linear-gradient(90deg, transparent 0%, rgba(0, 242, 254, 0.95) 50%, transparent 100%)',
-              boxShadow: isLight
-                ? '0 0 30px rgba(0, 122, 255, 0.8), 0 0 60px rgba(0, 122, 255, 0.4)'
-                : '0 0 40px #00F2FE, 0 0 80px #38BDF8',
-              animation: 'anamorphicWarpSweep 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-            }}
-          />
-
-          {/* Expanding Optical Iris Aperture Ring */}
-          <div
-            style={{
-              width: 140,
-              height: 70,
-              borderRadius: 70,
-              border: `4px solid ${accentColor}`,
-              boxShadow: `0 0 60px ${accentColor}`,
-              animation: 'irisApertureExplode 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-            }}
-          />
-        </div>
-      )}
 
       {/* Floating Keyboard Skip Hint */}
       <div
@@ -1022,166 +861,41 @@ export const OntoKineticStudioLoader: React.FC<LoadingTemplateProps> = ({
       <style>{`
         @keyframes plasmaDrift1 {
           0% { transform: translate(0, 0) scale(1); }
-          50% { transform: translate(60px, 40px) scale(1.15); }
-          100% { transform: translate(-30px, 70px) scale(0.95); }
+          50% { transform: translate(40px, 30px) scale(1.1); }
+          100% { transform: translate(-20px, 50px) scale(0.95); }
         }
         @keyframes plasmaDrift2 {
           0% { transform: translate(0, 0) scale(1); }
-          50% { transform: translate(-50px, -40px) scale(1.12); }
-          100% { transform: translate(40px, -60px) scale(0.92); }
-        }
-        @keyframes plasmaDrift3 {
-          0% { transform: translate(0, 0) scale(0.95); }
-          50% { transform: translate(40px, -50px) scale(1.18); }
-          100% { transform: translate(-50px, 30px) scale(1.02); }
+          50% { transform: translate(-30px, -30px) scale(1.08); }
+          100% { transform: translate(30px, -40px) scale(0.94); }
         }
         @keyframes asymmetricBreathe {
-          0% { opacity: 0.3; transform: scale(0.85); }
-          65% { opacity: 1; transform: scale(1.2); }
-          100% { opacity: 0.3; transform: scale(0.85); }
-        }
-        @keyframes ontoBlockDrop {
-          0% {
-            opacity: 0;
-            transform: translateY(-50px) scale(0.85);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-        @keyframes ontoMorphPop {
-          0% {
-            opacity: 0;
-            transform: scale(1.12) translateY(14px);
-          }
-          100% {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-          }
-        }
-        @keyframes ontoDeckSlideUp {
-          0% {
-            opacity: 0;
-            transform: translateY(28px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          0% { opacity: 0.4; transform: scale(0.85); }
+          50% { opacity: 1; transform: scale(1.15); }
+          100% { opacity: 0.4; transform: scale(0.85); }
         }
         @keyframes shimmerSweep {
           0% { transform: translateX(-150%) skewX(-20deg); }
           60%, 100% { transform: translateX(250%) skewX(-20deg); }
         }
-        @keyframes fluidCardEntrance1 {
+        @keyframes deckEntranceSmooth {
           0% {
             opacity: 0;
-            transform: translateX(-240px) translateY(45px) rotate(-10deg) scale(0.88);
+            transform: translateY(24px) scale(0.97);
           }
           100% {
-            opacity: 1;
-            transform: translateX(-240px) translateY(0) rotate(-4.5deg) scale(1);
-          }
-        }
-        @keyframes fluidCardEntrance2 {
-          0% {
-            opacity: 0;
-            transform: translateY(35px) scale(0.88);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(-14px) scale(1.02);
-          }
-        }
-        @keyframes fluidCardEntrance3 {
-          0% {
-            opacity: 0;
-            transform: translateX(240px) translateY(45px) rotate(10deg) scale(0.88);
-          }
-          100% {
-            opacity: 1;
-            transform: translateX(240px) translateY(0) rotate(4.5deg) scale(1);
-          }
-        }
-        @keyframes fluidCardExit1 {
-          0% {
-            opacity: 1;
-            transform: translateX(-240px) translateY(0) rotate(-4.5deg) scale(1);
-          }
-          100% {
-            opacity: 0;
-            transform: translateX(-380px) translateY(90px) rotate(-16deg) scale(0.78);
-          }
-        }
-        @keyframes fluidCardExit2 {
-          0% {
-            opacity: 1;
-            transform: translateY(-14px) scale(1.02);
-          }
-          100% {
-            opacity: 0;
-            transform: translateY(70px) scale(0.88);
-          }
-        }
-        @keyframes fluidCardExit3 {
-          0% {
-            opacity: 1;
-            transform: translateX(240px) translateY(0) rotate(4.5deg) scale(1);
-          }
-          100% {
-            opacity: 0;
-            transform: translateX(380px) translateY(90px) rotate(16deg) scale(0.78);
-          }
-        }
-        @keyframes studioHeaderExit {
-          0% {
             opacity: 1;
             transform: translateY(0) scale(1);
-            filter: blur(0px);
-          }
-          100% {
-            opacity: 0;
-            transform: translateY(-40px) scale(1.06);
-            filter: blur(8px);
           }
         }
-        @keyframes studioBtnExit {
+        @keyframes deckExitSmooth {
           0% {
             opacity: 1;
             transform: translateY(0) scale(1);
           }
           100% {
             opacity: 0;
-            transform: translateY(35px) scale(0.88);
-          }
-        }
-        @keyframes anamorphicWarpSweep {
-          0% {
-            opacity: 0;
-            transform: scaleX(0.05);
-          }
-          30% {
-            opacity: 1;
-            transform: scaleX(1);
-          }
-          100% {
-            opacity: 0;
-            transform: scaleX(1.5) scaleY(4);
-          }
-        }
-        @keyframes irisApertureExplode {
-          0% {
-            opacity: 0.95;
-            transform: scale(0.2);
-          }
-          50% {
-            opacity: 0.85;
-            transform: scale(8);
-          }
-          100% {
-            opacity: 0;
-            transform: scale(28);
+            transform: translateY(-20px) scale(1.02);
           }
         }
       `}</style>
