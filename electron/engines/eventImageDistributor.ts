@@ -85,6 +85,7 @@ export const BUILTIN_EVENT_MAPPINGS: EventMappingItem[] = [
   { eventName: 'Tijarat', abbreviation: 'TJR' },
   { eventName: 'Talaqqi', abbreviation: 'TQ', placardFileName: '__16 Talaqi Sharaf Tasaweer Instruction.jpg' },
   { eventName: 'Tahneeq', abbreviation: 'TQN', placardFileName: '__17 Tahneeq Tasaweer Instructions.jpg' },
+  { eventName: 'Tahneeq', abbreviation: 'TNQ', placardFileName: '__17 Tahneeq Tasaweer Instructions.jpg' },
   { eventName: 'Waaz', abbreviation: 'WAAZ' },
   { eventName: 'Wada', abbreviation: 'WD' },
   { eventName: 'Ziyafat', abbreviation: 'Z', placardFileName: '__01 Ziyafat Tasaweer Instructions.jpg' },
@@ -114,7 +115,13 @@ export class EventImageDistributorEngine {
     const clean = folderName.trim();
     if (!clean) return null;
 
-    // 1. Standard full canonical pattern: e.g. 1448-04-09_02E-27-12Q-40905764 or 1448-04-09_01M-05-1M-
+    // 0. Ignore category container folders (e.g. 01-Mumbai-Bethak, 02-Mumbai-Waaz, 03-Mumbai-Namaz, 04-Mumbai-Ziyarat)
+    // They are category groups holding item folders, not item folders themselves.
+    if (/^\d{2}[-_][a-zA-Z0-9\s]+[-_](bethak|waaz|namaz|ziyarat|majlis|event|[a-zA-Z]+)$/i.test(clean) && !/\d{4}[-_]\d{2}/.test(clean)) {
+      return null;
+    }
+
+    // 1. Standard full canonical pattern: e.g. 1448-03-13 _01M-01-TNQ-50458093, 1448-04-09_02E-27-12Q-40905764, or 1448-04-09_01M-05-1M-
     const fullMatch = clean.match(/^(\d{4}[-_.]\d{2}[-_.]\d{2}(?:[\s_-]*\w+)?)[\-_](\d+[a-zA-Z]?)[\-_]([a-zA-Z0-9]+)(?:[\-_](\d*))?[\-_]?$/i);
     if (fullMatch) {
       const dateSlot = fullMatch[1];
@@ -428,6 +435,16 @@ except Exception as e:
           }
 
           const fullSub = path.join(dir, entry.name);
+          const isCategory = /^\d{2}[-_][a-zA-Z0-9\s]+[-_][a-zA-Z0-9\s]+$/i.test(entry.name) ||
+                             /^\d{2}[-_].*?(bethak|waaz|namaz|ziyarat|majlis)/i.test(entry.name);
+
+          if (isCategory) {
+            // Category container folder (e.g. 01-Mumbai-Bethak): recurse directly into it to find the individual item folders
+            const subCandidates = await findCandidateFolders(fullSub, depth + 1);
+            candidates.push(...subCandidates);
+            continue;
+          }
+
           const parsed = EventImageDistributorEngine.parseFolderTokens(entry.name);
           if (parsed) {
             candidates.push(fullSub);
@@ -537,6 +554,20 @@ except Exception as e:
         try {
           await fs.promises.copyFile(img.filePath, destFile);
           totalImagesCopied++;
+
+          // Also copy into inner person name subfolder if present (e.g. 1448-03-13 _01M-01-TNQ-50458093/Person Name/)
+          try {
+            const subEntries = await fs.promises.readdir(folder.folderPath, { withFileTypes: true });
+            for (const sub of subEntries) {
+              if (sub.isDirectory() && !sub.name.startsWith('.')) {
+                const innerDest = path.join(folder.folderPath, sub.name, img.fileName);
+                if (!fs.existsSync(innerDest)) {
+                  await fs.promises.copyFile(img.filePath, innerDest);
+                }
+              }
+            }
+          } catch {}
+
           if (onProgress) {
             onProgress(opIndex, totalOps, `Copied ${img.fileName} -> ${folder.folderName}`);
           }

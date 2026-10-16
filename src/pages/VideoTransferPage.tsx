@@ -30,6 +30,10 @@ import {
   Check,
   Copy,
   Zap,
+  ChevronUp,
+  Camera,
+  Images,
+  ArrowUp,
 } from 'lucide-react';
 import { StudioButton } from '../components/StudioButton';
 import { StorageHeadroomBar } from '../components/StorageHeadroomBar';
@@ -159,11 +163,35 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
   } | null>(null);
 
   const [pathErrors, setPathErrors] = useState<{ video?: string; photo?: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<'matched' | 'unmatched' | 'unmatchedFolders' | 'emptyFolders'>('matched');
+  const [activeTab, setActiveTab] = useState<'matched' | 'missing' | 'unmatched' | 'unmatchedFolders' | 'emptyFolders'>('matched');
+  const [missingSubFilter, setMissingSubFilter] = useState<'all' | 'video' | 'photo' | 'empty'>('all');
   const [searchFilter, setSearchFilter] = useState('');
   const [selectedDateFilter, setSelectedDateFilter] = useState<string>('ALL');
   const [dismissedEmptyBanner, setDismissedEmptyBanner] = useState(false);
   const [emptyFolders, setEmptyFolders] = useState<EmptyPhotoFolderItem[]>([]);
+
+  // Photo Folder Preview Gallery Modal State ("See Photos")
+  const [viewingPhotoFolder, setViewingPhotoFolder] = useState<{ path: string; name: string } | null>(null);
+  const [folderPhotos, setFolderPhotos] = useState<{ fileName: string; filePath: string; sizeBytes: number; mtime: number }[]>([]);
+  const [isLoadingPhotos, setIsLoadingPhotos] = useState(false);
+  const [activePhotoLightboxIndex, setActivePhotoLightboxIndex] = useState<number | null>(null);
+
+  // Scroll to Top & Action Highlight State
+  const pageContainerRef = React.useRef<HTMLDivElement>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [isActionHighlighted, setIsActionHighlighted] = useState(false);
+
+  const handlePageScroll = () => {
+    if (pageContainerRef.current) {
+      setShowScrollTop(pageContainerRef.current.scrollTop > 180);
+    }
+  };
+
+  const handleScrollToTop = () => {
+    pageContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    setIsActionHighlighted(true);
+    setTimeout(() => setIsActionHighlighted(false), 2400);
+  };
 
   // Dual Comparison Modal State (Single unified verification experience)
   const [activeCompareIndex, setActiveCompareIndex] = useState<number | null>(null);
@@ -642,6 +670,141 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
     return total > 0 ? Math.round((scanResult.matched.length / total) * 100) : 0;
   }, [scanResult]);
 
+  // Unified Missing & Mismatch Items
+  interface MissingUnifiedItem {
+    id: string;
+    type: 'unmatched_video' | 'unmatched_photo_folder' | 'empty_folder';
+    name: string;
+    subtext: string;
+    dateFolder: string;
+    shotCode?: string;
+    reason: string;
+    videoPath?: string;
+    photoFolderPath?: string;
+    videoCandidateFolders?: { name: string; path: string }[];
+    originalItem: any;
+  }
+
+  const filteredMissingItems = useMemo<MissingUnifiedItem[]>(() => {
+    const list: MissingUnifiedItem[] = [];
+
+    // 1. Unmatched video clips (photo folder not found)
+    for (const v of filteredUnmatched) {
+      list.push({
+        id: `v_${v.videoPath}`,
+        type: 'unmatched_video',
+        name: v.videoFile,
+        subtext: v.videoPath,
+        dateFolder: v.dateFolder,
+        shotCode: v.shotCode,
+        reason: v.reason || 'Photo folder not found in photo directory',
+        videoPath: v.videoPath,
+        photoFolderPath: undefined,
+        videoCandidateFolders: scanResult?.photoFoldersByDate[v.dateFolder] || [],
+        originalItem: v,
+      });
+    }
+
+    // 2. Photo folders without video (video clip not found)
+    for (const p of filteredUnmatchedFolders) {
+      list.push({
+        id: `p_${p.folderPath}`,
+        type: 'unmatched_photo_folder',
+        name: p.folderName,
+        subtext: p.folderPath,
+        dateFolder: p.dateFolder,
+        shotCode: p.shotCode,
+        reason: 'No video clip matched with this photo subfolder',
+        videoPath: undefined,
+        photoFolderPath: p.folderPath,
+        originalItem: p,
+      });
+    }
+
+    // 3. Empty folders
+    for (const e of filteredEmptyFolders) {
+      list.push({
+        id: `e_${e.folderPath}`,
+        type: 'empty_folder',
+        name: e.folderName,
+        subtext: e.folderPath,
+        dateFolder: e.dateFolder,
+        shotCode: undefined,
+        reason: e.reason || '0 media files found in folder',
+        videoPath: undefined,
+        photoFolderPath: e.folderPath,
+        originalItem: e,
+      });
+    }
+
+    return list;
+  }, [filteredUnmatched, filteredUnmatchedFolders, filteredEmptyFolders, scanResult]);
+
+  const activeMissingList = useMemo(() => {
+    if (missingSubFilter === 'video') {
+      return filteredMissingItems.filter((i) => i.type === 'unmatched_video');
+    }
+    if (missingSubFilter === 'photo') {
+      return filteredMissingItems.filter((i) => i.type === 'unmatched_photo_folder');
+    }
+    if (missingSubFilter === 'empty') {
+      return filteredMissingItems.filter((i) => i.type === 'empty_folder');
+    }
+    return filteredMissingItems;
+  }, [filteredMissingItems, missingSubFilter]);
+
+  // Load photos when viewingPhotoFolder is set
+  useEffect(() => {
+    if (!viewingPhotoFolder) {
+      setFolderPhotos([]);
+      setActivePhotoLightboxIndex(null);
+      return;
+    }
+    let active = true;
+    setIsLoadingPhotos(true);
+    if (window.electronAPI?.listFolderImages) {
+      window.electronAPI
+        .listFolderImages(viewingPhotoFolder.path)
+        .then((photos: any) => {
+          if (active) {
+            setFolderPhotos(photos || []);
+            setIsLoadingPhotos(false);
+          }
+        })
+        .catch(() => {
+          if (active) {
+            setFolderPhotos([]);
+            setIsLoadingPhotos(false);
+          }
+        });
+    } else {
+      setIsLoadingPhotos(false);
+    }
+    return () => {
+      active = false;
+    };
+  }, [viewingPhotoFolder]);
+
+  // Keyboard navigation for photo lightbox
+  useEffect(() => {
+    if (activePhotoLightboxIndex === null) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setActivePhotoLightboxIndex(null);
+      } else if (e.key === 'ArrowLeft') {
+        setActivePhotoLightboxIndex((prev) =>
+          prev !== null && prev > 0 ? prev - 1 : folderPhotos.length - 1
+        );
+      } else if (e.key === 'ArrowRight') {
+        setActivePhotoLightboxIndex((prev) =>
+          prev !== null && prev < folderPhotos.length - 1 ? prev + 1 : 0
+        );
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [activePhotoLightboxIndex, folderPhotos.length]);
+
   // Keyboard Arrow & Esc Navigation for Dual Verification Modal
   useEffect(() => {
     if (activeCompareIndex === null) return;
@@ -662,11 +825,14 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
 
   return (
     <div
+      ref={pageContainerRef}
+      onScroll={handlePageScroll}
       style={{
         display: 'flex',
         flexDirection: 'column',
         gap: 16,
         height: '100%',
+        position: 'relative',
         overflowY: 'auto',
         paddingRight: 6,
       }}
@@ -768,7 +934,12 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                 fontSize: 11.5,
                 height: 34,
                 background: 'linear-gradient(135deg, #10B981, #059669)',
-                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)',
+                boxShadow: isActionHighlighted
+                  ? '0 0 25px #00F2FE, 0 0 10px #10B981'
+                  : '0 4px 14px rgba(16, 185, 129, 0.3)',
+                transform: isActionHighlighted ? 'scale(1.08)' : 'scale(1)',
+                border: isActionHighlighted ? '2px solid #00F2FE' : undefined,
+                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
               }}
             >
               Start Synchronization ({scanResult?.matched.length || 0})
@@ -1440,6 +1611,37 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
             </button>
 
             <button
+              onClick={() => setActiveTab('missing')}
+              style={{
+                padding: '7px 14px',
+                borderRadius: 8,
+                border: activeTab === 'missing' ? '1px solid #F43F5E' : '1px solid transparent',
+                backgroundColor: activeTab === 'missing' ? 'rgba(244, 63, 94, 0.16)' : 'transparent',
+                color: activeTab === 'missing' ? '#FB7185' : 'var(--secondary-label)',
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <span>Missing & Mismatches</span>
+              <span
+                style={{
+                  padding: '1.5px 7px',
+                  borderRadius: 10,
+                  fontSize: 10.5,
+                  backgroundColor: filteredMissingItems.length > 0 ? 'rgba(244, 63, 94, 0.25)' : 'var(--surface)',
+                  color: filteredMissingItems.length > 0 ? '#FB7185' : 'var(--tertiary-label)',
+                  fontWeight: 800,
+                }}
+              >
+                {filteredMissingItems.length}
+              </span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('unmatched')}
               style={{
                 padding: '7px 14px',
@@ -2043,25 +2245,26 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                       </div>
 
                       {/* 6. Action Buttons */}
-                      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
                         <button
                           onClick={() => handleLocateItem(item.videoPath)}
                           style={{
-                            background: 'rgba(255, 255, 255, 0.04)',
-                            border: '1px solid var(--border)',
+                            background: 'rgba(16, 185, 129, 0.1)',
+                            border: '1px solid rgba(16, 185, 129, 0.3)',
                             borderRadius: 6,
                             padding: '3px 8px',
-                            color: 'var(--label)',
+                            color: '#10B981',
                             fontSize: 10.5,
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             gap: 4,
+                            fontWeight: 600,
                           }}
-                          title="Locate Video in Explorer"
+                          title="Locate & Open Video Clip in Explorer"
                         >
                           <Video size={11} color="#10B981" />
-                          <span>Video</span>
+                          <span>Open Video Folder</span>
                         </button>
 
                         <button
@@ -2077,11 +2280,33 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                             display: 'flex',
                             alignItems: 'center',
                             gap: 4,
+                            fontWeight: 600,
                           }}
                           title="Open Target Photo Folder in Explorer"
                         >
                           <FolderOpen size={11} color="#38BDF8" />
-                          <span>Folder</span>
+                          <span>Open Photo Folder</span>
+                        </button>
+
+                        <button
+                          onClick={() => setViewingPhotoFolder({ path: item.photoFolderPath, name: item.photoFolder })}
+                          style={{
+                            background: 'rgba(168, 85, 247, 0.12)',
+                            border: '1px solid rgba(168, 85, 247, 0.35)',
+                            borderRadius: 6,
+                            padding: '3px 8px',
+                            color: '#C084FC',
+                            fontSize: 10.5,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            fontWeight: 700,
+                          }}
+                          title="Browse and inspect all photos inside this photo folder"
+                        >
+                          <Images size={11} color="#C084FC" />
+                          <span>See Photos</span>
                         </button>
 
                         <button
@@ -2116,6 +2341,582 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                       </div>
                     </div>
                   );
+                })
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Tab: Unified Missing & Mismatches View */}
+        {activeTab === 'missing' && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            {/* Missing Sub-filter Bar */}
+            <div
+              style={{
+                padding: '8px 16px',
+                backgroundColor: 'rgba(244, 63, 94, 0.05)',
+                borderBottom: '1px solid var(--border)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 8,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--tertiary-label)', textTransform: 'uppercase', marginRight: 4 }}>
+                  Filter Mismatches:
+                </span>
+                <button
+                  onClick={() => setMissingSubFilter('all')}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: 6,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    border: missingSubFilter === 'all' ? '1px solid #F43F5E' : '1px solid var(--border)',
+                    backgroundColor: missingSubFilter === 'all' ? 'rgba(244, 63, 94, 0.2)' : 'transparent',
+                    color: missingSubFilter === 'all' ? '#FB7185' : 'var(--secondary-label)',
+                  }}
+                >
+                  All Mismatches ({filteredMissingItems.length})
+                </button>
+                <button
+                  onClick={() => setMissingSubFilter('unmatched_video')}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: 6,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    border: missingSubFilter === 'unmatched_video' ? '1px solid #EF4444' : '1px solid var(--border)',
+                    backgroundColor: missingSubFilter === 'unmatched_video' ? 'rgba(239, 68, 68, 0.2)' : 'transparent',
+                    color: missingSubFilter === 'unmatched_video' ? '#EF4444' : 'var(--secondary-label)',
+                  }}
+                >
+                  Videos Missing Photo Folder ({filteredUnmatched.length})
+                </button>
+                <button
+                  onClick={() => setMissingSubFilter('unmatched_folder')}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: 6,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    border: missingSubFilter === 'unmatched_folder' ? '1px solid #F59E0B' : '1px solid var(--border)',
+                    backgroundColor: missingSubFilter === 'unmatched_folder' ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
+                    color: missingSubFilter === 'unmatched_folder' ? '#F59E0B' : 'var(--secondary-label)',
+                  }}
+                >
+                  Photo Folders Missing Video ({filteredUnmatchedFolders.length})
+                </button>
+                <button
+                  onClick={() => setMissingSubFilter('empty_folder')}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: 6,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    border: missingSubFilter === 'empty_folder' ? '1px solid #EC4899' : '1px solid var(--border)',
+                    backgroundColor: missingSubFilter === 'empty_folder' ? 'rgba(236, 72, 153, 0.2)' : 'transparent',
+                    color: missingSubFilter === 'empty_folder' ? '#EC4899' : 'var(--secondary-label)',
+                  }}
+                >
+                  Empty Photo Folders ({filteredEmptyFolders.length})
+                </button>
+              </div>
+
+              {filteredEmptyFolders.length > 0 && (
+                <StudioButton
+                  variant="danger"
+                  size="sm"
+                  icon={<Trash2 size={12} />}
+                  onClick={handleDeleteAllEmptyFolders}
+                  style={{ height: 26, fontSize: 10.5 }}
+                >
+                  Purge All ({filteredEmptyFolders.length}) Empty
+                </StudioButton>
+              )}
+            </div>
+
+            {/* Table Header */}
+            <div
+              style={{
+                height: 38,
+                backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                borderBottom: '1px solid var(--border)',
+                display: 'grid',
+                gridTemplateColumns: '2fr 1fr 1fr 2fr 2.4fr',
+                alignItems: 'center',
+                padding: '0 16px',
+                fontSize: 11,
+                fontWeight: 700,
+                color: 'var(--tertiary-label)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+              }}
+            >
+              <span>Missing Item & Type</span>
+              <span>Token</span>
+              <span>Date Scope</span>
+              <span>Diagnostic Problem</span>
+              <span style={{ textAlign: 'right' }}>Actions & Exploration</span>
+            </div>
+
+            {/* Table Body */}
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              {!scanResult || activeMissingList.length === 0 ? (
+                <div
+                  style={{
+                    height: '100%',
+                    minHeight: 240,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 10,
+                    padding: 32,
+                    textAlign: 'center',
+                  }}
+                >
+                  <CheckCircle2 size={36} color="#10B981" />
+                  <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--label)' }}>
+                    No missing assets or mismatches found in this filter view.
+                  </span>
+                  <span style={{ fontSize: 12, color: 'var(--secondary-label)', maxWidth: 420 }}>
+                    All video sequence clips and photo subfolders are fully synchronized or matched.
+                  </span>
+                </div>
+              ) : (
+                activeMissingList.map((item, idx) => {
+                  if (item.type === 'unmatched_video') {
+                    const videoItem = item.data;
+                    const candidateFolders = scanResult ? (scanResult.photoFoldersByDate[videoItem.dateFolder] || []) : [];
+
+                    return (
+                      <div
+                        key={`missing-video-${idx}`}
+                        style={{
+                          minHeight: 52,
+                          display: 'grid',
+                          gridTemplateColumns: '2fr 1fr 1fr 2fr 2.4fr',
+                          alignItems: 'center',
+                          padding: '8px 16px',
+                          borderBottom: '1px solid var(--border-subtle)',
+                          fontSize: 11.5,
+                          color: 'var(--label)',
+                          backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.012)',
+                          gap: 8,
+                        }}
+                      >
+                        <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span
+                              style={{
+                                padding: '1.5px 5px',
+                                borderRadius: 4,
+                                fontSize: 9.5,
+                                fontWeight: 800,
+                                color: '#EF4444',
+                                backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                                border: '1px solid rgba(239, 68, 68, 0.3)',
+                                textTransform: 'uppercase',
+                              }}
+                            >
+                              Photo Folder Not Found
+                            </span>
+                          </div>
+                          <span
+                            style={{
+                              fontWeight: 700,
+                              fontFamily: 'var(--font-mono)',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              marginTop: 3,
+                            }}
+                            title={videoItem.videoPath}
+                          >
+                            {videoItem.videoFile}
+                          </span>
+                        </div>
+
+                        <div>
+                          <span
+                            style={{
+                              padding: '2px 7px',
+                              borderRadius: 4,
+                              fontSize: 10,
+                              fontWeight: 700,
+                              color: '#F59E0B',
+                              backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                              border: '1px solid rgba(245, 158, 11, 0.3)',
+                            }}
+                          >
+                            {videoItem.shotCode || 'None'}
+                          </span>
+                        </div>
+
+                        <span style={{ color: 'var(--secondary-label)' }}>
+                          {videoItem.dateFolder}
+                        </span>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <span style={{ fontSize: 10.5, color: '#EF4444', fontWeight: 600 }}>
+                            {videoItem.reason}
+                          </span>
+                          {videoItem.suggestedFolder && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <span style={{ fontSize: 10, color: '#38BDF8' }}>Suggested:</span>
+                              <button
+                                onClick={() => handleManualPair(videoItem, videoItem.suggestedFolder!.path)}
+                                style={{
+                                  padding: '1.5px 6px',
+                                  borderRadius: 4,
+                                  backgroundColor: 'rgba(56, 189, 248, 0.15)',
+                                  border: '1px solid rgba(56, 189, 248, 0.35)',
+                                  color: '#38BDF8',
+                                  fontSize: 10,
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                Pair with "{videoItem.suggestedFolder.name}"
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Actions for Video Clip */}
+                        <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <select
+                            defaultValue=""
+                            onChange={(e) => {
+                              if (e.target.value) handleManualPair(videoItem, e.target.value);
+                            }}
+                            style={{
+                              maxWidth: 135,
+                              padding: '3px 6px',
+                              borderRadius: 6,
+                              backgroundColor: 'var(--surface-elevated)',
+                              border: '1px solid var(--border)',
+                              color: 'var(--label)',
+                              fontSize: 10,
+                              outline: 'none',
+                            }}
+                          >
+                            <option value="" disabled>Pair to Photo Folder...</option>
+                            {candidateFolders.map((cf) => (
+                              <option key={cf.path} value={cf.path}>
+                                {cf.name}
+                              </option>
+                            ))}
+                          </select>
+
+                          <button
+                            onClick={() => handleLocateItem(videoItem.videoPath)}
+                            style={{
+                              background: 'rgba(16, 185, 129, 0.12)',
+                              border: '1px solid rgba(16, 185, 129, 0.35)',
+                              borderRadius: 6,
+                              padding: '3px 8px',
+                              color: '#10B981',
+                              fontSize: 10,
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              height: 24,
+                            }}
+                            title="Open Video Folder in Explorer"
+                          >
+                            <Video size={10.5} color="#10B981" />
+                            <span>Open Video Folder</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  if (item.type === 'unmatched_folder') {
+                    const folderItem = item.data;
+                    return (
+                      <div
+                        key={`missing-folder-${idx}`}
+                        style={{
+                          minHeight: 52,
+                          display: 'grid',
+                          gridTemplateColumns: '2fr 1fr 1fr 2fr 2.4fr',
+                          alignItems: 'center',
+                          padding: '8px 16px',
+                          borderBottom: '1px solid var(--border-subtle)',
+                          fontSize: 11.5,
+                          color: 'var(--label)',
+                          backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.012)',
+                          gap: 8,
+                        }}
+                      >
+                        <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span
+                              style={{
+                                padding: '1.5px 5px',
+                                borderRadius: 4,
+                                fontSize: 9.5,
+                                fontWeight: 800,
+                                color: '#F59E0B',
+                                backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                                border: '1px solid rgba(245, 158, 11, 0.3)',
+                                textTransform: 'uppercase',
+                              }}
+                            >
+                              Video Clip Not Found
+                            </span>
+                          </div>
+                          <span
+                            style={{
+                              fontWeight: 700,
+                              color: 'var(--system-cyan)',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              marginTop: 3,
+                            }}
+                            title={folderItem.folderPath}
+                          >
+                            {folderItem.folderName}
+                          </span>
+                        </div>
+
+                        <div>
+                          <span
+                            style={{
+                              padding: '2px 7px',
+                              borderRadius: 4,
+                              fontSize: 10,
+                              fontWeight: 700,
+                              color: 'var(--secondary-label)',
+                              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                              border: '1px solid var(--border)',
+                            }}
+                          >
+                            {folderItem.shotCode || 'None'}
+                          </span>
+                        </div>
+
+                        <span style={{ color: 'var(--secondary-label)' }}>
+                          {folderItem.dateFolder}
+                        </span>
+
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: 10.5, color: '#F59E0B', fontWeight: 600 }}>
+                            Photo-only session; no corresponding video master clip identified
+                          </span>
+                        </div>
+
+                        {/* Actions for Photo Folder */}
+                        <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <button
+                            onClick={() => handleOpenPath(folderItem.folderPath, `Photo Folder (${folderItem.folderName})`)}
+                            style={{
+                              background: 'rgba(56, 189, 248, 0.1)',
+                              border: '1px solid rgba(56, 189, 248, 0.35)',
+                              borderRadius: 6,
+                              padding: '3px 8px',
+                              color: '#38BDF8',
+                              fontSize: 10,
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              height: 24,
+                            }}
+                            title="Open Photo Folder in Explorer"
+                          >
+                            <FolderOpen size={10.5} color="#38BDF8" />
+                            <span>Open Photo Folder</span>
+                          </button>
+
+                          <button
+                            onClick={() => setViewingPhotoFolder({ path: folderItem.folderPath, name: folderItem.folderName })}
+                            style={{
+                              background: 'rgba(168, 85, 247, 0.14)',
+                              border: '1px solid rgba(168, 85, 247, 0.4)',
+                              borderRadius: 6,
+                              padding: '3px 8px',
+                              color: '#C084FC',
+                              fontSize: 10,
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              height: 24,
+                            }}
+                            title="Browse all photos inside this folder"
+                          >
+                            <Images size={10.5} color="#C084FC" />
+                            <span>See Photos</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  if (item.type === 'empty_folder') {
+                    const emptyItem = item.data;
+                    return (
+                      <div
+                        key={`missing-empty-${idx}`}
+                        style={{
+                          minHeight: 52,
+                          display: 'grid',
+                          gridTemplateColumns: '2fr 1fr 1fr 2fr 2.4fr',
+                          alignItems: 'center',
+                          padding: '8px 16px',
+                          borderBottom: '1px solid var(--border-subtle)',
+                          fontSize: 11.5,
+                          color: 'var(--label)',
+                          backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.012)',
+                          gap: 8,
+                        }}
+                      >
+                        <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span
+                              style={{
+                                padding: '1.5px 5px',
+                                borderRadius: 4,
+                                fontSize: 9.5,
+                                fontWeight: 800,
+                                color: '#FB7185',
+                                backgroundColor: 'rgba(244, 63, 94, 0.15)',
+                                border: '1px solid rgba(244, 63, 94, 0.3)',
+                                textTransform: 'uppercase',
+                              }}
+                            >
+                              Empty Photo Folder
+                            </span>
+                          </div>
+                          <span
+                            style={{
+                              fontWeight: 700,
+                              color: '#FB7185',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              marginTop: 3,
+                            }}
+                            title={emptyItem.folderPath}
+                          >
+                            {emptyItem.folderName}
+                          </span>
+                        </div>
+
+                        <div>
+                          <span
+                            style={{
+                              padding: '2px 7px',
+                              borderRadius: 4,
+                              fontSize: 10,
+                              fontWeight: 700,
+                              color: 'var(--tertiary-label)',
+                              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                              border: '1px solid var(--border)',
+                            }}
+                          >
+                            0 items
+                          </span>
+                        </div>
+
+                        <span style={{ color: 'var(--secondary-label)' }}>
+                          {emptyItem.dateFolder}
+                        </span>
+
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: 10.5, color: '#FB7185', fontWeight: 600 }}>
+                            Contains 0 photos; target folder is vacant or abandoned
+                          </span>
+                        </div>
+
+                        {/* Actions for Empty Folder */}
+                        <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <button
+                            onClick={() => handleOpenPath(emptyItem.folderPath, `Photo Folder (${emptyItem.folderName})`)}
+                            style={{
+                              background: 'rgba(56, 189, 248, 0.1)',
+                              border: '1px solid rgba(56, 189, 248, 0.35)',
+                              borderRadius: 6,
+                              padding: '3px 8px',
+                              color: '#38BDF8',
+                              fontSize: 10,
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              height: 24,
+                            }}
+                            title="Open Photo Folder in Explorer"
+                          >
+                            <FolderOpen size={10.5} color="#38BDF8" />
+                            <span>Open Photo Folder</span>
+                          </button>
+
+                          <button
+                            onClick={() => setViewingPhotoFolder({ path: emptyItem.folderPath, name: emptyItem.folderName })}
+                            style={{
+                              background: 'rgba(168, 85, 247, 0.14)',
+                              border: '1px solid rgba(168, 85, 247, 0.4)',
+                              borderRadius: 6,
+                              padding: '3px 8px',
+                              color: '#C084FC',
+                              fontSize: 10,
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              height: 24,
+                            }}
+                            title="Inspect photo contents"
+                          >
+                            <Images size={10.5} color="#C084FC" />
+                            <span>See Photos</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleDeleteEmptyFolder(emptyItem.folderPath, emptyItem.folderName)}
+                            style={{
+                              background: 'rgba(239, 68, 68, 0.15)',
+                              border: '1px solid rgba(239, 68, 68, 0.35)',
+                              borderRadius: 6,
+                              padding: '3px 8px',
+                              color: '#EF4444',
+                              fontSize: 10,
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              height: 24,
+                            }}
+                            title="Delete this empty folder"
+                          >
+                            <Trash2 size={10.5} color="#EF4444" />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return null;
                 })
               )}
             </div>
@@ -2278,15 +3079,23 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                         <button
                           onClick={() => handleLocateItem(item.videoPath)}
                           style={{
-                            background: 'none',
-                            border: 'none',
-                            color: 'var(--secondary-label)',
+                            background: 'rgba(16, 185, 129, 0.12)',
+                            border: '1px solid rgba(16, 185, 129, 0.35)',
+                            borderRadius: 6,
+                            padding: '3px 8px',
+                            color: '#10B981',
+                            fontSize: 10,
+                            fontWeight: 700,
                             cursor: 'pointer',
-                            padding: '4px 6px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            height: 25,
                           }}
-                          title="Locate Video File"
+                          title="Open Video Folder in Explorer"
                         >
-                          <Video size={13} />
+                          <Video size={11} color="#10B981" />
+                          <span>Open Video Folder</span>
                         </button>
                       </div>
                     </div>
@@ -2380,15 +3189,50 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                       </span>
                     </div>
 
-                    <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
-                      <StudioButton
-                        variant="glass"
-                        icon={<FolderOpen size={12} />}
+                    <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <button
                         onClick={() => handleOpenPath(item.folderPath, `Photo Folder (${item.folderName})`)}
-                        style={{ fontSize: 10.5, padding: '4px 8px', height: 26 }}
+                        style={{
+                          background: 'rgba(56, 189, 248, 0.1)',
+                          border: '1px solid rgba(56, 189, 248, 0.35)',
+                          borderRadius: 6,
+                          padding: '3px 8px',
+                          color: '#38BDF8',
+                          fontSize: 10,
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          height: 25,
+                        }}
+                        title="Open Photo Folder in Explorer"
                       >
-                        Open Folder
-                      </StudioButton>
+                        <FolderOpen size={11} color="#38BDF8" />
+                        <span>Open Photo Folder</span>
+                      </button>
+
+                      <button
+                        onClick={() => setViewingPhotoFolder({ path: item.folderPath, name: item.folderName })}
+                        style={{
+                          background: 'rgba(168, 85, 247, 0.14)',
+                          border: '1px solid rgba(168, 85, 247, 0.4)',
+                          borderRadius: 6,
+                          padding: '3px 8px',
+                          color: '#C084FC',
+                          fontSize: 10,
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          height: 25,
+                        }}
+                        title="Browse and view photos in this folder"
+                      >
+                        <Images size={11} color="#C084FC" />
+                        <span>See Photos</span>
+                      </button>
                     </div>
                   </div>
                 ))
@@ -3184,6 +4028,430 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
           </div>
         );
       })()}
+
+      {/* 9. Dedicated Photo Viewer Gallery Modal */}
+      {viewingPhotoFolder && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9998,
+            backgroundColor: 'rgba(0, 0, 0, 0.82)',
+            backdropFilter: 'blur(14px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 24,
+          }}
+          onClick={() => {
+            setViewingPhotoFolder(null);
+            setActivePhotoLightboxIndex(null);
+          }}
+        >
+          <div
+            className="glass-card"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: 980,
+              width: '100%',
+              maxHeight: '88vh',
+              backgroundColor: 'var(--surface-card)',
+              borderRadius: 18,
+              border: '1px solid rgba(168, 85, 247, 0.35)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              boxShadow: '0 30px 80px rgba(0, 0, 0, 0.85), 0 0 35px rgba(168, 85, 247, 0.2)',
+            }}
+          >
+            {/* Gallery Header */}
+            <div
+              style={{
+                padding: '14px 20px',
+                borderBottom: '1px solid var(--border)',
+                background: 'linear-gradient(180deg, rgba(168, 85, 247, 0.08) 0%, transparent 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    backgroundColor: 'rgba(168, 85, 247, 0.15)',
+                    border: '1px solid rgba(168, 85, 247, 0.35)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Images size={18} color="#C084FC" />
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <h3 style={{ fontSize: 14, fontWeight: 800, margin: 0, color: 'var(--label)' }}>
+                      Photo Gallery — {viewingPhotoFolder.name}
+                    </h3>
+                    <span
+                      style={{
+                        padding: '1px 8px',
+                        borderRadius: 10,
+                        backgroundColor: 'rgba(168, 85, 247, 0.2)',
+                        color: '#C084FC',
+                        fontSize: 10.5,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {folderPhotos.length} {folderPhotos.length === 1 ? 'Photograph' : 'Photographs'}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: 'var(--secondary-label)',
+                      marginTop: 2,
+                      fontFamily: 'var(--font-mono)',
+                      maxWidth: 600,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                    title={viewingPhotoFolder.path}
+                  >
+                    {viewingPhotoFolder.path}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button
+                  onClick={() => handleOpenPath(viewingPhotoFolder.path, viewingPhotoFolder.name)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 8,
+                    backgroundColor: 'rgba(56, 189, 248, 0.12)',
+                    border: '1px solid rgba(56, 189, 248, 0.35)',
+                    color: '#38BDF8',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <FolderOpen size={13} />
+                  <span>Open Folder in Explorer</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setViewingPhotoFolder(null);
+                    setActivePhotoLightboxIndex(null);
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--secondary-label)',
+                    cursor: 'pointer',
+                    padding: 6,
+                    borderRadius: 6,
+                  }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Gallery Grid Content */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
+              {isLoadingPhotos ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 48, gap: 12 }}>
+                  <RefreshCw size={28} className="spin" color="#C084FC" />
+                  <span style={{ fontSize: 13, color: 'var(--secondary-label)' }}>Scanning photographs in folder...</span>
+                </div>
+              ) : folderPhotos.length === 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 48, gap: 10 }}>
+                  <Camera size={36} color="var(--tertiary-label)" />
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--label)' }}>No Photographs Found in This Folder</span>
+                  <span style={{ fontSize: 11.5, color: 'var(--secondary-label)', textAlign: 'center', maxWidth: 420 }}>
+                    This subfolder does not contain supported image files (.jpg, .jpeg, .png, .cr2, .cr3, .arw, .nef, .dng, .heic).
+                  </span>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+                    gap: 14,
+                  }}
+                >
+                  {folderPhotos.map((photo, idx) => {
+                    const sizeMb = (photo.sizeBytes / (1024 * 1024)).toFixed(2);
+                    return (
+                      <div
+                        key={photo.filePath}
+                        onClick={() => setActivePhotoLightboxIndex(idx)}
+                        style={{
+                          backgroundColor: '#07090E',
+                          borderRadius: 10,
+                          overflow: 'hidden',
+                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                          display: 'flex',
+                          flexDirection: 'column',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = 'rgba(168, 85, 247, 0.6)';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                          e.currentTarget.style.boxShadow = '0 6px 16px rgba(168, 85, 247, 0.25)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                          e.currentTarget.style.transform = 'none';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
+                      >
+                        <div style={{ width: '100%', height: 110, position: 'relative', overflow: 'hidden', backgroundColor: '#020305' }}>
+                          <ThumbnailImg filePath={photo.filePath} alt={photo.fileName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <div
+                            style={{
+                              position: 'absolute',
+                              bottom: 4,
+                              right: 4,
+                              fontSize: 9,
+                              fontWeight: 700,
+                              padding: '1px 5px',
+                              borderRadius: 4,
+                              backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                              color: '#E0E7FF',
+                            }}
+                          >
+                            {sizeMb} MB
+                          </div>
+                        </div>
+                        <div style={{ padding: '6px 8px' }}>
+                          <div
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 600,
+                              color: 'var(--label)',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              fontFamily: 'var(--font-mono)',
+                            }}
+                            title={photo.fileName}
+                          >
+                            {photo.fileName}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 10. Photo Lightbox Modal */}
+      {activePhotoLightboxIndex !== null && folderPhotos[activePhotoLightboxIndex] && (() => {
+        const currentPhoto = folderPhotos[activePhotoLightboxIndex];
+        const hasPrev = activePhotoLightboxIndex > 0;
+        const hasNext = activePhotoLightboxIndex < folderPhotos.length - 1;
+
+        return (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 99999,
+              backgroundColor: 'rgba(0, 0, 0, 0.94)',
+              backdropFilter: 'blur(20px)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '20px 32px',
+            }}
+            onClick={() => setActivePhotoLightboxIndex(null)}
+          >
+            {/* Top Bar */}
+            <div
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                color: '#FFFFFF',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div>
+                <span style={{ fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
+                  {currentPhoto.fileName}
+                </span>
+                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginLeft: 12 }}>
+                  ({activePhotoLightboxIndex + 1} of {folderPhotos.length} • {(currentPhoto.sizeBytes / (1024 * 1024)).toFixed(2)} MB)
+                </span>
+              </div>
+              <button
+                onClick={() => setActivePhotoLightboxIndex(null)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  border: 'none',
+                  borderRadius: 8,
+                  color: '#FFFFFF',
+                  padding: '6px 12px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontSize: 12,
+                }}
+              >
+                <X size={16} /> Close (Esc)
+              </button>
+            </div>
+
+            {/* Main Center Image */}
+            <div
+              style={{
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                maxWidth: '92vw',
+                maxHeight: '82vh',
+                flex: 1,
+                margin: '12px 0',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {hasPrev && (
+                <button
+                  onClick={() => setActivePhotoLightboxIndex(activePhotoLightboxIndex - 1)}
+                  style={{
+                    position: 'absolute',
+                    left: -40,
+                    zIndex: 10,
+                    width: 44,
+                    height: 44,
+                    borderRadius: '50%',
+                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                    border: '1px solid rgba(255, 255, 255, 0.25)',
+                    color: '#FFFFFF',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  title="Previous Photo (Left Arrow)"
+                >
+                  <ChevronLeft size={24} />
+                </button>
+              )}
+
+              <ThumbnailImg
+                filePath={currentPhoto.filePath}
+                alt={currentPhoto.fileName}
+                style={{
+                  maxWidth: '88vw',
+                  maxHeight: '78vh',
+                  objectFit: 'contain',
+                  borderRadius: 8,
+                  boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8)',
+                }}
+              />
+
+              {hasNext && (
+                <button
+                  onClick={() => setActivePhotoLightboxIndex(activePhotoLightboxIndex + 1)}
+                  style={{
+                    position: 'absolute',
+                    right: -40,
+                    zIndex: 10,
+                    width: 44,
+                    height: 44,
+                    borderRadius: '50%',
+                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                    border: '1px solid rgba(255, 255, 255, 0.25)',
+                    color: '#FFFFFF',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  title="Next Photo (Right Arrow)"
+                >
+                  <ChevronRight size={24} />
+                </button>
+              )}
+            </div>
+
+            {/* Bottom Info Bar */}
+            <div
+              style={{
+                fontSize: 11,
+                color: 'rgba(255, 255, 255, 0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span>Use ← Left Arrow and → Right Arrow to browse photos • Esc to close</span>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* 11. Floating Back to Top Button */}
+      {showScrollTop && (
+        <button
+          onClick={() => {
+            pageContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+            setIsActionHighlighted(true);
+            setTimeout(() => setIsActionHighlighted(false), 2400);
+          }}
+          style={{
+            position: 'fixed',
+            bottom: 30,
+            right: 36,
+            zIndex: 900,
+            padding: '10px 18px',
+            borderRadius: 30,
+            backgroundColor: '#10B981',
+            color: '#FFFFFF',
+            border: '1px solid rgba(255, 255, 255, 0.25)',
+            boxShadow: '0 8px 24px rgba(16, 185, 129, 0.45), 0 2px 8px rgba(0,0,0,0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            fontSize: 12.5,
+            fontWeight: 800,
+            cursor: 'pointer',
+            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px) scale(1.04)';
+            e.currentTarget.style.boxShadow = '0 12px 30px rgba(16, 185, 129, 0.6)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'none';
+            e.currentTarget.style.boxShadow = '0 8px 24px rgba(16, 185, 129, 0.45), 0 2px 8px rgba(0,0,0,0.3)';
+          }}
+          title="Scroll back to top and highlight Start Synchronization"
+        >
+          <ArrowUp size={16} />
+          <span>Back to Top & Start</span>
+        </button>
+      )}
 
       {/* 8. Operation Overlay */}
       <OperationLoadingOverlay

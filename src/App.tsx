@@ -14,6 +14,8 @@ import {
   AppLoadingScreen,
   SetupWizard,
   UpdateModal,
+  TopToolbar,
+  PipelineStageNavigator,
 } from './components';
 
 import { PipelineProvider } from './context/PipelineContext';
@@ -245,13 +247,23 @@ const AppContent: React.FC = () => {
           zIndex: 1,
         }}
       >
+        <TopToolbar
+          activePage={activePage}
+          telemetry={telemetry}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+          onOpenKeyboardShortcuts={() => setIsShortcutsOpen(true)}
+          onNavigate={setActivePage}
+          onPlayBootLoader={() => setIsAppBooting(true)}
+        />
+
         {/* Zoomed Page Viewport Container */}
         <main
           className="glass-panel"
           style={{
             flex: 1,
             borderRadius: 18,
-            padding: 18,
+            padding: 16,
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
@@ -259,10 +271,17 @@ const AppContent: React.FC = () => {
             boxShadow: '0 20px 50px rgba(0, 0, 0, 0.35)',
           }}
         >
+          {PIPELINE_NAV_ORDER.includes(activePage) && (
+            <PipelineStageNavigator
+              currentStage={activePage}
+              onNavigate={setActivePage}
+            />
+          )}
+
           <div
             style={{
+              flex: 1,
               width: '100%',
-              height: '100%',
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden',

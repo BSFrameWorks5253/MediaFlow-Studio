@@ -460,6 +460,35 @@ function setupIpcHandlers() {
     }
   });
 
+  ipcMain.handle('media:list-folder-images', async (_, folderPath: string) => {
+    if (!folderPath || !folderPath.trim()) return [];
+    try {
+      const cleanPath = path.resolve(folderPath.replace(/^file:\/\/\/?/, ''));
+      if (!fs.existsSync(cleanPath)) return [];
+      const validExts = new Set(['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tif', '.tiff', '.arw', '.cr2', '.cr3', '.nef']);
+      const entries = await fs.promises.readdir(cleanPath, { withFileTypes: true });
+      const images: { fileName: string; filePath: string; sizeBytes: number; mtime: number }[] = [];
+      for (const entry of entries) {
+        if (entry.isFile()) {
+          const ext = path.extname(entry.name).toLowerCase();
+          if (validExts.has(ext)) {
+            const fullPath = path.join(cleanPath, entry.name);
+            const stat = await fs.promises.stat(fullPath);
+            images.push({
+              fileName: entry.name,
+              filePath: fullPath,
+              sizeBytes: stat.size,
+              mtime: stat.mtimeMs,
+            });
+          }
+        }
+      }
+      return images;
+    } catch {
+      return [];
+    }
+  });
+
   // 4. Thumbnail Separator
   ipcMain.handle('thumb:scan', async (_, sourceDir: string, destDir?: string) => {
     return await thumbEngine.scanDirectory(sourceDir, destDir);

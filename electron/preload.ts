@@ -87,6 +87,8 @@ export const electronAPI = {
     ipcRenderer.invoke('folder:delete-empty', folderPath),
   readThumbnailDataUrl: (filePath: string) =>
     ipcRenderer.invoke('media:read-thumbnail', filePath),
+  listFolderImages: (folderPath: string) =>
+    ipcRenderer.invoke('media:list-folder-images', folderPath),
   onVideoTransferProgress: (callback: (curr: number, total: number, file: string, speed: string) => void) => {
     const handler = (_: any, curr: number, total: number, file: string, speed: string) =>
       callback(curr, total, file, speed);

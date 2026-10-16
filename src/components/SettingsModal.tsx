@@ -29,7 +29,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       const saved = localStorage.getItem('dataflow_loading_screen_template') as LoadingTemplateId;
       if (saved) return saved;
     }
-    return 'flagship';
+    return 'onto';
   });
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<{ status: 'idle' | 'checking' | 'latest' | 'available' | 'error'; message: string; url?: string }>({
@@ -323,11 +323,73 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     border: '1px solid var(--border)',
                   }}
                 >
-                  {LOADING_TEMPLATES_CATALOG.find((t) => t.id === loadingTemplate)?.name || 'DataFlow Flagship Studio'}
+                  {LOADING_TEMPLATES_CATALOG.find((t) => t.id === loadingTemplate)?.name || 'Onto Kinetic Studio'}
                 </span>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 8 }}>
+              {/* Onto Spotlight Banner */}
+              <div
+                style={{
+                  padding: '10px 12px',
+                  borderRadius: 10,
+                  backgroundColor: loadingTemplate === 'onto' ? 'rgba(0, 122, 255, 0.12)' : 'var(--surface-elevated)',
+                  border: loadingTemplate === 'onto' ? '1.5px solid #007AFF' : '1px solid var(--border)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 10,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 8,
+                      background: 'linear-gradient(135deg, #007AFF 0%, #00F2FE 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#FFF',
+                      fontSize: 13,
+                      fontWeight: 800,
+                    }}
+                  >
+                    O
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--label)' }}>
+                      Onto Kinetic Studio (onto.mp4)
+                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--secondary-label)' }}>
+                      Cinematic 3D Monolithic Typography & Pipeline Morph
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoadingTemplate('onto');
+                    if (typeof window !== 'undefined') {
+                      localStorage.setItem('dataflow_loading_screen_template', 'onto');
+                    }
+                  }}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: 6,
+                    border: loadingTemplate === 'onto' ? '1px solid #007AFF' : '1px solid var(--border)',
+                    backgroundColor: loadingTemplate === 'onto' ? '#007AFF' : 'var(--surface)',
+                    color: loadingTemplate === 'onto' ? '#FFF' : 'var(--label)',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {loadingTemplate === 'onto' ? '✓ Selected' : 'Select Onto'}
+                </button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8 }}>
                 {LOADING_TEMPLATES_CATALOG.map((tpl) => {
                   const isSelected = tpl.id === loadingTemplate;
                   return (
@@ -340,28 +402,43 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         }
                       }}
                       style={{
-                        padding: '8px 10px',
+                        padding: '10px 12px',
                         borderRadius: 10,
-                        border: isSelected ? '1.5px solid var(--accent)' : '1px solid var(--border)',
+                        border: isSelected ? `2px solid ${tpl.accentColor}` : '1px solid var(--border)',
                         backgroundColor: isSelected ? 'var(--surface-elevated)' : 'transparent',
                         color: 'var(--label)',
                         cursor: 'pointer',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'flex-start',
-                        gap: 3,
+                        gap: 4,
                         textAlign: 'left',
                         transition: 'all 0.15s ease',
+                        boxShadow: isSelected ? `0 0 12px ${tpl.accentColor}30` : 'none',
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: isSelected ? 'var(--accent)' : 'var(--label)' }}>
-                          {tpl.name.split(' ')[0]}
+                        <span style={{ fontSize: 12, fontWeight: 700, color: isSelected ? tpl.accentColor : 'var(--label)' }}>
+                          {tpl.name}
                         </span>
-                        {isSelected && <Check size={12} color="var(--accent)" />}
+                        {isSelected && <Check size={14} color={tpl.accentColor} />}
                       </div>
-                      <span style={{ fontSize: 9.5, color: 'var(--secondary-label)' }}>
-                        {tpl.badge.split(' ')[0]}
+                      <span style={{ fontSize: 10, color: 'var(--secondary-label)' }}>
+                        {tpl.subtitle}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 8.5,
+                          padding: '1.5px 6px',
+                          borderRadius: 4,
+                          backgroundColor: `${tpl.accentColor}18`,
+                          color: tpl.accentColor,
+                          fontWeight: 800,
+                          fontFamily: 'var(--font-mono)',
+                          marginTop: 2,
+                        }}
+                      >
+                        {tpl.badge}
                       </span>
                     </button>
                   );

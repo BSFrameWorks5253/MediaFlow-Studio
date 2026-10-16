@@ -240,52 +240,53 @@ export const UploadStructurePage: React.FC<UploadStructurePageProps> = ({
               <span style={{ fontSize: 10, color: 'var(--tertiary-label)' }}>Quick Presets:</span>
               <button
                 type="button"
+                onClick={() => setSafarName('1448-09-Morbi Atraf')}
+                style={{
+                  background: 'rgba(56, 189, 248, 0.15)',
+                  border: '1px solid rgba(56, 189, 248, 0.4)',
+                  borderRadius: 4,
+                  padding: '2px 8px',
+                  color: '#38BDF8',
+                  fontSize: 10.5,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                1448-09-Morbi Atraf
+              </button>
+              <button
+                type="button"
+                onClick={() => setSafarName('1448-03 Mumbai')}
+                style={{
+                  background: 'rgba(16, 185, 129, 0.12)',
+                  border: '1px solid rgba(16, 185, 129, 0.35)',
+                  borderRadius: 4,
+                  padding: '2px 8px',
+                  color: '#10E79D',
+                  fontSize: 10.5,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                1448-03 Mumbai
+              </button>
+              <button
+                type="button"
                 onClick={() => {
                   const today = new Date().toISOString().slice(0, 10);
                   setSafarName(`${today}_SAFAR`);
                 }}
                 style={{
-                  background: 'rgba(56, 189, 248, 0.12)',
-                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                  background: 'var(--surface-elevated)',
+                  border: '1px solid var(--border)',
                   borderRadius: 4,
                   padding: '2px 6px',
-                  color: '#38BDF8',
+                  color: 'var(--label)',
                   fontSize: 10,
-                  fontWeight: 600,
                   cursor: 'pointer',
                 }}
               >
                 + Today's Date
-              </button>
-              <button
-                type="button"
-                onClick={() => setSafarName('SAFAR_01')}
-                style={{
-                  background: 'var(--surface-elevated)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 4,
-                  padding: '2px 6px',
-                  color: 'var(--label)',
-                  fontSize: 10,
-                  cursor: 'pointer',
-                }}
-              >
-                SAFAR_01
-              </button>
-              <button
-                type="button"
-                onClick={() => setSafarName('EVENT_MASTER_DATA')}
-                style={{
-                  background: 'var(--surface-elevated)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 4,
-                  padding: '2px 6px',
-                  color: 'var(--label)',
-                  fontSize: 10,
-                  cursor: 'pointer',
-                }}
-              >
-                EVENT_MASTER
               </button>
             </div>
           </div>
@@ -295,7 +296,7 @@ export const UploadStructurePage: React.FC<UploadStructurePageProps> = ({
               type="text"
               value={safarName}
               onChange={(e) => setSafarName(e.target.value)}
-              placeholder="e.g., SAFAR_01, 2026-09-07_SAFAR, or Project_Name"
+              placeholder="e.g. 1448-09-Morbi Atraf, 1448-03 Mumbai, or Custom Project Name"
               style={{
                 flex: 1,
                 padding: '9px 12px',
@@ -311,7 +312,7 @@ export const UploadStructurePage: React.FC<UploadStructurePageProps> = ({
             />
           </div>
           <span style={{ fontSize: 11, color: 'var(--tertiary-label)' }}>
-            Creates standardized <b>Main Data\{cleanSafar || '...'}\</b>, <b>Thumbnails\{cleanSafar || '...'}\</b>, and <b>Remaining\{cleanSafar || '...'}\</b> trees with automatic downstream wiring.
+            Creates standardized root: <b>{baseDir ? `${baseDir}\\${cleanSafar || '1448-09-Morbi Atraf'}` : `[Base]\\${cleanSafar || '1448-09-Morbi Atraf'}`}</b> with <b>Main Data\{cleanSafar || '...'}\</b>, <b>Thumbnails\{cleanSafar || '...'}\</b>, and <b>Remaining\{cleanSafar || '...'}\</b> trees.
           </span>
         </div>
       </div>
