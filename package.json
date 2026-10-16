@@ -55,6 +55,11 @@
       "output": "release",
       "buildResources": "build"
     },
+    "publish": {
+      "provider": "github",
+      "owner": "BSFrameWorks5253",
+      "repo": "MediaFlow-Studio"
+    },
     "files": [
       "dist/**/*",
       "dist-electron/**/*"
