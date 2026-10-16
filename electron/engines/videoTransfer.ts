@@ -40,6 +40,9 @@ export interface VideoMatchedPair {
   hasPhotoThumb: boolean;
   photoThumbPath?: string;
   manualOverride?: boolean;
+  matchType?: 'exact' | 'normalized' | 'camera_id' | 'shot_token' | 'sequence' | 'manual';
+  confidence?: number;
+  parentCategoryFolder?: string;
 }
 
 export interface VideoUnmatchedItem {
@@ -51,6 +54,7 @@ export interface VideoUnmatchedItem {
   cleanName: string;
   targetExpectedDir?: string;
   reason: string;
+  suggestedFolder?: { name: string; path: string; reason: string };
 }
 
 export interface DateFolderStatus {
@@ -111,19 +115,76 @@ export interface UndoRecord {
   thumbRecords: { source: string; target: string }[];
 }
 
+interface PhotoSubfolderCandidate {
+  name: string;
+  path: string;
+  dateFolder: string;
+  hasPhotos: boolean;
+  photoCount: number;
+  isLeaf: boolean;
+  clean: string;
+  camId: string | null;
+  shotToken: string | null;
+  seq: string | null;
+  parsed: SequenceParseResult;
+  companionPhotoThumb?: string;
+  parentCategoryName?: string;
+}
+
 export class VideoTransferEngine {
   private isScanning = false;
   private isTransferring = false;
   private abortController: AbortController | null = null;
 
+  static cleanKey(s: string): string {
+    return s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
+
+  static extractCameraId(s: string): string | null {
+    const m = s.match(/(\d{7,8})/);
+    return m ? m[1] : null;
+  }
+
+  static extractShotToken(s: string): string | null {
+    const m = s.match(/[-_](\d{1,2}[a-z]{1,3})[-_]/i);
+    if (m) return m[1].toLowerCase();
+    const m2 = s.match(/[-_](waaz|namaz|bethak|ziyarat|isteqbal|fmb|mkb)[-_]/i);
+    if (m2) return m2[1].toLowerCase();
+    return null;
+  }
+
+  static extractSeq(s: string): string | null {
+    const clean = s.replace(/^\d{4}[-_.]\d{2}[-_.]\d{2}(?:[\s_-]+_?\d{1,2}[A-Za-z]*)?[\s_-]*/, '');
+    const m = clean.match(/^(\d+[a-zA-Z]?)(?:[\s_-]|$)/);
+    if (m) {
+      const seq = m[1];
+      return /^\d+$/.test(seq) ? seq.padStart(2, '0').toLowerCase() : seq.toLowerCase();
+    }
+    return null;
+  }
+
+  static isDateFolderName(name: string): boolean {
+    const trimmed = name.trim();
+    if (/^(?:\d{4}[-_.]\d{2}[-_.]\d{2}|\d{2}[-_.]\d{2}[-_.]\d{4})(?:[\s_-]+_?\d{1,2}[A-Za-z]*)?$/i.test(trimmed)) {
+      return true;
+    }
+    if (/^(?:day|date|event|session)[\s_\-]*\d+/i.test(trimmed)) {
+      return true;
+    }
+    return false;
+  }
+
   static parseSequenceName(rawName: string): SequenceParseResult {
     const ext = path.extname(rawName);
     const stem = ext ? path.basename(rawName, ext).trim() : rawName.trim();
 
-    // 1. Strip trailing video/thumbnail suffixes (-its-v, _v, -v, _p, -p)
+    // 1. Strip trailing video/thumbnail suffixes (-its-v, _v, -v, _p, -p, _copy, (1))
     let clean = stem.replace(/[-_](?:its|v|p)+(?:[-_]v|[-_]p)?$/i, '').trim();
-    // 2. Strip leading date format (e.g. 2026-09-01_ or 1448-03-12_)
-    clean = clean.replace(/^\d{4}[-_.]\d{2}[-_.]\d{2}[\s_-]*/, '').trim();
+    clean = clean.replace(/\s*\(\d+\)$/, '').trim();
+    clean = clean.replace(/[-_](?:copy\s*\d*)$/i, '').trim();
+
+    // 2. Strip leading date and session code (e.g. 1448-04-03 _02E- or 2026-09-01-)
+    clean = clean.replace(/^\d{4}[-_.]\d{2}[-_.]\d{2}(?:[\s_-]+_?\d{1,2}[A-Za-z]*)?[\s_-]*/, '').trim();
 
     // 3. Camera clip prefix like '001 01-Q', 'C0001_01-Q', 'CAM1_01-Q'
     const camMatch = clean.match(/^(?:[a-zA-Z]{0,4}\d{2,5})[\s_\-]+(\d+[a-zA-Z]?[\s_\-]+[a-zA-Z0-9]+(?:[\s_\-].*)?)$/);
@@ -209,18 +270,59 @@ export class VideoTransferEngine {
 
     this.isScanning = true;
 
-    // 1. Identify Date Folders in Video & Photo
+    // 1. Discover Date Folders
+    // Check if the directory itself is a single date folder
+    const vidDirectEntries = await fs.promises.readdir(cleanVid, { withFileTypes: true });
+    const photoDirectEntries = await fs.promises.readdir(cleanPhoto, { withFileTypes: true });
+
+    const vidChildDateEntries = vidDirectEntries.filter(
+      (e) => e.isDirectory() && VideoTransferEngine.isDateFolderName(e.name)
+    );
+    const photoChildDateEntries = photoDirectEntries.filter(
+      (e) => e.isDirectory() && VideoTransferEngine.isDateFolderName(e.name)
+    );
+
     const videoDates = new Set<string>();
     const photoDates = new Set<string>();
 
-    const isDateFolder = (n: string) =>
-      /\d{4}[-_.]\d{2}[-_.]\d{2}/.test(n) || /\d{2}[-_.]\d{2}[-_.]\d{4}/.test(n) || /^(?:day|date|event|session)[\s_\-]*\d+/i.test(n);
-
-    for (const ent of await fs.promises.readdir(cleanVid, { withFileTypes: true })) {
-      if (ent.isDirectory() && isDateFolder(ent.name)) videoDates.add(ent.name);
+    if (vidChildDateEntries.length > 0) {
+      for (const e of vidChildDateEntries) videoDates.add(e.name);
+    } else if (VideoTransferEngine.isDateFolderName(path.basename(cleanVid))) {
+      videoDates.add(path.basename(cleanVid));
     }
-    for (const ent of await fs.promises.readdir(cleanPhoto, { withFileTypes: true })) {
-      if (ent.isDirectory() && isDateFolder(ent.name)) photoDates.add(ent.name);
+
+    if (photoChildDateEntries.length > 0) {
+      for (const e of photoChildDateEntries) photoDates.add(e.name);
+    } else if (VideoTransferEngine.isDateFolderName(path.basename(cleanPhoto))) {
+      photoDates.add(path.basename(cleanPhoto));
+    }
+
+    // Handle intermediate wrappers like "Videos" / "Photos" if child dates not found
+    if (videoDates.size === 0) {
+      for (const e of vidDirectEntries.filter((d) => d.isDirectory())) {
+        try {
+          const sub = path.join(cleanVid, e.name);
+          const subEnts = await fs.promises.readdir(sub, { withFileTypes: true });
+          for (const se of subEnts) {
+            if (se.isDirectory() && VideoTransferEngine.isDateFolderName(se.name)) {
+              videoDates.add(se.name);
+            }
+          }
+        } catch {}
+      }
+    }
+    if (photoDates.size === 0) {
+      for (const e of photoDirectEntries.filter((d) => d.isDirectory())) {
+        try {
+          const sub = path.join(cleanPhoto, e.name);
+          const subEnts = await fs.promises.readdir(sub, { withFileTypes: true });
+          for (const se of subEnts) {
+            if (se.isDirectory() && VideoTransferEngine.isDateFolderName(se.name)) {
+              photoDates.add(se.name);
+            }
+          }
+        } catch {}
+      }
     }
 
     // Date folder status comparison
@@ -276,179 +378,346 @@ export class VideoTransferEngine {
       });
     }
 
-    const photoFoldersByDate: Record<string, { name: string; path: string; parsed: SequenceParseResult }[]> = {};
+    // 2. Discover Photo Subfolders per Date Folder
+    const photoSubfoldersByDate: Record<string, PhotoSubfolderCandidate[]> = {};
     const emptyPhotoFolders: EmptyPhotoFolderItem[] = [];
 
-    // Scan photo subfolders
-    const scanPhotoTree = async (currentDir: string, dateTag: string) => {
-      const ents = await fs.promises.readdir(currentDir, { withFileTypes: true });
-      for (const ent of ents) {
-        if (ent.isDirectory()) {
-          const sub = path.join(currentDir, ent.name);
-          if (isDateFolder(ent.name)) {
-            await scanPhotoTree(sub, ent.name);
+    const collectPhotoSubfolders = async (dateDir: string, dateTag: string) => {
+      const list: PhotoSubfolderCandidate[] = [];
+
+      const walk = async (currentDir: string, depth: number, parentCategory?: string) => {
+        if (depth > 6) return;
+        let ents: fs.Dirent[] = [];
+        try {
+          ents = await fs.promises.readdir(currentDir, { withFileTypes: true });
+        } catch {
+          return;
+        }
+
+        for (const ent of ents) {
+          if (!ent.isDirectory()) continue;
+          const nameLower = ent.name.toLowerCase();
+          if (nameLower.includes('remaining') || nameLower === 'thumbs' || nameLower === 'thumbnails') continue;
+
+          const subPath = path.join(currentDir, ent.name);
+          let childEnts: fs.Dirent[] = [];
+          try {
+            childEnts = await fs.promises.readdir(subPath, { withFileTypes: true });
+          } catch {}
+
+          const childDirs = childEnts.filter(
+            (c) => c.isDirectory() && !c.name.toLowerCase().includes('remaining')
+          );
+          const photoFiles = childEnts.filter(
+            (c) =>
+              c.isFile() &&
+              (ALL_PHOTO_EXTS.has(path.extname(c.name).toLowerCase()) ||
+                THUMB_EXTS.has(path.extname(c.name).toLowerCase()))
+          );
+
+          // Find companion _p thumbnail inside this subfolder or in its parent
+          let companionPhotoThumb: string | undefined;
+          const directPThumb = childEnts.find(
+            (c) => c.isFile() && /_p\.(jpg|jpeg|png)$/i.test(c.name)
+          );
+          if (directPThumb) {
+            companionPhotoThumb = path.join(subPath, directPThumb.name);
           } else {
-            let subEnts: fs.Dirent[] = [];
-            try {
-              subEnts = await fs.promises.readdir(sub, { withFileTypes: true });
-            } catch {}
+            // Check parent folder for {ent.name}_P.jpg
+            const parentThumbName = `${ent.name}_p.jpg`;
+            const parentThumbAlt = `${ent.name}_P.jpg`;
+            const parentCandidate1 = path.join(currentDir, parentThumbName);
+            const parentCandidate2 = path.join(currentDir, parentThumbAlt);
+            if (fs.existsSync(parentCandidate1)) companionPhotoThumb = parentCandidate1;
+            else if (fs.existsSync(parentCandidate2)) companionPhotoThumb = parentCandidate2;
+          }
 
-            const childDirs = subEnts.filter((e) => e.isDirectory());
-            const photoFiles = subEnts.filter((e) => {
-              if (!e.isFile()) return false;
-              const ext = path.extname(e.name).toLowerCase();
-              return ALL_PHOTO_EXTS.has(ext) || THUMB_EXTS.has(ext);
+          const hasPhotos = photoFiles.length > 0;
+          const isLeaf = childDirs.length === 0;
+
+          if (isLeaf && !hasPhotos && childEnts.length === 0) {
+            emptyPhotoFolders.push({
+              id: `empty-${ent.name}-${emptyPhotoFolders.length + 1}`,
+              folderName: ent.name,
+              folderPath: subPath,
+              dateFolder: dateTag,
+              subfolderCount: 0,
+              photoCount: 0,
+              totalFileCount: 0,
+              reason: 'Empty folder with 0 photos and 0 subfolders',
             });
+          }
 
-            // "if a folder has folder in it means that folder is not empty it in it"
-            if (childDirs.length > 0) {
-              if (!photoFoldersByDate[dateTag]) photoFoldersByDate[dateTag] = [];
-              photoFoldersByDate[dateTag].push({
-                name: ent.name,
-                path: sub,
-                parsed: VideoTransferEngine.parseSequenceName(ent.name),
-              });
-              await scanPhotoTree(sub, dateTag);
-            } else {
-              // Leaf folder with 0 subfolders: check if it has photos
-              if (photoFiles.length === 0) {
-                emptyPhotoFolders.push({
-                  id: `empty-${ent.name}-${emptyPhotoFolders.length + 1}`,
-                  folderName: ent.name,
-                  folderPath: sub,
-                  dateFolder: dateTag || path.basename(cleanPhoto),
-                  subfolderCount: 0,
-                  photoCount: 0,
-                  totalFileCount: subEnts.filter((e) => e.isFile()).length,
-                  reason: 'There are no photos in this folder',
-                });
-              } else {
-                if (!photoFoldersByDate[dateTag]) photoFoldersByDate[dateTag] = [];
-                photoFoldersByDate[dateTag].push({
-                  name: ent.name,
-                  path: sub,
-                  parsed: VideoTransferEngine.parseSequenceName(ent.name),
-                });
+          const cand: PhotoSubfolderCandidate = {
+            name: ent.name,
+            path: subPath,
+            dateFolder: dateTag,
+            hasPhotos,
+            photoCount: photoFiles.length,
+            isLeaf,
+            clean: VideoTransferEngine.cleanKey(ent.name),
+            camId: VideoTransferEngine.extractCameraId(ent.name),
+            shotToken: VideoTransferEngine.extractShotToken(ent.name),
+            seq: VideoTransferEngine.extractSeq(ent.name),
+            parsed: VideoTransferEngine.parseSequenceName(ent.name),
+            companionPhotoThumb,
+            parentCategoryName: parentCategory || (depth === 1 ? ent.name : undefined),
+          };
+
+          list.push(cand);
+          await walk(subPath, depth + 1, parentCategory || ent.name);
+        }
+      };
+
+      await walk(dateDir, 1);
+      photoSubfoldersByDate[dateTag] = list;
+    };
+
+    if (photoDates.size > 0) {
+      for (const d of photoDates) {
+        const dLower = d.toLowerCase();
+        const actualName = photoDatesLower.get(dLower) || d;
+        const targetDateDir = path.join(cleanPhoto, actualName);
+        if (fs.existsSync(targetDateDir)) {
+          await collectPhotoSubfolders(targetDateDir, d);
+        }
+      }
+    } else {
+      // Single root
+      await collectPhotoSubfolders(cleanPhoto, path.basename(cleanPhoto));
+    }
+
+    // 3. Discover Video Files per Date Folder
+    interface DiscoveredVideo {
+      file: string;
+      fullPath: string;
+      size: number;
+      dateFolder: string;
+      clean: string;
+      camId: string | null;
+      shotToken: string | null;
+      seq: string | null;
+      parsed: SequenceParseResult;
+      companionVideoThumb?: string;
+    }
+
+    const videosList: DiscoveredVideo[] = [];
+
+    const collectVideos = async (dateDir: string, dateTag: string) => {
+      const walk = async (currentDir: string, depth: number) => {
+        if (depth > 5) return;
+        let ents: fs.Dirent[] = [];
+        try {
+          ents = await fs.promises.readdir(currentDir, { withFileTypes: true });
+        } catch {
+          return;
+        }
+
+        // Pre-index thumbnails in this folder for instant companion lookup
+        const thumbsInDir = ents.filter(
+          (e) => e.isFile() && /_v\.(jpg|jpeg|png)$/i.test(e.name)
+        );
+
+        for (const ent of ents) {
+          const fullPath = path.join(currentDir, ent.name);
+          if (ent.isDirectory()) {
+            await walk(fullPath, depth + 1);
+          } else if (ent.isFile()) {
+            const ext = path.extname(ent.name).toLowerCase();
+            if (VIDEO_TRANSFER_EXTS.has(ext)) {
+              let size = 0;
+              try {
+                const stat = await fs.promises.stat(fullPath);
+                size = stat.size;
+              } catch {}
+
+              const stem = path.basename(ent.name, ext);
+              const vClean = VideoTransferEngine.cleanKey(stem);
+              const vCam = VideoTransferEngine.extractCameraId(stem);
+              const vToken = VideoTransferEngine.extractShotToken(stem);
+              const vSeq = VideoTransferEngine.extractSeq(stem);
+
+              // Look for companion _V thumbnail
+              let companionVideoThumb: string | undefined;
+              const directVThumb = thumbsInDir.find(
+                (t) => path.basename(t.name, path.extname(t.name)).toLowerCase() === `${stem.toLowerCase()}_v`
+              );
+              if (directVThumb) {
+                companionVideoThumb = path.join(currentDir, directVThumb.name);
+              } else if (vCam) {
+                const camThumb = thumbsInDir.find((t) => t.name.includes(vCam));
+                if (camThumb) companionVideoThumb = path.join(currentDir, camThumb.name);
               }
+
+              videosList.push({
+                file: ent.name,
+                fullPath,
+                size,
+                dateFolder: dateTag,
+                clean: vClean,
+                camId: vCam,
+                shotToken: vToken,
+                seq: vSeq,
+                parsed: VideoTransferEngine.parseSequenceName(ent.name),
+                companionVideoThumb,
+              });
             }
           }
         }
-      }
+      };
+
+      await walk(dateDir, 1);
     };
 
-    const initialPhotoDate = photoDates.size > 0 ? '' : path.basename(cleanPhoto);
-    await scanPhotoTree(cleanPhoto, initialPhotoDate);
-
-    // Scan videos
-    const videosList: { file: string; fullPath: string; size: number; dateFolder: string; parsed: SequenceParseResult }[] = [];
-    const scanVideoTree = async (currentDir: string, dateTag: string) => {
-      const ents = await fs.promises.readdir(currentDir, { withFileTypes: true });
-      for (const ent of ents) {
-        const full = path.join(currentDir, ent.name);
-        if (ent.isDirectory()) {
-          const dName = isDateFolder(ent.name) ? ent.name : dateTag;
-          await scanVideoTree(full, dName);
-        } else if (ent.isFile()) {
-          const ext = path.extname(ent.name).toLowerCase();
-          if (VIDEO_TRANSFER_EXTS.has(ext)) {
-            const stat = await fs.promises.stat(full);
-            videosList.push({
-              file: ent.name,
-              fullPath: full,
-              size: stat.size,
-              dateFolder: dateTag || path.basename(cleanVid),
-              parsed: VideoTransferEngine.parseSequenceName(ent.name),
-            });
-          }
+    if (videoDates.size > 0) {
+      for (const d of videoDates) {
+        const dLower = d.toLowerCase();
+        const actualName = videoDatesLower.get(dLower) || d;
+        const targetDateDir = path.join(cleanVid, actualName);
+        if (fs.existsSync(targetDateDir)) {
+          await collectVideos(targetDateDir, d);
         }
       }
-    };
+    } else {
+      await collectVideos(cleanVid, path.basename(cleanVid));
+    }
 
-    await scanVideoTree(cleanVid, videoDates.size > 0 ? '' : path.basename(cleanVid));
-
-    // Matching Algorithm
+    // 4. Multi-Pass Intelligent Pairing Algorithm
     const matched: VideoMatchedPair[] = [];
     const unmatched: VideoUnmatchedItem[] = [];
-
-    // Pre-index thumbnails in video folder
-    const videoThumbs: { file: string; path: string; parsed: SequenceParseResult }[] = [];
-    const collectThumbs = async (dir: string) => {
-      const ents = await fs.promises.readdir(dir, { withFileTypes: true });
-      for (const e of ents) {
-        const full = path.join(dir, e.name);
-        if (e.isDirectory()) await collectThumbs(full);
-        else if (e.isFile() && THUMB_EXTS.has(path.extname(e.name).toLowerCase())) {
-          videoThumbs.push({ file: e.name, path: full, parsed: VideoTransferEngine.parseSequenceName(e.name) });
-        }
-      }
-    };
-    await collectThumbs(cleanVid);
+    const pairedPhotoPaths = new Set<string>();
 
     for (const vid of videosList) {
-      // Find eligible photo folders (either same date or all if no dates)
-      let eligiblePhotoFolders = photoFoldersByDate[vid.dateFolder] || [];
-      if (eligiblePhotoFolders.length === 0) {
-        // Flatten all if single session
-        eligiblePhotoFolders = Object.values(photoFoldersByDate).flat();
+      // Find candidate photo subfolders within the same date
+      let candidates = photoSubfoldersByDate[vid.dateFolder] || [];
+      if (candidates.length === 0 && (videoDates.size <= 1 || photoDates.size <= 1)) {
+        candidates = Object.values(photoSubfoldersByDate).flat();
       }
 
-      let pairedFolder: { name: string; path: string } | null = null;
+      // Sort candidate folders: leaf folders with photos first, then leaf folders, then parents
+      const sortedCandidates = [...candidates].sort((a, b) => {
+        if (a.hasPhotos !== b.hasPhotos) return a.hasPhotos ? -1 : 1;
+        if (a.isLeaf !== b.isLeaf) return a.isLeaf ? -1 : 1;
+        return 0;
+      });
 
-      for (const pf of eligiblePhotoFolders) {
-        if (VideoTransferEngine.isMatchPair(vid.parsed, pf.parsed)) {
-          pairedFolder = pf;
-          break;
+      const vStem = path.basename(vid.file, path.extname(vid.file));
+      let match: PhotoSubfolderCandidate | undefined;
+      let matchType: 'exact' | 'normalized' | 'camera_id' | 'shot_token' | 'sequence' = 'exact';
+      let confidence = 100;
+
+      // Pass 1: Exact Name Match
+      match = sortedCandidates.find((pf) => pf.name.toLowerCase() === vStem.toLowerCase());
+      if (match) {
+        matchType = 'exact';
+        confidence = 100;
+      }
+
+      // Pass 2: Normalized Key Match (ignoring punctuation, spaces, +)
+      if (!match) {
+        match = sortedCandidates.find((pf) => pf.clean === vid.clean);
+        if (match) {
+          matchType = 'normalized';
+          confidence = 95;
         }
       }
 
-      if (pairedFolder) {
-        // Look for companion _V.jpg and _P.jpg thumbnails
-        let vThumbPath: string | undefined;
-        let pThumbPath: string | undefined;
-
-        for (const vt of videoThumbs) {
-          const baseStem = path.basename(vid.file, path.extname(vid.file)).toLowerCase();
-          const tStem = path.basename(vt.file, path.extname(vt.file)).toLowerCase();
-          if (tStem.endsWith('_v') && (vt.parsed.token === vid.parsed.token || tStem.startsWith(baseStem))) {
-            vThumbPath = vt.path;
-            break;
-          }
+      // Pass 3: Camera Clip ID Match (unique 7-8 digit camera clip identifier)
+      if (!match && vid.camId) {
+        match = sortedCandidates.find((pf) => pf.camId && pf.camId === vid.camId);
+        if (match) {
+          matchType = 'camera_id';
+          confidence = 90;
         }
+      }
 
-        // Check destination folder for companion _P thumb
-        try {
-          const destEnts = await fs.promises.readdir(pairedFolder.path);
-          for (const de of destEnts) {
-            const ext = path.extname(de).toLowerCase();
-            const stem = path.basename(de, ext).toLowerCase();
-            if (THUMB_EXTS.has(ext) && stem.endsWith('_p')) {
-              pThumbPath = path.join(pairedFolder.path, de);
-              break;
-            }
-          }
-        } catch {}
+      // Pass 4: Shot Token Match (e.g. '01q', '04m', 'waaz', 'namaz')
+      if (!match && vid.shotToken) {
+        // First try matching both shotToken and sequence
+        match = sortedCandidates.find(
+          (pf) => pf.shotToken === vid.shotToken && (!vid.seq || !pf.seq || vid.seq === pf.seq)
+        );
+        if (!match) {
+          match = sortedCandidates.find((pf) => pf.shotToken === vid.shotToken);
+        }
+        if (match) {
+          matchType = 'shot_token';
+          confidence = 85;
+        }
+      }
+
+      // Pass 5: Sequence Match (e.g. sequence '01' === '01')
+      if (!match && vid.seq) {
+        match = sortedCandidates.find(
+          (pf) => pf.seq === vid.seq && (!vid.shotToken || !pf.shotToken || vid.shotToken === pf.shotToken)
+        );
+        if (match) {
+          matchType = 'sequence';
+          confidence = 75;
+        }
+      }
+
+      if (match) {
+        pairedPhotoPaths.add(match.path);
+
+        // Thumbnail resolution
+        const hasVThumb = !!vid.companionVideoThumb && fs.existsSync(vid.companionVideoThumb);
+        let pThumbPath = match.companionPhotoThumb;
+        if (!pThumbPath) {
+          // Check parent folder of match
+          const parentDir = path.dirname(match.path);
+          const pCandidate = path.join(parentDir, `${match.name}_P.jpg`);
+          if (fs.existsSync(pCandidate)) pThumbPath = pCandidate;
+        }
 
         matched.push({
           videoFile: vid.file,
           videoPath: vid.fullPath,
           videoSize: vid.size,
-          photoFolder: pairedFolder.name,
-          photoFolderPath: pairedFolder.path,
+          photoFolder: match.name,
+          photoFolderPath: match.path,
           dateFolder: vid.dateFolder,
-          shotCode: vid.parsed.token,
-          hasVideoThumb: !!vThumbPath,
-          videoThumbPath: vThumbPath,
-          hasPhotoThumb: !!pThumbPath,
+          shotCode: vid.shotToken || vid.seq || vid.parsed.token,
+          hasVideoThumb: hasVThumb,
+          videoThumbPath: vid.companionVideoThumb,
+          hasPhotoThumb: !!pThumbPath && fs.existsSync(pThumbPath),
           photoThumbPath: pThumbPath,
+          matchType,
+          confidence,
+          parentCategoryFolder: match.parentCategoryName,
         });
       } else {
-        const expectedPhotoDir = vid.dateFolder && photoDatesLower.has(vid.dateFolder.toLowerCase())
-          ? path.join(cleanPhoto, photoDatesLower.get(vid.dateFolder.toLowerCase())!)
-          : cleanPhoto;
+        const expectedPhotoDir =
+          vid.dateFolder && photoDatesLower.has(vid.dateFolder.toLowerCase())
+            ? path.join(cleanPhoto, photoDatesLower.get(vid.dateFolder.toLowerCase())!)
+            : cleanPhoto;
 
-        const reason = !photoDatesLower.has(vid.dateFolder.toLowerCase()) && videoDates.size > 0
-          ? `Date folder "${vid.dateFolder}" does not exist in Photo directory`
-          : `No photo subfolder matching sequence "${vid.parsed.sequence}" or token "${vid.parsed.token}" found in "${vid.dateFolder || 'photos'}"`;
+        // Smart Suggested Match
+        let suggestedFolder: { name: string; path: string; reason: string } | undefined;
+        if (vid.seq) {
+          const seqMatch = sortedCandidates.find((pf) => pf.seq === vid.seq);
+          if (seqMatch) {
+            suggestedFolder = {
+              name: seqMatch.name,
+              path: seqMatch.path,
+              reason: `Matching sequence number (${vid.seq})`,
+            };
+          }
+        } else if (vid.shotToken) {
+          const tokenMatch = sortedCandidates.find((pf) => pf.shotToken === vid.shotToken);
+          if (tokenMatch) {
+            suggestedFolder = {
+              name: tokenMatch.name,
+              path: tokenMatch.path,
+              reason: `Matching event code (${vid.shotToken})`,
+            };
+          }
+        }
+
+        const reason =
+          !photoDatesLower.has(vid.dateFolder.toLowerCase()) && videoDates.size > 0
+            ? `Date folder "${vid.dateFolder}" does not exist in Photo directory`
+            : `No photo subfolder matching sequence "${vid.parsed.sequence}" or clip identifier found in "${vid.dateFolder || 'photos'}"`;
 
         unmatched.push({
           videoFile: vid.file,
@@ -459,86 +728,76 @@ export class VideoTransferEngine {
           cleanName: vid.parsed.cleanName,
           targetExpectedDir: expectedPhotoDir,
           reason,
+          suggestedFolder,
         });
 
         issues.push({
           type: 'warning',
           category: 'clip',
-          message: `Video clip "${vid.file}" (${vid.parsed.token}): ${reason}`,
+          message: `Video clip "${vid.file}": ${reason}`,
           folderPath: path.dirname(vid.fullPath),
           dateFolder: vid.dateFolder,
         });
       }
     }
 
-    // Unmatched photo folders check
-    const matchedPhotoFolderPaths = new Set(matched.map((m) => m.photoFolderPath));
+    // 5. Unmatched Photo Folders (Filter out parents of matched subfolders and ignored event folders)
     const unmatchedPhotoFolders: PhotoFolderUnmatchedItem[] = [];
 
-    for (const [dateTag, pFolders] of Object.entries(photoFoldersByDate)) {
-      const correspondingVideoDir = dateTag && videoDatesLower.has(dateTag.toLowerCase())
-        ? path.join(cleanVid, videoDatesLower.get(dateTag.toLowerCase())!)
-        : cleanVid;
+    for (const [dateTag, candidates] of Object.entries(photoSubfoldersByDate)) {
+      const correspondingVideoDir =
+        dateTag && videoDatesLower.has(dateTag.toLowerCase())
+          ? path.join(cleanVid, videoDatesLower.get(dateTag.toLowerCase())!)
+          : cleanVid;
 
-      for (const pf of pFolders) {
-        if (!matchedPhotoFolderPaths.has(pf.path)) {
-          unmatchedPhotoFolders.push({
-            folderName: pf.name,
-            folderPath: pf.path,
-            dateFolder: dateTag || '(Root)',
-            shotCode: pf.parsed.token,
-            reason: `No video master clip matched with sequence "${pf.parsed.sequence}" or token "${pf.parsed.token}"`,
-            videoFolderPath: correspondingVideoDir,
-          });
-        }
+      for (const pf of candidates) {
+        // Skip if already paired
+        if (pairedPhotoPaths.has(pf.path)) continue;
+
+        // Skip ignored candid event folders (MQ, MF, H)
+        if (VideoTransferEngine.isIgnoredEventFolder(pf.name)) continue;
+
+        // Skip parent folder if any of its children were paired
+        const isParentOfPaired = Array.from(pairedPhotoPaths).some((pp) =>
+          pp.startsWith(pf.path + path.sep)
+        );
+        if (isParentOfPaired) continue;
+
+        // Skip child folder if its parent was paired
+        const isChildOfPaired = Array.from(pairedPhotoPaths).some((pp) =>
+          pf.path.startsWith(pp + path.sep)
+        );
+        if (isChildOfPaired) continue;
+
+        // Skip folders that don't have photos and have no sequence formatting
+        if (!pf.hasPhotos && !/^\d+[a-zA-Z]*[\s_\-]/.test(pf.name.trim())) continue;
+
+        unmatchedPhotoFolders.push({
+          folderName: pf.name,
+          folderPath: pf.path,
+          dateFolder: dateTag || '(Root)',
+          shotCode: pf.parsed.token,
+          reason: `No video master clip matched with sequence "${pf.parsed.sequence}" or token "${pf.parsed.token}"`,
+          videoFolderPath: correspondingVideoDir,
+        });
       }
     }
 
-    // Also check if any date folder itself is empty of subfolders and photos
-    for (const dName of photoDates) {
-      const dPath = path.join(cleanPhoto, dName);
-      try {
-        const dEnts = await fs.promises.readdir(dPath, { withFileTypes: true });
-        const dDirs = dEnts.filter((e) => e.isDirectory());
-        const dPhotos = dEnts.filter(
-          (e) =>
-            e.isFile() &&
-            (ALL_PHOTO_EXTS.has(path.extname(e.name).toLowerCase()) ||
-              THUMB_EXTS.has(path.extname(e.name).toLowerCase()))
-        );
-        if (dDirs.length === 0 && dPhotos.length === 0) {
-          emptyPhotoFolders.push({
-            id: `empty-date-${dName}`,
-            folderName: dName,
-            folderPath: dPath,
-            dateFolder: dName,
-            subfolderCount: 0,
-            photoCount: 0,
-            totalFileCount: dEnts.filter((e) => e.isFile()).length,
-            reason: 'Date folder contains no subfolders and no photos',
-          });
-        }
-      } catch {}
-    }
+    // Date mismatch flag
+    const hasDateMismatch =
+      videoDates.size > 0 &&
+      photoDates.size > 0 &&
+      !Array.from(videoDates).some((vd) =>
+        Array.from(photoDates).some((pd) => pd.toLowerCase() === vd.toLowerCase())
+      );
 
-    if (emptyPhotoFolders.length > 0) {
-      issues.push({
-        type: 'warning',
-        category: 'folder',
-        message: `Found ${emptyPhotoFolders.length} empty folder(s) containing no photos in the photo directory.`,
-      });
-    }
-
-    this.isScanning = false;
-
-    // Convert photoFoldersByDate to clean output
+    // Clean photoFoldersByDate for UI dropdowns
     const cleanPfd: Record<string, { name: string; path: string }[]> = {};
-    for (const [k, v] of Object.entries(photoFoldersByDate)) {
+    for (const [k, v] of Object.entries(photoSubfoldersByDate)) {
       cleanPfd[k] = v.map((item) => ({ name: item.name, path: item.path }));
     }
 
-    const hasDateMismatch = videoDates.size > 0 && photoDates.size > 0 &&
-      !Array.from(videoDates).some((vd) => Array.from(photoDates).some((pd) => pd.toLowerCase() === vd.toLowerCase()));
+    this.isScanning = false;
 
     return {
       matched,
@@ -594,7 +853,8 @@ export class VideoTransferEngine {
       try {
         await fs.promises.mkdir(pair.photoFolderPath, { recursive: true });
 
-        const isSameVolume = path.parse(pair.videoPath).root.toLowerCase() === path.parse(targetFile).root.toLowerCase();
+        const isSameVolume =
+          path.parse(pair.videoPath).root.toLowerCase() === path.parse(targetFile).root.toLowerCase();
 
         if (mode === 'move' && isSameVolume) {
           await fs.promises.rename(pair.videoPath, targetFile);
@@ -613,7 +873,7 @@ export class VideoTransferEngine {
 
         const thumbRecords: { source: string; target: string }[] = [];
 
-        // Route companion thumbnails to parent directory of photo folder
+        // Route companion thumbnails to parent directory of photo folder or into target folder
         const parentDest = path.dirname(pair.photoFolderPath);
         if (pair.videoThumbPath && fs.existsSync(pair.videoThumbPath)) {
           const vThumbTarget = path.join(parentDest, path.basename(pair.videoThumbPath));
@@ -670,7 +930,6 @@ export class VideoTransferEngine {
       try {
         if (rec.mode === 'move') {
           if (fs.existsSync(rec.target)) {
-            await fs.promises.mkdir(path.dirname(rec.source), { recursive: true });
             await fs.promises.rename(rec.target, rec.source);
             restored++;
           }
@@ -681,9 +940,12 @@ export class VideoTransferEngine {
           }
         }
 
-        for (const tr of rec.thumbRecords) {
-          if (fs.existsSync(tr.target)) {
-            await fs.promises.unlink(tr.target);
+        // Clean companion thumbnails copied during transfer
+        for (const tRec of rec.thumbRecords) {
+          if (fs.existsSync(tRec.target) && tRec.target !== tRec.source) {
+            try {
+              await fs.promises.unlink(tRec.target);
+            } catch {}
           }
         }
       } catch {}

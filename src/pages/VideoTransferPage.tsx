@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Folder,
   Video,
@@ -17,13 +17,28 @@ import {
   Trash2,
   FolderX,
   X,
+  ChevronDown,
+  ChevronRight,
+  Eye,
+  Sparkles,
+  Filter,
+  Link,
+  Unlink,
+  Layers,
+  HardDrive,
+  Check,
+  Copy,
+  Zap,
 } from 'lucide-react';
 import { StudioButton } from '../components/StudioButton';
 import { StorageHeadroomBar } from '../components/StorageHeadroomBar';
 import {
   VideoScanResult,
+  VideoMatchedPair,
+  VideoUnmatchedItem,
   DateFolderStatus,
   EmptyPhotoFolderItem,
+  PhotoFolderUnmatchedItem,
 } from '../../electron/engines/videoTransfer';
 import { usePipeline } from '../context/PipelineContext';
 import { PageKey } from '../components/Sidebar';
@@ -49,155 +64,102 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
   const [isUndoing, setIsUndoing] = useState(false);
   const [lastManifest, setLastManifest] = useState('');
 
+  // Transfer Progress Telemetry
+  const [transferProgress, setTransferProgress] = useState<{
+    current: number;
+    total: number;
+    currentFile: string;
+    speedStr: string;
+    percent: number;
+  } | null>(null);
+
   const [pathErrors, setPathErrors] = useState<{ video?: string; photo?: string } | null>(null);
   const [activeTab, setActiveTab] = useState<'matched' | 'unmatched' | 'unmatchedFolders' | 'emptyFolders'>('matched');
   const [searchFilter, setSearchFilter] = useState('');
+  const [selectedDateFilter, setSelectedDateFilter] = useState<string>('ALL');
   const [showEmptyModal, setShowEmptyModal] = useState(false);
   const [emptyFolders, setEmptyFolders] = useState<EmptyPhotoFolderItem[]>([]);
+
+  // Thumbnail Preview Modal State
+  const [previewThumb, setPreviewThumb] = useState<{
+    url: string;
+    title: string;
+    type: '_V' | '_P';
+    path: string;
+  } | null>(null);
+
+  // Manual Re-assignment / Pairing State
+  const [reassigningItem, setReassigningItem] = useState<string | null>(null);
 
   const [autoMoveToMainData, setAutoMoveToMainData] = useState(true);
   const [isMovingFolder, setIsMovingFolder] = useState(false);
   const [movedResult, setMovedResult] = useState<{ count: number; path: string } | null>(null);
   const [canProceedTransfer, setCanProceedTransfer] = useState(true);
 
-  const totalVideoBytes = React.useMemo(() => {
+  // Subscribe to Live Transfer Progress IPC
+  useEffect(() => {
+    if (window.electronAPI?.onVideoTransferProgress) {
+      const unsubscribe = window.electronAPI.onVideoTransferProgress((curr, total, file, speed) => {
+        const percent = total > 0 ? Math.round((curr / total) * 100) : 0;
+        setTransferProgress({
+          current: curr,
+          total,
+          currentFile: file,
+          speedStr: speed || 'Streaming',
+          percent,
+        });
+      });
+      return () => {
+        if (unsubscribe) unsubscribe();
+      };
+    }
+    return undefined;
+  }, []);
+
+  const totalVideoBytes = useMemo(() => {
     if (!scanResult || !scanResult.matched) return 0;
     return scanResult.matched.reduce((acc, m) => acc + (m.videoSize || 0), 0);
   }, [scanResult]);
 
-  React.useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('demo') === 'true') {
-        setVideoDir('D:\\2026_EVENTS\\ROYAL_WEDDING\\MASTER_VIDEOS');
-        setPhotoDir('D:\\2026_EVENTS\\ROYAL_WEDDING\\CLEAN_PHOTOS');
-        setScanResult({
-          matched: [
-            {
-              videoFile: 'VID_20260214_0042.MP4',
-              videoPath: 'D:\\2026_EVENTS\\ROYAL_WEDDING\\MASTER_VIDEOS\\2026-02-14\\VID_20260214_0042.MP4',
-              shotCode: '0042',
-              dateFolder: '2026-02-14',
-              photoFolder: '2026-02-14\\0042_Ceremony_BrideArrival',
-              targetDir: 'D:\\2026_EVENTS\\ROYAL_WEDDING\\CLEAN_PHOTOS\\2026-02-14\\0042_Ceremony_BrideArrival',
-              hasThumbP: true,
-              hasThumbV: true,
-              thumbPName: '0042_Ceremony_BrideArrival_P.jpg',
-              thumbVName: '0042_Ceremony_BrideArrival_V.jpg',
-            },
-            {
-              videoFile: 'VID_20260214_0043.MP4',
-              videoPath: 'D:\\2026_EVENTS\\ROYAL_WEDDING\\MASTER_VIDEOS\\2026-02-14\\VID_20260214_0043.MP4',
-              shotCode: '0043',
-              dateFolder: '2026-02-14',
-              photoFolder: '2026-02-14\\0043_Varmala_Exchange',
-              targetDir: 'D:\\2026_EVENTS\\ROYAL_WEDDING\\CLEAN_PHOTOS\\2026-02-14\\0043_Varmala_Exchange',
-              hasThumbP: true,
-              hasThumbV: true,
-              thumbPName: '0043_Varmala_Exchange_P.jpg',
-              thumbVName: '0043_Varmala_Exchange_V.jpg',
-            },
-            {
-              videoFile: 'VID_20260215_0108.MP4',
-              videoPath: 'D:\\2026_EVENTS\\ROYAL_WEDDING\\MASTER_VIDEOS\\2026-02-15\\VID_20260215_0108.MP4',
-              shotCode: '0108',
-              dateFolder: '2026-02-15',
-              photoFolder: '2026-02-15\\0108_Reception_Toast_Speeches',
-              targetDir: 'D:\\2026_EVENTS\\ROYAL_WEDDING\\CLEAN_PHOTOS\\2026-02-15\\0108_Reception_Toast_Speeches',
-              hasThumbP: false,
-              hasThumbV: true,
-              thumbVName: '0108_Reception_Toast_Speeches_V.jpg',
-            },
-          ],
-          unmatched: [
-            {
-              videoFile: 'BROLL_Drone_Landscape_001.MP4',
-              videoPath: 'D:\\2026_EVENTS\\ROYAL_WEDDING\\MASTER_VIDEOS\\2026-02-14\\BROLL_Drone_Landscape_001.MP4',
-              shotCode: 'None',
-              dateFolder: '2026-02-14',
-              reason: 'No matching numeric shot code sequence in photo subfolders',
-            },
-          ],
-          unmatchedPhotoFolders: [
-            {
-              folderName: '0001_Portrait_Solo_Groom',
-              folderPath: 'D:\\2026_EVENTS\\ROYAL_WEDDING\\CLEAN_PHOTOS\\2026-02-14\\0001_Portrait_Solo_Groom',
-              shotCode: '0001',
-              dateFolder: '2026-02-14',
-              reason: 'Photo-only session (no master video shot recorded)',
-            },
-          ],
-          dateFolderStatuses: [
-            {
-              date: '2026-02-14',
-              status: 'ok',
-              inVideo: true,
-              inPhoto: true,
-              videoPath: 'D:\\2026_EVENTS\\ROYAL_WEDDING\\MASTER_VIDEOS\\2026-02-14',
-              photoPath: 'D:\\2026_EVENTS\\ROYAL_WEDDING\\CLEAN_PHOTOS\\2026-02-14',
-            },
-            {
-              date: '2026-02-15',
-              status: 'ok',
-              inVideo: true,
-              inPhoto: true,
-              videoPath: 'D:\\2026_EVENTS\\ROYAL_WEDDING\\MASTER_VIDEOS\\2026-02-15',
-              photoPath: 'D:\\2026_EVENTS\\ROYAL_WEDDING\\CLEAN_PHOTOS\\2026-02-15',
-            },
-          ],
-          videoDates: ['2026-02-14', '2026-02-15'],
-          photoDates: ['2026-02-14', '2026-02-15'],
-          dateMismatch: false,
-          emptyPhotoFolders: [
-            {
-              id: 'demo-empty-1',
-              folderName: '0047_BrideMaids_Setup_Empty',
-              folderPath: 'D:\\2026_EVENTS\\ROYAL_WEDDING\\CLEAN_PHOTOS\\2026-02-14\\0047_BrideMaids_Setup_Empty',
-              dateFolder: '2026-02-14',
-              subfolderCount: 0,
-              photoCount: 0,
-              totalFileCount: 0,
-              reason: 'There are no photos in this folder',
-            },
-            {
-              id: 'demo-empty-2',
-              folderName: '0051_Reception_Lounge_Empty',
-              folderPath: 'D:\\2026_EVENTS\\ROYAL_WEDDING\\CLEAN_PHOTOS\\2026-02-15\\0051_Reception_Lounge_Empty',
-              dateFolder: '2026-02-15',
-              subfolderCount: 0,
-              photoCount: 0,
-              totalFileCount: 0,
-              reason: 'There are no photos in this folder',
-            },
-          ],
-          issues: [],
-        } as any);
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+  };
 
-        setEmptyFolders([
-          {
-            id: 'demo-empty-1',
-            folderName: '0047_BrideMaids_Setup_Empty',
-            folderPath: 'D:\\2026_EVENTS\\ROYAL_WEDDING\\CLEAN_PHOTOS\\2026-02-14\\0047_BrideMaids_Setup_Empty',
-            dateFolder: '2026-02-14',
-            subfolderCount: 0,
-            photoCount: 0,
-            totalFileCount: 0,
-            reason: 'There are no photos in this folder',
-          },
-          {
-            id: 'demo-empty-2',
-            folderName: '0051_Reception_Lounge_Empty',
-            folderPath: 'D:\\2026_EVENTS\\ROYAL_WEDDING\\CLEAN_PHOTOS\\2026-02-15\\0051_Reception_Lounge_Empty',
-            dateFolder: '2026-02-15',
-            subfolderCount: 0,
-            photoCount: 0,
-            totalFileCount: 0,
-            reason: 'There are no photos in this folder',
-          },
-        ]);
-      }
-    }
-  }, []);
+  // Unique list of dates present in results
+  const availableDates = useMemo(() => {
+    if (!scanResult) return [];
+    const set = new Set<string>();
+    scanResult.matched.forEach((m) => set.add(m.dateFolder));
+    scanResult.unmatched.forEach((u) => set.add(u.dateFolder));
+    scanResult.videoDates.forEach((vd) => set.add(vd));
+    return Array.from(set).sort();
+  }, [scanResult]);
+
+  // Date stats helper
+  const dateStats = useMemo(() => {
+    const stats: Record<string, { matched: number; unmatched: number; total: number }> = {};
+    if (!scanResult) return stats;
+
+    scanResult.matched.forEach((m) => {
+      const d = m.dateFolder || 'General';
+      if (!stats[d]) stats[d] = { matched: 0, unmatched: 0, total: 0 };
+      stats[d].matched++;
+      stats[d].total++;
+    });
+
+    scanResult.unmatched.forEach((u) => {
+      const d = u.dateFolder || 'General';
+      if (!stats[d]) stats[d] = { matched: 0, unmatched: 0, total: 0 };
+      stats[d].unmatched++;
+      stats[d].total++;
+    });
+
+    return stats;
+  }, [scanResult]);
 
   const handleGoToFolder = async (folderPath?: string) => {
     if (!folderPath || !folderPath.trim()) return;
@@ -282,6 +244,11 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
     }
   };
 
+  const handleCopyText = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    onShowToast(`Copied ${label} to clipboard!`, 'info');
+  };
+
   const handleBrowseVideo = async () => {
     if (!window.electronAPI) return;
     const dir = await window.electronAPI.selectDirectory('Select Master Video Clips Directory', videoDir);
@@ -329,7 +296,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
         return;
       }
 
-      // 2. Perform deep sequence and date scan
+      // 2. Perform deep sequence and multi-pass matching scan
       const res: VideoScanResult = await window.electronAPI.scanVideoTransfer(videoDir, photoDir);
       setScanResult(res);
       const foundEmpty = res.emptyPhotoFolders || [];
@@ -338,20 +305,22 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
         setShowEmptyModal(true);
       }
 
-      if (res.issues && res.issues.length > 0) {
+      if (res.unmatched.length === 0 && res.matched.length > 0) {
         onShowToast(
-          `Scan completed: ${res.matched.length} clips paired, ${res.unmatched.length} unmatched clips. Notice: ${res.issues.length} warnings/missing folder issues found!`,
-          'warning'
-        );
-        // Automatically switch tab if 0 matched but unmatched clips exist
-        if (res.matched.length === 0 && res.unmatched.length > 0) {
-          setActiveTab('unmatched');
-        }
-      } else {
-        onShowToast(
-          `Scan complete: ${res.matched.length} clips paired successfully across all folders.`,
+          `Perfect Synchronization! 100% of clips (${res.matched.length} / ${res.matched.length}) paired successfully!`,
           'success'
         );
+      } else if (res.matched.length > 0) {
+        onShowToast(
+          `Scan complete: ${res.matched.length} clips paired, ${res.unmatched.length} unmatched clips pending review.`,
+          'info'
+        );
+      } else {
+        onShowToast(
+          `Scan completed: 0 clips automatically paired. Please check your folder structure.`,
+          'warning'
+        );
+        setActiveTab('unmatched');
       }
     } catch (e: any) {
       console.error('Video transfer scan failed:', e);
@@ -359,6 +328,84 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
     } finally {
       setIsScanning(false);
     }
+  };
+
+  // Manual Pair Action: Move an unmatched clip to matched list with selected target folder
+  const handleManualPair = (unmatchedItem: VideoUnmatchedItem, targetFolderPath: string) => {
+    if (!scanResult || !targetFolderPath) return;
+
+    const targetFolderName = targetFolderPath.split(/[\\/]/).pop() || targetFolderPath;
+
+    const newPair: VideoMatchedPair = {
+      videoFile: unmatchedItem.videoFile,
+      videoPath: unmatchedItem.videoPath,
+      videoSize: 0,
+      photoFolder: targetFolderName,
+      photoFolderPath: targetFolderPath,
+      dateFolder: unmatchedItem.dateFolder,
+      shotCode: unmatchedItem.shotCode,
+      hasVideoThumb: false,
+      hasPhotoThumb: false,
+      manualOverride: true,
+      matchType: 'manual',
+      confidence: 100,
+    };
+
+    setScanResult({
+      ...scanResult,
+      matched: [...scanResult.matched, newPair],
+      unmatched: scanResult.unmatched.filter((u) => u.videoPath !== unmatchedItem.videoPath),
+    });
+
+    onShowToast(`Paired "${unmatchedItem.videoFile}" with "${targetFolderName}"`, 'success');
+  };
+
+  // Manual Re-assignment: Change target folder of an already matched clip
+  const handleReassignTarget = (videoPath: string, newTargetFolderPath: string) => {
+    if (!scanResult || !newTargetFolderPath) return;
+    const targetFolderName = newTargetFolderPath.split(/[\\/]/).pop() || newTargetFolderPath;
+
+    setScanResult({
+      ...scanResult,
+      matched: scanResult.matched.map((m) => {
+        if (m.videoPath === videoPath) {
+          return {
+            ...m,
+            photoFolder: targetFolderName,
+            photoFolderPath: newTargetFolderPath,
+            manualOverride: true,
+            matchType: 'manual',
+            confidence: 100,
+          };
+        }
+        return m;
+      }),
+    });
+    setReassigningItem(null);
+    onShowToast(`Reassigned target to "${targetFolderName}"`, 'success');
+  };
+
+  // Manual Unpair Action: Move a matched clip to unmatched list
+  const handleUnpair = (item: VideoMatchedPair) => {
+    if (!scanResult) return;
+
+    const unmatchedItem: VideoUnmatchedItem = {
+      videoFile: item.videoFile,
+      videoPath: item.videoPath,
+      videoDir: item.videoPath.substring(0, item.videoPath.lastIndexOf(/[\\/]/ as any)),
+      dateFolder: item.dateFolder,
+      shotCode: item.shotCode,
+      cleanName: item.videoFile.replace(/\.[^.]+$/, ''),
+      reason: 'Manually unpaired by user',
+    };
+
+    setScanResult({
+      ...scanResult,
+      matched: scanResult.matched.filter((m) => m.videoPath !== item.videoPath),
+      unmatched: [...scanResult.unmatched, unmatchedItem],
+    });
+
+    onShowToast(`Unpaired "${item.videoFile}"`, 'info');
   };
 
   const handleMoveMergedFolder = async (customTarget?: string) => {
@@ -398,6 +445,14 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
     }
 
     setIsTransferring(true);
+    setTransferProgress({
+      current: 0,
+      total: scanResult.matched.length,
+      currentFile: scanResult.matched[0].videoFile,
+      speedStr: 'Initiating transfer...',
+      percent: 0,
+    });
+
     try {
       const res = await window.electronAPI.executeVideoTransfer(
         scanResult.matched,
@@ -407,7 +462,6 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
       setLastManifest(res.manifestPath);
       onShowToast(`Transfer complete: ${res.transferred} video clips aligned successfully!`, 'success');
 
-      // Automatically move merged folder to Upload Structure (Main Data/[Safar Name]) if configured
       if (autoMoveToMainData && uploadStructure.mainDataPath && photoDir) {
         await handleMoveMergedFolder(uploadStructure.mainDataPath);
       } else {
@@ -418,6 +472,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
       onShowToast(toUserErrorMessage(e, 'Video transfer operation failed. Please check drive permissions and free space.'), 'danger');
     } finally {
       setIsTransferring(false);
+      setTransferProgress(null);
     }
   };
 
@@ -439,127 +494,223 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
     }
   };
 
-  const filteredMatched = (scanResult?.matched || []).filter((item) => {
-    if (!searchFilter.trim()) return true;
-    const q = searchFilter.toLowerCase();
-    return (
-      item.videoFile.toLowerCase().includes(q) ||
-      item.photoFolder.toLowerCase().includes(q) ||
-      item.shotCode.toLowerCase().includes(q) ||
-      item.dateFolder.toLowerCase().includes(q)
-    );
-  });
+  // Filtered Rows with Date and Search Support
+  const filteredMatched = useMemo(() => {
+    return (scanResult?.matched || []).filter((item) => {
+      if (selectedDateFilter !== 'ALL' && item.dateFolder !== selectedDateFilter) {
+        return false;
+      }
+      if (!searchFilter.trim()) return true;
+      const q = searchFilter.toLowerCase();
+      return (
+        item.videoFile.toLowerCase().includes(q) ||
+        item.photoFolder.toLowerCase().includes(q) ||
+        item.shotCode.toLowerCase().includes(q) ||
+        item.dateFolder.toLowerCase().includes(q)
+      );
+    });
+  }, [scanResult, selectedDateFilter, searchFilter]);
 
-  const filteredUnmatched = (scanResult?.unmatched || []).filter((item) => {
-    if (!searchFilter.trim()) return true;
-    const q = searchFilter.toLowerCase();
-    return (
-      item.videoFile.toLowerCase().includes(q) ||
-      item.shotCode.toLowerCase().includes(q) ||
-      item.dateFolder.toLowerCase().includes(q) ||
-      item.reason.toLowerCase().includes(q)
-    );
-  });
+  const filteredUnmatched = useMemo(() => {
+    return (scanResult?.unmatched || []).filter((item) => {
+      if (selectedDateFilter !== 'ALL' && item.dateFolder !== selectedDateFilter) {
+        return false;
+      }
+      if (!searchFilter.trim()) return true;
+      const q = searchFilter.toLowerCase();
+      return (
+        item.videoFile.toLowerCase().includes(q) ||
+        item.shotCode.toLowerCase().includes(q) ||
+        item.dateFolder.toLowerCase().includes(q) ||
+        item.reason.toLowerCase().includes(q)
+      );
+    });
+  }, [scanResult, selectedDateFilter, searchFilter]);
 
-  const filteredUnmatchedFolders = (scanResult?.unmatchedPhotoFolders || []).filter((item) => {
-    if (!searchFilter.trim()) return true;
-    const q = searchFilter.toLowerCase();
-    return (
-      item.folderName.toLowerCase().includes(q) ||
-      item.shotCode.toLowerCase().includes(q) ||
-      item.dateFolder.toLowerCase().includes(q) ||
-      item.reason.toLowerCase().includes(q)
-    );
-  });
+  const filteredUnmatchedFolders = useMemo(() => {
+    return (scanResult?.unmatchedPhotoFolders || []).filter((item) => {
+      if (selectedDateFilter !== 'ALL' && item.dateFolder !== selectedDateFilter) {
+        return false;
+      }
+      if (!searchFilter.trim()) return true;
+      const q = searchFilter.toLowerCase();
+      return (
+        item.folderName.toLowerCase().includes(q) ||
+        item.shotCode.toLowerCase().includes(q) ||
+        item.dateFolder.toLowerCase().includes(q) ||
+        item.reason.toLowerCase().includes(q)
+      );
+    });
+  }, [scanResult, selectedDateFilter, searchFilter]);
 
-  const filteredEmptyFolders = emptyFolders.filter((item) => {
-    if (!searchFilter.trim()) return true;
-    const q = searchFilter.toLowerCase();
-    return (
-      item.folderName.toLowerCase().includes(q) ||
-      item.folderPath.toLowerCase().includes(q) ||
-      item.dateFolder.toLowerCase().includes(q) ||
-      item.reason.toLowerCase().includes(q)
-    );
-  });
+  const filteredEmptyFolders = useMemo(() => {
+    return emptyFolders.filter((item) => {
+      if (selectedDateFilter !== 'ALL' && item.dateFolder !== selectedDateFilter) {
+        return false;
+      }
+      if (!searchFilter.trim()) return true;
+      const q = searchFilter.toLowerCase();
+      return (
+        item.folderName.toLowerCase().includes(q) ||
+        item.folderPath.toLowerCase().includes(q) ||
+        item.dateFolder.toLowerCase().includes(q) ||
+        item.reason.toLowerCase().includes(q)
+      );
+    });
+  }, [emptyFolders, selectedDateFilter, searchFilter]);
+
+  const matchPercentage = useMemo(() => {
+    if (!scanResult) return 0;
+    const total = scanResult.matched.length + scanResult.unmatched.length;
+    return total > 0 ? Math.round((scanResult.matched.length / total) * 100) : 0;
+  }, [scanResult]);
 
   return (
     <div
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: 14,
+        gap: 16,
         height: '100%',
         overflowY: 'auto',
         paddingRight: 6,
       }}
     >
-      {/* Path Selector Bar */}
+      {/* 1. Header Card with Path Selectors & Transfer Options */}
       <div
         className="glass-card"
         style={{
-          padding: '18px 22px',
+          padding: '20px 24px',
           display: 'flex',
           flexDirection: 'column',
-          gap: 14,
+          gap: 16,
+          border: '1px solid var(--border)',
+          borderRadius: 14,
+          background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <span style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--label)', fontFamily: 'var(--font-display)' }}>
-              Sync Photo Video — Sequence Alignment Workstation
-            </span>
-            <span style={{ fontSize: 11, color: 'var(--secondary-label)', marginLeft: 10 }}>
-              (Pairs master video clips with photo subfolders & companion _V / _P thumbnails)
-            </span>
-          </div>
-
-          {scanResult && (
-            <div style={{ display: 'flex', gap: 10, fontSize: 11, fontFamily: 'var(--font-mono)' }}>
-              <span style={{ color: 'var(--secondary-label)' }}>
-                Matched: <b style={{ color: 'var(--system-green)' }}>{scanResult.matched.length}</b>
-              </span>
-              <span style={{ color: 'var(--secondary-label)' }}>
-                Unmatched Clips: <b style={{ color: scanResult.unmatched.length > 0 ? 'var(--system-orange)' : 'var(--tertiary-label)' }}>{scanResult.unmatched.length}</b>
-              </span>
-              <span style={{ color: 'var(--secondary-label)' }}>
-                Photo Folders Without Video: <b style={{ color: 'var(--tertiary-label)' }}>{scanResult.unmatchedPhotoFolders?.length || 0}</b>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 10,
+                background: 'linear-gradient(135deg, #10B981, #06B6D4)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.25)',
+              }}
+            >
+              <Video size={20} color="#FFFFFF" />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span
+                  style={{
+                    fontSize: 15,
+                    fontWeight: 800,
+                    color: 'var(--label)',
+                    fontFamily: 'var(--font-display)',
+                    letterSpacing: '-0.01em',
+                  }}
+                >
+                  Video-to-Photo Sequence Synchronizer
+                </span>
+                <span
+                  style={{
+                    padding: '2px 8px',
+                    borderRadius: 12,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                    color: '#10B981',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                  }}
+                >
+                  Multi-Pass Intelligent Matching
+                </span>
+              </div>
+              <span style={{ fontSize: 11.5, color: 'var(--secondary-label)' }}>
+                Deeply scans nested event subfolders, pairs camera video clips (_V) with photo folders (_P), and routes companion thumbnails.
               </span>
             </div>
-          )}
+          </div>
+
+          {/* Quick Actions in Header */}
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            {lastManifest && (
+              <StudioButton
+                variant="secondary"
+                loading={isUndoing}
+                icon={<RotateCcw size={13} />}
+                onClick={handleUndo}
+                style={{ fontSize: 11.5, height: 34 }}
+              >
+                Undo Last Sync
+              </StudioButton>
+            )}
+
+            <StudioButton
+              variant="secondary"
+              loading={isScanning}
+              icon={<RefreshCw size={13} />}
+              onClick={handleScan}
+              style={{ fontSize: 11.5, height: 34 }}
+            >
+              Scan Sequence Pairs
+            </StudioButton>
+
+            <StudioButton
+              variant="primary"
+              loading={isTransferring}
+              icon={<Play size={13} />}
+              onClick={handleTransfer}
+              disabled={!scanResult || scanResult.matched.length === 0 || !canProceedTransfer}
+              title={!canProceedTransfer ? 'Transfer blocked: Insufficient space on target drive' : undefined}
+              style={{
+                fontSize: 11.5,
+                height: 34,
+                background: 'linear-gradient(135deg, #10B981, #059669)',
+                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)',
+              }}
+            >
+              Start Synchronization ({scanResult?.matched.length || 0})
+            </StudioButton>
+          </div>
         </div>
 
+        {/* Dual Path Selectors */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-          {/* Video Directory with Native Drag & Drop */}
           <StudioFolderInput
-            label="1. Master Video Clips Directory"
-            description="Folder containing camera video files"
+            label="1. Video Master Clips Directory (_V)"
+            description="Folder containing source camera video files and companion _V thumbnails"
             value={videoDir}
             onChange={(val) => {
               setVideoDir(val);
               if (pathErrors?.video) setPathErrors((p) => (p ? { ...p, video: undefined } : null));
             }}
             onBrowse={handleBrowseVideo}
-            placeholder="Drop master video folder here or click Browse..."
+            placeholder="e.g. E:\In Process\Morbi Atraaf Safar\Morbi Atraaf Safar_V"
             error={pathErrors?.video}
           />
 
-          {/* Photo Directory with Native Drag & Drop */}
           <StudioFolderInput
-            label="2. Target Clean Photo Subfolders Directory"
-            description="Destination event photo subfolders"
+            label="2. Clean Photo Subfolders Directory (_P)"
+            description="Target event photo subfolders where videos will be placed"
             value={photoDir}
             onChange={(val) => {
               setPhotoDir(val);
               if (pathErrors?.photo) setPathErrors((p) => (p ? { ...p, photo: undefined } : null));
             }}
             onBrowse={handleBrowsePhoto}
-            placeholder="Drop clean photos folder here or click Browse..."
+            placeholder="e.g. E:\In Process\Morbi Atraaf Safar\Morbi Atraaf Safar_P"
             error={pathErrors?.photo}
           />
         </div>
 
-        {/* Dynamic Drive Storage Fit & Capacity Bar */}
+        {/* Storage Capacity Bar */}
         {photoDir.trim() && (
           <StorageHeadroomBar
             destPath={photoDir}
@@ -571,72 +722,69 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
           />
         )}
 
-        {/* Options & Action Row */}
+        {/* Settings Bar */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            paddingTop: 8,
+            paddingTop: 10,
             borderTop: '1px solid var(--border-subtle)',
+            fontSize: 11.5,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            {/* Mode Switch */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 11, color: 'var(--secondary-label)' }}>Mode:</span>
+              <span style={{ color: 'var(--secondary-label)', fontWeight: 600 }}>Transfer Mode:</span>
               <select
                 value={transferMode}
                 onChange={(e) => setTransferMode(e.target.value as any)}
                 style={{
-                  padding: '4px 8px',
+                  padding: '4px 10px',
                   borderRadius: 6,
                   backgroundColor: 'var(--surface-elevated)',
                   border: '1px solid var(--border)',
                   color: 'var(--label)',
-                  fontSize: 11,
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  outline: 'none',
                 }}
               >
-                <option value="copy">COPY (Preserve Source)</option>
-                <option value="move">MOVE (Cut & Re-locate)</option>
+                <option value="copy">COPY (Safe: Preserves Source Files)</option>
+                <option value="move">MOVE (Fast: Move into Target Folders)</option>
               </select>
             </div>
 
-            {/* Collision Policy */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 11, color: 'var(--secondary-label)' }}>Collisions:</span>
+              <span style={{ color: 'var(--secondary-label)', fontWeight: 600 }}>File Collisions:</span>
               <select
                 value={collisionPolicy}
                 onChange={(e) => setCollisionPolicy(e.target.value as any)}
                 style={{
-                  padding: '4px 8px',
+                  padding: '4px 10px',
                   borderRadius: 6,
                   backgroundColor: 'var(--surface-elevated)',
                   border: '1px solid var(--border)',
                   color: 'var(--label)',
-                  fontSize: 11,
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  outline: 'none',
                 }}
               >
-                <option value="keepBoth">Keep Both (_1, _2)</option>
+                <option value="keepBoth">Auto-Rename (_1, _2)</option>
                 <option value="skip">Skip Existing</option>
               </select>
             </div>
 
-            {/* Auto Move to Main Data Toggle */}
             {uploadStructure.mainDataPath && (
               <label
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 6,
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: '#38BDF8',
                   cursor: 'pointer',
-                  padding: '3px 8px',
-                  borderRadius: 6,
-                  backgroundColor: 'rgba(56, 189, 248, 0.1)',
-                  border: '1px solid rgba(56, 189, 248, 0.25)',
+                  color: '#38BDF8',
+                  fontWeight: 600,
                 }}
               >
                 <input
@@ -649,361 +797,297 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
             )}
           </div>
 
-          <div style={{ display: 'flex', gap: 10 }}>
-            {lastManifest && (
-              <StudioButton
-                variant="secondary"
-                loading={isUndoing}
-                icon={<RotateCcw size={14} />}
-                onClick={handleUndo}
-              >
-                Undo Last Transfer
-              </StudioButton>
-            )}
-
-            <StudioButton variant="secondary" loading={isScanning} onClick={handleScan}>
-              Scan Sequence Pairs
-            </StudioButton>
-
-            <StudioButton
-              variant="primary"
-              loading={isTransferring}
-              icon={<Play size={14} />}
-              onClick={handleTransfer}
-              disabled={!scanResult || scanResult.matched.length === 0 || !canProceedTransfer}
-              title={!canProceedTransfer ? 'Transfer blocked: Insufficient space on target drive' : undefined}
-            >
-              Transfer Paired Clips
-            </StudioButton>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--tertiary-label)', fontSize: 11 }}>
+            <span>Auto Companion _V / _P Thumb Routing: </span>
+            <b style={{ color: '#10B981' }}>Active</b>
           </div>
         </div>
-
-        {/* Move Merged Folder Action Card */}
-        {photoDir && (
-          <div
-            style={{
-              padding: '10px 14px',
-              borderRadius: 8,
-              backgroundColor: movedResult ? 'rgba(16, 185, 129, 0.08)' : 'var(--surface-elevated)',
-              border: movedResult ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid var(--border)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 16,
-              marginTop: 2,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 6,
-                  backgroundColor: movedResult ? 'rgba(16, 185, 129, 0.15)' : 'rgba(56, 189, 248, 0.15)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {movedResult ? <CheckCircle2 size={16} color="#10B981" /> : <FolderCheck size={16} color="#38BDF8" />}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--label)' }}>
-                  {movedResult ? 'Merged Folder Relocated & Renamed' : 'Move Merged Media to Upload Structure'}
-                </span>
-                <span style={{ fontSize: 10.5, color: 'var(--secondary-label)' }}>
-                  {movedResult ? (
-                    <>Target: <strong style={{ color: '#10B981' }}>{movedResult.path}</strong> (all subfolders preserved)</>
-                  ) : uploadStructure.mainDataPath ? (
-                    <>Moves into <strong style={{ color: '#38BDF8' }}>Main Data/{uploadStructure.safarName}</strong> (renames parent folder to "{uploadStructure.safarName}", keeps all subfolders untouched)</>
-                  ) : (
-                    'Configure Stage 01 Upload Structure to automatically wire the destination.'
-                  )}
-                </span>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: 8 }}>
-              {movedResult ? (
-                <StudioButton
-                  variant="secondary"
-                  onClick={() => handleOpenPath(movedResult.path, 'Moved Merged Media')}
-                  icon={<ExternalLink size={13} />}
-                  style={{ fontSize: 11 }}
-                >
-                  Open in Explorer
-                </StudioButton>
-              ) : (
-                <StudioButton
-                  variant="secondary"
-                  loading={isMovingFolder}
-                  onClick={() => handleMoveMergedFolder()}
-                  disabled={!uploadStructure.mainDataPath || isTransferring}
-                  icon={<FolderCheck size={14} />}
-                  style={{ fontSize: 11 }}
-                >
-                  Move & Rename to Main Data
-                </StudioButton>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Path Errors Alert Card */}
-      {pathErrors && (
-        <div
-          style={{
-            padding: '12px 16px',
-            borderRadius: 10,
-            backgroundColor: 'rgba(239, 68, 68, 0.12)',
-            border: '1px solid var(--system-red)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 8,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, color: 'var(--system-red)', fontSize: 12.5 }}>
-            <AlertCircle size={16} />
-            <span>Folder Path Problem Detected</span>
-          </div>
-
-          {pathErrors.video && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, fontSize: 11.5 }}>
-              <span style={{ color: 'var(--label)' }}>❌ {pathErrors.video}</span>
-              <StudioButton
-                variant="glass"
-                icon={<FolderOpen size={12} />}
-                onClick={() => handleOpenPath(videoDir, 'Video Parent Folder')}
-                style={{ fontSize: 10.5, padding: '3px 8px', height: 26 }}
-              >
-                Open in Explorer to Check
-              </StudioButton>
-            </div>
-          )}
-
-          {pathErrors.photo && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, fontSize: 11.5 }}>
-              <span style={{ color: 'var(--label)' }}>❌ {pathErrors.photo}</span>
-              <StudioButton
-                variant="glass"
-                icon={<FolderOpen size={12} />}
-                onClick={() => handleOpenPath(photoDir, 'Photo Parent Folder')}
-                style={{ fontSize: 10.5, padding: '3px 8px', height: 26 }}
-              >
-                Open in Explorer to Check
-              </StudioButton>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Date Folders Alignment & Presence Status Card */}
-      {scanResult?.dateFolderStatuses && scanResult.dateFolderStatuses.length > 0 && (
+      {/* 2. Live Transfer Progress Floating Drawer */}
+      {transferProgress && (
         <div
           className="glass-card"
           style={{
-            padding: '14px 18px',
+            padding: '16px 20px',
+            borderRadius: 12,
+            border: '1px solid rgba(16, 185, 129, 0.4)',
+            background: 'linear-gradient(180deg, rgba(16, 185, 129, 0.12) 0%, rgba(16, 185, 129, 0.04) 100%)',
             display: 'flex',
             flexDirection: 'column',
             gap: 10,
+            boxShadow: '0 8px 32px rgba(16, 185, 129, 0.15)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Calendar size={16} color="var(--system-blue)" />
-              <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--label)' }}>
-                Date Folders Presence & Sync Status
-              </span>
-              <span style={{ fontSize: 11, color: 'var(--secondary-label)' }}>
-                ({scanResult.dateFolderStatuses.length} date folder{scanResult.dateFolderStatuses.length > 1 ? 's' : ''} detected)
+              <Zap size={16} color="#10B981" />
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--label)' }}>
+                Synchronizing Video Clips: {transferProgress.current} / {transferProgress.total} ({transferProgress.percent}%)
               </span>
             </div>
-            <span style={{ fontSize: 10.5, color: 'var(--tertiary-label)' }}>
-              Click any folder button to open directly in Windows Explorer to verify existence
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span
+                style={{
+                  padding: '2px 8px',
+                  borderRadius: 4,
+                  fontSize: 11,
+                  fontFamily: 'var(--font-mono)',
+                  backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                  color: '#10B981',
+                  fontWeight: 700,
+                }}
+              >
+                {transferProgress.speedStr}
+              </span>
+            </div>
+          </div>
+
+          {/* Progress Bar Track */}
+          <div
+            style={{
+              height: 8,
+              borderRadius: 4,
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              overflow: 'hidden',
+              position: 'relative',
+            }}
+          >
+            <div
+              style={{
+                height: '100%',
+                width: `${transferProgress.percent}%`,
+                background: 'linear-gradient(90deg, #10B981, #06B6D4)',
+                borderRadius: 4,
+                transition: 'width 0.2s ease',
+              }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--secondary-label)' }}>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '80%' }}>
+              Current file: <strong style={{ color: 'var(--label)' }}>{transferProgress.currentFile}</strong>
+            </span>
+            <span>Mode: {transferMode.toUpperCase()}</span>
+          </div>
+        </div>
+      )}
+
+      {/* 3. Hero Statistics & Health HUD Cards */}
+      {scanResult && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+          {/* Card 1: Total Videos */}
+          <div
+            className="glass-card"
+            style={{
+              padding: '16px 18px',
+              borderRadius: 12,
+              border: '1px solid var(--border)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 4,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--tertiary-label)', textTransform: 'uppercase' }}>
+                Total Videos Found
+              </span>
+              <Video size={16} color="var(--system-blue)" />
+            </div>
+            <span style={{ fontSize: 24, fontWeight: 800, color: 'var(--label)', fontFamily: 'var(--font-mono)' }}>
+              {scanResult.matched.length + scanResult.unmatched.length}
+            </span>
+            <span style={{ fontSize: 11, color: 'var(--secondary-label)' }}>
+              Payload: {formatBytes(totalVideoBytes)}
             </span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 8 }}>
-            {scanResult.dateFolderStatuses.map((ds: DateFolderStatus) => {
-              const isOk = ds.status === 'ok';
-              const missingPhoto = ds.status === 'missing_in_photo';
-
-              return (
-                <div
-                  key={ds.date}
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: 8,
-                    backgroundColor: isOk ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.08)',
-                    border: isOk ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(239, 68, 68, 0.35)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 8,
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {isOk ? <CheckCircle2 size={15} color="var(--system-green)" /> : <AlertTriangle size={15} color="var(--system-red)" />}
-                      <span style={{ fontWeight: 700, fontSize: 12, color: 'var(--label)' }}>
-                        {ds.date}
-                      </span>
-                    </div>
-
-                    <span
-                      style={{
-                        padding: '2px 8px',
-                        borderRadius: 4,
-                        fontSize: 10,
-                        fontWeight: 700,
-                        color: isOk ? 'var(--system-green)' : 'var(--system-red)',
-                        backgroundColor: isOk ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                      }}
-                    >
-                      {isOk ? 'SYNCED' : missingPhoto ? 'MISSING IN PHOTO' : 'MISSING IN VIDEO'}
-                    </span>
-                  </div>
-
-                  {/* Open Folder Actions */}
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <StudioButton
-                      variant={ds.inVideo ? 'glass' : 'secondary'}
-                      icon={<FolderOpen size={12} />}
-                      onClick={() => handleOpenPath(ds.videoPath, `Video Date Folder (${ds.date})`)}
-                      style={{ fontSize: 10.5, flex: 1, padding: '4px 8px', height: 26 }}
-                      title={ds.inVideo ? `Open ${ds.videoPath}` : `Date missing in Video. Opens parent video directory to inspect`}
-                    >
-                      {ds.inVideo ? 'Open Video Date' : 'Check Video (Missing)'}
-                    </StudioButton>
-
-                    <StudioButton
-                      variant={ds.inPhoto ? 'glass' : 'secondary'}
-                      icon={<FolderOpen size={12} />}
-                      onClick={() => handleOpenPath(ds.photoPath, `Photo Date Folder (${ds.date})`)}
-                      style={{ fontSize: 10.5, flex: 1, padding: '4px 8px', height: 26 }}
-                      title={ds.inPhoto ? `Open ${ds.photoPath}` : `Date missing in Photo. Opens parent photo directory to inspect`}
-                    >
-                      {ds.inPhoto ? 'Open Photo Date' : 'Check Photo (Missing)'}
-                    </StudioButton>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Diagnostic Issues & Warnings Panel */}
-      {scanResult?.issues && scanResult.issues.length > 0 && (
-        <div
-          style={{
-            padding: '12px 16px',
-            borderRadius: 10,
-            backgroundColor: 'rgba(245, 158, 11, 0.12)',
-            border: '1px solid rgba(245, 158, 11, 0.35)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 8,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 700, color: '#F59E0B' }}>
-            <AlertTriangle size={16} />
-            <span>Synchronization Warnings & Missing Items ({scanResult.issues.length})</span>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 130, overflowY: 'auto' }}>
-            {scanResult.issues.map((iss, i) => (
-              <div
-                key={i}
+          {/* Card 2: Matched Clips (with Percentage Ring Badge) */}
+          <div
+            className="glass-card"
+            style={{
+              padding: '16px 18px',
+              borderRadius: 12,
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              background: 'linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, transparent 100%)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 4,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#10B981', textTransform: 'uppercase' }}>
+                Matched Sequences
+              </span>
+              <CheckCircle2 size={16} color="#10B981" />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+              <span style={{ fontSize: 24, fontWeight: 800, color: '#10B981', fontFamily: 'var(--font-mono)' }}>
+                {scanResult.matched.length}
+              </span>
+              <span
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '5px 10px',
-                  borderRadius: 6,
-                  backgroundColor: 'rgba(0, 0, 0, 0.2)',
                   fontSize: 11,
-                  color: 'var(--label)',
-                  gap: 10,
+                  fontWeight: 700,
+                  color: '#10B981',
+                  backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                  padding: '2px 8px',
+                  borderRadius: 10,
                 }}
               >
-                <span>• {iss.message}</span>
-                {iss.folderPath && (
-                  <StudioButton
-                    variant="glass"
-                    icon={<FolderOpen size={11} />}
-                    onClick={() => handleOpenPath(iss.folderPath, 'folder')}
-                    style={{ fontSize: 10, padding: '2px 8px', height: 24, whiteSpace: 'nowrap' }}
-                  >
-                    Open Folder in Explorer
-                  </StudioButton>
-                )}
-              </div>
-            ))}
+                {matchPercentage}%
+              </span>
+            </div>
+            <span style={{ fontSize: 11, color: 'var(--secondary-label)' }}>
+              Ready for immediate synchronization
+            </span>
+          </div>
+
+          {/* Card 3: Unmatched Videos */}
+          <div
+            className="glass-card"
+            style={{
+              padding: '16px 18px',
+              borderRadius: 12,
+              border:
+                scanResult.unmatched.length > 0
+                  ? '1px solid rgba(239, 68, 68, 0.35)'
+                  : '1px solid var(--border)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 4,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: scanResult.unmatched.length > 0 ? '#EF4444' : 'var(--tertiary-label)', textTransform: 'uppercase' }}>
+                Unmatched Clips
+              </span>
+              <AlertTriangle size={16} color={scanResult.unmatched.length > 0 ? '#EF4444' : 'var(--tertiary-label)'} />
+            </div>
+            <span style={{ fontSize: 24, fontWeight: 800, color: scanResult.unmatched.length > 0 ? '#EF4444' : 'var(--label)', fontFamily: 'var(--font-mono)' }}>
+              {scanResult.unmatched.length}
+            </span>
+            <span style={{ fontSize: 11, color: 'var(--secondary-label)' }}>
+              {scanResult.unmatched.length > 0 ? 'Click Unmatched tab to pair manually' : 'Zero unmapped video orphans'}
+            </span>
+          </div>
+
+          {/* Card 4: Event Dates Synced */}
+          <div
+            className="glass-card"
+            style={{
+              padding: '16px 18px',
+              borderRadius: 12,
+              border: '1px solid var(--border)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 4,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--tertiary-label)', textTransform: 'uppercase' }}>
+                Event Date Folders
+              </span>
+              <Calendar size={16} color="var(--system-purple)" />
+            </div>
+            <span style={{ fontSize: 24, fontWeight: 800, color: 'var(--label)', fontFamily: 'var(--font-mono)' }}>
+              {availableDates.length}
+            </span>
+            <span style={{ fontSize: 11, color: 'var(--secondary-label)' }}>
+              {scanResult.dateMismatch ? 'Date mismatch quarantine flagged' : 'All date scopes verified'}
+            </span>
           </div>
         </div>
       )}
 
-      {/* Date Mismatch Alert Banner */}
-      {scanResult?.dateMismatch && (
+      {/* 4. Interactive Date Filter Horizontal Ribbon */}
+      {availableDates.length > 0 && (
         <div
+          className="glass-card"
           style={{
-            padding: '12px 16px',
-            borderRadius: 10,
-            backgroundColor: 'rgba(255, 69, 58, 0.15)',
-            border: '1px solid var(--system-red)',
+            padding: '10px 14px',
             display: 'flex',
             alignItems: 'center',
             gap: 10,
-          }}
-        >
-          <AlertTriangle size={18} color="var(--system-red)" />
-          <div style={{ fontSize: 11.5, color: 'var(--label)' }}>
-            <b>Date Mismatch Quarantine:</b> Video date folders ({scanResult.videoDates.join(', ')}) do not match Photo date folders ({scanResult.photoDates.join(', ')}). Cross-event pairing is restricted.
-          </div>
-        </div>
-      )}
-
-      {/* Empty Folders Alert Notice Banner */}
-      {emptyFolders.length > 0 && (
-        <div
-          style={{
-            padding: '10px 14px',
+            overflowX: 'auto',
             borderRadius: 10,
-            backgroundColor: 'rgba(236, 72, 153, 0.08)',
-            border: '1px solid rgba(236, 72, 153, 0.3)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 12,
+            border: '1px solid var(--border)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <FolderX size={16} color="#EC4899" />
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--label)' }}>
-                {emptyFolders.length} Empty Photo Folder{emptyFolders.length > 1 ? 's' : ''} Detected
-              </span>
-              <span style={{ fontSize: 10.5, color: 'var(--secondary-label)' }}>
-                These folders contain no photos. (Folders containing child subfolders are preserved).
-              </span>
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, fontSize: 11, fontWeight: 700, color: 'var(--secondary-label)' }}>
+            <Filter size={13} />
+            <span>Filter by Event Date:</span>
           </div>
 
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <StudioButton
-              variant="secondary"
-              onClick={() => setShowEmptyModal(true)}
-              icon={<FolderX size={13} />}
-              style={{ fontSize: 11, height: 28, padding: '4px 10px' }}
-            >
-              Pop Review & Clean Up
-            </StudioButton>
-          </div>
+          <button
+            onClick={() => setSelectedDateFilter('ALL')}
+            style={{
+              padding: '4px 10px',
+              borderRadius: 6,
+              border: selectedDateFilter === 'ALL' ? '1px solid #10B981' : '1px solid var(--border)',
+              backgroundColor: selectedDateFilter === 'ALL' ? 'rgba(16, 185, 129, 0.15)' : 'var(--surface-elevated)',
+              color: selectedDateFilter === 'ALL' ? '#10B981' : 'var(--label)',
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            All Dates ({scanResult?.matched.length || 0})
+          </button>
+
+          {availableDates.map((date) => {
+            const stat = dateStats[date] || { matched: 0, unmatched: 0, total: 0 };
+            const isSelected = selectedDateFilter === date;
+            const isAllMatched = stat.unmatched === 0 && stat.matched > 0;
+
+            return (
+              <button
+                key={date}
+                onClick={() => setSelectedDateFilter(date)}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: 6,
+                  border: isSelected
+                    ? '1px solid #38BDF8'
+                    : isAllMatched
+                    ? '1px solid rgba(16, 185, 129, 0.3)'
+                    : '1px solid var(--border)',
+                  backgroundColor: isSelected
+                    ? 'rgba(56, 189, 248, 0.15)'
+                    : 'var(--surface-elevated)',
+                  color: isSelected ? '#38BDF8' : 'var(--label)',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  flexShrink: 0,
+                }}
+              >
+                <span>{date}</span>
+                <span
+                  style={{
+                    fontSize: 9.5,
+                    fontFamily: 'var(--font-mono)',
+                    padding: '1px 5px',
+                    borderRadius: 8,
+                    backgroundColor: isAllMatched ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                    color: isAllMatched ? '#10B981' : '#EF4444',
+                    fontWeight: 700,
+                  }}
+                >
+                  {stat.matched}/{stat.total}
+                </span>
+                {isAllMatched && <Check size={11} color="#10B981" />}
+              </button>
+            );
+          })}
         </div>
       )}
 
-      {/* Multi-Tab Table Workstation */}
+      {/* 5. Main Workstation Multi-Tab Table */}
       <div
         className="glass-card"
         style={{
@@ -1011,20 +1095,22 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          minHeight: 280,
+          minHeight: 380,
+          borderRadius: 14,
+          border: '1px solid var(--border)',
         }}
       >
-        {/* Table Tabs & Search Header */}
+        {/* Table Tabs & Search Filter Header */}
         <div
           style={{
-            height: 44,
+            height: 48,
             backgroundColor: 'var(--surface-elevated)',
             borderBottom: '1px solid var(--border)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '0 14px',
-            gap: 12,
+            padding: '0 16px',
+            gap: 14,
           }}
         >
           {/* Tabs */}
@@ -1032,200 +1118,219 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
             <button
               onClick={() => setActiveTab('matched')}
               style={{
-                padding: '6px 12px',
-                borderRadius: 6,
-                border: activeTab === 'matched' ? '1px solid var(--system-green)' : '1px solid transparent',
+                padding: '7px 14px',
+                borderRadius: 8,
+                border: activeTab === 'matched' ? '1px solid #10B981' : '1px solid transparent',
                 backgroundColor: activeTab === 'matched' ? 'rgba(16, 185, 129, 0.15)' : 'transparent',
-                color: activeTab === 'matched' ? 'var(--system-green)' : 'var(--secondary-label)',
-                fontSize: 11.5,
-                fontWeight: 600,
+                color: activeTab === 'matched' ? '#10B981' : 'var(--secondary-label)',
+                fontSize: 12,
+                fontWeight: 700,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6,
+                gap: 8,
               }}
             >
               <span>Matched Pairs</span>
               <span
                 style={{
-                  padding: '1px 6px',
+                  padding: '1.5px 7px',
                   borderRadius: 10,
-                  fontSize: 10,
+                  fontSize: 10.5,
                   backgroundColor: 'rgba(16, 185, 129, 0.2)',
-                  color: 'var(--system-green)',
+                  color: '#10B981',
+                  fontWeight: 800,
                 }}
               >
-                {scanResult?.matched.length || 0}
+                {filteredMatched.length}
               </span>
             </button>
 
             <button
               onClick={() => setActiveTab('unmatched')}
               style={{
-                padding: '6px 12px',
-                borderRadius: 6,
-                border: activeTab === 'unmatched' ? '1px solid var(--system-red)' : '1px solid transparent',
+                padding: '7px 14px',
+                borderRadius: 8,
+                border: activeTab === 'unmatched' ? '1px solid #EF4444' : '1px solid transparent',
                 backgroundColor: activeTab === 'unmatched' ? 'rgba(239, 68, 68, 0.15)' : 'transparent',
-                color: activeTab === 'unmatched' ? 'var(--system-red)' : 'var(--secondary-label)',
-                fontSize: 11.5,
-                fontWeight: 600,
+                color: activeTab === 'unmatched' ? '#EF4444' : 'var(--secondary-label)',
+                fontSize: 12,
+                fontWeight: 700,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6,
+                gap: 8,
               }}
             >
-              <span>Missing Photo Subfolder</span>
+              <span>Unmatched Video Clips</span>
               <span
                 style={{
-                  padding: '1px 6px',
+                  padding: '1.5px 7px',
                   borderRadius: 10,
-                  fontSize: 10,
-                  backgroundColor: 'rgba(239, 68, 68, 0.2)',
-                  color: 'var(--system-red)',
+                  fontSize: 10.5,
+                  backgroundColor: filteredUnmatched.length > 0 ? 'rgba(239, 68, 68, 0.25)' : 'var(--surface)',
+                  color: filteredUnmatched.length > 0 ? '#EF4444' : 'var(--tertiary-label)',
+                  fontWeight: 800,
                 }}
               >
-                {scanResult?.unmatched.length || 0}
+                {filteredUnmatched.length}
               </span>
             </button>
 
             <button
               onClick={() => setActiveTab('unmatchedFolders')}
               style={{
-                padding: '6px 12px',
-                borderRadius: 6,
-                border: activeTab === 'unmatchedFolders' ? '1px solid var(--system-orange)' : '1px solid transparent',
+                padding: '7px 14px',
+                borderRadius: 8,
+                border: activeTab === 'unmatchedFolders' ? '1px solid #F59E0B' : '1px solid transparent',
                 backgroundColor: activeTab === 'unmatchedFolders' ? 'rgba(245, 158, 11, 0.15)' : 'transparent',
-                color: activeTab === 'unmatchedFolders' ? 'var(--system-orange)' : 'var(--secondary-label)',
-                fontSize: 11.5,
-                fontWeight: 600,
+                color: activeTab === 'unmatchedFolders' ? '#F59E0B' : 'var(--secondary-label)',
+                fontSize: 12,
+                fontWeight: 700,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6,
+                gap: 8,
               }}
             >
-              <span>Missing Video Files</span>
+              <span>Photo Folders Without Video</span>
               <span
                 style={{
-                  padding: '1px 6px',
+                  padding: '1.5px 7px',
                   borderRadius: 10,
-                  fontSize: 10,
+                  fontSize: 10.5,
                   backgroundColor: 'rgba(245, 158, 11, 0.2)',
-                  color: 'var(--system-orange)',
+                  color: '#F59E0B',
+                  fontWeight: 800,
                 }}
               >
-                {scanResult?.unmatchedPhotoFolders?.length || 0}
+                {filteredUnmatchedFolders.length}
               </span>
             </button>
 
             <button
               onClick={() => setActiveTab('emptyFolders')}
               style={{
-                padding: '6px 12px',
-                borderRadius: 6,
+                padding: '7px 14px',
+                borderRadius: 8,
                 border: activeTab === 'emptyFolders' ? '1px solid #EC4899' : '1px solid transparent',
                 backgroundColor: activeTab === 'emptyFolders' ? 'rgba(236, 72, 153, 0.15)' : 'transparent',
                 color: activeTab === 'emptyFolders' ? '#EC4899' : 'var(--secondary-label)',
-                fontSize: 11.5,
-                fontWeight: 600,
+                fontSize: 12,
+                fontWeight: 700,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6,
+                gap: 8,
               }}
             >
-              <span>Empty Photo Folders</span>
+              <span>Empty Folders</span>
               <span
                 style={{
-                  padding: '1px 6px',
+                  padding: '1.5px 7px',
                   borderRadius: 10,
-                  fontSize: 10,
-                  backgroundColor: emptyFolders.length > 0 ? 'rgba(236, 72, 153, 0.25)' : 'var(--surface)',
-                  color: emptyFolders.length > 0 ? '#EC4899' : 'var(--tertiary-label)',
-                  fontWeight: 700,
+                  fontSize: 10.5,
+                  backgroundColor: filteredEmptyFolders.length > 0 ? 'rgba(236, 72, 153, 0.25)' : 'var(--surface)',
+                  color: filteredEmptyFolders.length > 0 ? '#EC4899' : 'var(--tertiary-label)',
+                  fontWeight: 800,
                 }}
               >
-                {emptyFolders.length}
+                {filteredEmptyFolders.length}
               </span>
             </button>
           </div>
 
-          {/* Search Filter */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              backgroundColor: 'var(--surface)',
-              border: '1px solid var(--border)',
-              borderRadius: 6,
-              padding: '0 8px',
-              gap: 6,
-              height: 28,
-              width: 220,
-            }}
-          >
-            <Search size={12} color="var(--tertiary-label)" />
+          {/* Search Filter Input */}
+          <div style={{ position: 'relative', width: 280 }}>
+            <Search
+              size={14}
+              color="var(--tertiary-label)"
+              style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }}
+            />
             <input
+              type="text"
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
-              placeholder="Filter items..."
+              placeholder="Search filename, shot, folder, date..."
               style={{
-                flex: 1,
-                background: 'transparent',
-                border: 'none',
-                outline: 'none',
+                width: '100%',
+                padding: '6px 28px 6px 30px',
+                borderRadius: 6,
+                backgroundColor: 'var(--surface)',
+                border: '1px solid var(--border)',
                 color: 'var(--label)',
-                fontSize: 11,
+                fontSize: 11.5,
+                outline: 'none',
               }}
             />
+            {searchFilter && (
+              <button
+                onClick={() => setSearchFilter('')}
+                style={{
+                  position: 'absolute',
+                  right: 8,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--tertiary-label)',
+                  cursor: 'pointer',
+                }}
+              >
+                <X size={13} />
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Tab 1: Matched Pairs */}
+        {/* Tab 1: Matched Pairs View */}
         {activeTab === 'matched' && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            {/* Table Header */}
             <div
               style={{
-                height: 34,
+                height: 38,
                 backgroundColor: 'rgba(255, 255, 255, 0.02)',
                 borderBottom: '1px solid var(--border)',
                 display: 'grid',
-                gridTemplateColumns: '2fr 1fr 2fr 1fr 1fr 1.2fr',
+                gridTemplateColumns: '2.5fr 1.2fr 2.5fr 1fr 1fr 1.5fr',
                 alignItems: 'center',
                 padding: '0 16px',
-                fontSize: 10.5,
+                fontSize: 11,
                 fontWeight: 700,
                 color: 'var(--tertiary-label)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
               }}
             >
-              <span>VIDEO MASTER CLIP</span>
-              <span>SHOT CODE</span>
-              <span>MATCHED PHOTO SUBFOLDER</span>
-              <span>VIDEO THUMB (_V)</span>
-              <span>PHOTO THUMB (_P)</span>
-              <span style={{ textAlign: 'right' }}>ACTIONS</span>
+              <span>Video Master Clip</span>
+              <span>Match Confidence</span>
+              <span>Target Photo Subfolder</span>
+              <span>Video Thumb (_V)</span>
+              <span>Photo Thumb (_P)</span>
+              <span style={{ textAlign: 'right' }}>Actions</span>
             </div>
 
+            {/* Table Body */}
             <div style={{ flex: 1, overflowY: 'auto' }}>
               {!scanResult || filteredMatched.length === 0 ? (
                 <div
                   style={{
                     height: '100%',
-                    minHeight: 200,
+                    minHeight: 240,
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: 10,
-                    padding: '32px 20px',
+                    gap: 12,
+                    padding: 32,
                     textAlign: 'center',
                   }}
                 >
                   <div
                     style={{
-                      width: 48,
-                      height: 48,
+                      width: 52,
+                      height: 52,
                       borderRadius: 14,
                       backgroundColor: 'rgba(16, 185, 129, 0.1)',
                       border: '1px solid rgba(16, 185, 129, 0.25)',
@@ -1234,17 +1339,17 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                       justifyContent: 'center',
                     }}
                   >
-                    <Video size={24} color="#10B981" />
+                    <Video size={26} color="#10B981" />
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                    <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--label)' }}>
-                      {scanResult ? 'No Matched Clips Found' : 'Awaiting Sequence Pair Scan'}
+                  <div>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--label)' }}>
+                      {scanResult ? 'No Matched Clips Matching Filter' : 'Awaiting Sequence Pair Scan'}
                     </span>
-                    <span style={{ fontSize: 11.5, color: 'var(--secondary-label)', maxWidth: 380, lineHeight: 1.4 }}>
+                    <div style={{ fontSize: 12, color: 'var(--secondary-label)', maxWidth: 400, marginTop: 4 }}>
                       {scanResult
-                        ? 'Try clearing the search filter above to see all matched clips.'
-                        : 'Select video and photo directories above, then click "Scan Sequence Pairs" to match clips with event subfolders.'}
-                    </span>
+                        ? 'Try clearing the search query or selecting "All Dates" above.'
+                        : 'Select master video and photo directories above, then click "Scan Sequence Pairs" to match clips.'}
+                    </div>
                   </div>
                   {!scanResult && (
                     <StudioButton
@@ -1254,124 +1359,381 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                       onClick={handleScan}
                       disabled={!videoDir || !photoDir}
                       icon={<RefreshCw size={13} />}
-                      style={{ background: 'linear-gradient(135deg, #10B981, #059669)', marginTop: 4 }}
+                      style={{ background: 'linear-gradient(135deg, #10B981, #059669)', marginTop: 6 }}
                     >
                       Scan Sequence Pairs
                     </StudioButton>
                   )}
                 </div>
               ) : (
-                filteredMatched.map((item, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      height: 40,
-                      display: 'grid',
-                      gridTemplateColumns: '2fr 1fr 2fr 1fr 1fr 1.2fr',
-                      alignItems: 'center',
-                      padding: '0 16px',
-                      borderBottom: '1px solid var(--border-subtle)',
-                      fontSize: 11,
-                      fontFamily: 'var(--font-mono)',
-                      color: 'var(--label)',
-                      backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.015)',
-                    }}
-                  >
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.videoPath}>
-                      {item.videoFile}
-                    </span>
+                filteredMatched.map((item, idx) => {
+                  const candidateFolders = scanResult.photoFoldersByDate[item.dateFolder] || [];
+                  const isReassigning = reassigningItem === item.videoPath;
 
-                    <span
+                  return (
+                    <div
+                      key={idx}
                       style={{
-                        display: 'inline-block',
-                        width: 'fit-content',
-                        padding: '1px 6px',
-                        borderRadius: 4,
-                        fontSize: 9.5,
-                        fontWeight: 700,
-                        color: 'var(--system-green)',
-                        backgroundColor: 'rgba(48, 209, 88, 0.12)',
-                        border: '1px solid var(--system-green)',
+                        minHeight: 48,
+                        display: 'grid',
+                        gridTemplateColumns: '2.5fr 1.2fr 2.5fr 1fr 1fr 1.5fr',
+                        alignItems: 'center',
+                        padding: '6px 16px',
+                        borderBottom: '1px solid var(--border-subtle)',
+                        fontSize: 11.5,
+                        color: 'var(--label)',
+                        backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.012)',
                       }}
                     >
-                      {item.shotCode}
-                    </span>
+                      {/* 1. Video File & Date */}
+                      <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', paddingRight: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
+                          <span
+                            style={{
+                              fontWeight: 700,
+                              fontFamily: 'var(--font-mono)',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                            title={item.videoPath}
+                          >
+                            {item.videoFile}
+                          </span>
+                          <button
+                            onClick={() => handleCopyText(item.videoFile, 'filename')}
+                            style={{ background: 'none', border: 'none', color: 'var(--tertiary-label)', cursor: 'pointer', padding: 2 }}
+                            title="Copy video file name"
+                          >
+                            <Copy size={11} />
+                          </button>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 10.5, color: 'var(--secondary-label)' }}>
+                          <span>Date: <strong style={{ color: 'var(--label)' }}>{item.dateFolder}</strong></span>
+                          <span>•</span>
+                          <span>{formatBytes(item.videoSize)}</span>
+                        </div>
+                      </div>
 
-                    <span style={{ color: 'var(--system-cyan)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.photoFolderPath}>
-                      {item.photoFolder}
-                    </span>
+                      {/* 2. Match Confidence Badge */}
+                      <div>
+                        <span
+                          style={{
+                            padding: '3px 8px',
+                            borderRadius: 6,
+                            fontSize: 10.5,
+                            fontWeight: 700,
+                            fontFamily: 'var(--font-mono)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            backgroundColor:
+                              item.matchType === 'exact'
+                                ? 'rgba(16, 185, 129, 0.15)'
+                                : item.matchType === 'camera_id'
+                                ? 'rgba(56, 189, 248, 0.15)'
+                                : item.matchType === 'normalized'
+                                ? 'rgba(20, 184, 166, 0.15)'
+                                : item.matchType === 'shot_token'
+                                ? 'rgba(99, 102, 241, 0.15)'
+                                : item.matchType === 'manual'
+                                ? 'rgba(245, 158, 11, 0.15)'
+                                : 'rgba(139, 92, 246, 0.15)',
+                            color:
+                              item.matchType === 'exact'
+                                ? '#10B981'
+                                : item.matchType === 'camera_id'
+                                ? '#38BDF8'
+                                : item.matchType === 'normalized'
+                                ? '#14B8A6'
+                                : item.matchType === 'shot_token'
+                                ? '#6366F1'
+                                : item.matchType === 'manual'
+                                ? '#F59E0B'
+                                : '#8B5CF6',
+                            border:
+                              item.matchType === 'exact'
+                                ? '1px solid rgba(16, 185, 129, 0.35)'
+                                : item.matchType === 'camera_id'
+                                ? '1px solid rgba(56, 189, 248, 0.35)'
+                                : item.matchType === 'normalized'
+                                ? '1px solid rgba(20, 184, 166, 0.35)'
+                                : item.matchType === 'shot_token'
+                                ? '1px solid rgba(99, 102, 241, 0.35)'
+                                : item.matchType === 'manual'
+                                ? '1px solid rgba(245, 158, 11, 0.35)'
+                                : '1px solid rgba(139, 92, 246, 0.35)',
+                          }}
+                        >
+                          <Sparkles size={11} />
+                          <span>
+                            {item.matchType === 'exact'
+                              ? 'Exact Stem'
+                              : item.matchType === 'camera_id'
+                              ? 'Camera Clip ID'
+                              : item.matchType === 'normalized'
+                              ? 'Normalized'
+                              : item.matchType === 'shot_token'
+                              ? `Shot ${item.shotCode}`
+                              : item.matchType === 'manual'
+                              ? 'Manual Pair'
+                              : 'Sequence'}
+                          </span>
+                        </span>
+                      </div>
 
-                    <span style={{ color: item.hasVideoThumb ? 'var(--system-green)' : 'var(--tertiary-label)', fontSize: 10 }}>
-                      {item.hasVideoThumb ? '✓ Found (_V)' : '— None'}
-                    </span>
+                      {/* 3. Target Photo Subfolder */}
+                      <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', paddingRight: 10 }}>
+                        {isReassigning ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <select
+                              defaultValue={item.photoFolderPath}
+                              onChange={(e) => handleReassignTarget(item.videoPath, e.target.value)}
+                              style={{
+                                width: '100%',
+                                padding: '4px 6px',
+                                borderRadius: 6,
+                                backgroundColor: 'var(--surface-card)',
+                                border: '1px solid #38BDF8',
+                                color: 'var(--label)',
+                                fontSize: 11,
+                                outline: 'none',
+                              }}
+                            >
+                              {candidateFolders.map((cf) => (
+                                <option key={cf.path} value={cf.path}>
+                                  {cf.name}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={() => setReassigningItem(null)}
+                              style={{ background: 'none', border: 'none', color: 'var(--secondary-label)', cursor: 'pointer' }}
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
+                              <span
+                                style={{
+                                  fontWeight: 700,
+                                  color: 'var(--system-cyan)',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                }}
+                                title={item.photoFolderPath}
+                              >
+                                {item.photoFolder}
+                              </span>
+                              {item.parentCategoryFolder && item.parentCategoryFolder !== item.photoFolder && (
+                                <span
+                                  style={{
+                                    fontSize: 9.5,
+                                    padding: '1px 5px',
+                                    borderRadius: 4,
+                                    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                                    color: 'var(--secondary-label)',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  in {item.parentCategoryFolder}
+                                </span>
+                              )}
+                            </div>
+                            <span
+                              style={{
+                                fontSize: 10.5,
+                                color: 'var(--tertiary-label)',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                              title={item.photoFolderPath}
+                            >
+                              {item.photoFolderPath}
+                            </span>
+                          </>
+                        )}
+                      </div>
 
-                    <span style={{ color: item.hasPhotoThumb ? 'var(--system-green)' : 'var(--tertiary-label)', fontSize: 10 }}>
-                      {item.hasPhotoThumb ? '✓ Found (_P)' : '— None'}
-                    </span>
+                      {/* 4. Video Thumbnail (_V) */}
+                      <div>
+                        {item.hasVideoThumb && item.videoThumbPath ? (
+                          <button
+                            onClick={() =>
+                              setPreviewThumb({
+                                url: `file://${item.videoThumbPath!.replace(/\\/g, '/')}`,
+                                title: item.videoFile,
+                                type: '_V',
+                                path: item.videoThumbPath!,
+                              })
+                            }
+                            style={{
+                              padding: '3px 8px',
+                              borderRadius: 6,
+                              backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                              border: '1px solid rgba(16, 185, 129, 0.35)',
+                              color: '#10B981',
+                              fontSize: 10.5,
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
+                            title="Click to view thumbnail"
+                          >
+                            <Eye size={11} />
+                            <span>Found (_V)</span>
+                          </button>
+                        ) : (
+                          <span style={{ fontSize: 10.5, color: 'var(--tertiary-label)' }}>— None</span>
+                        )}
+                      </div>
 
-                    <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                      <button
-                        onClick={() => handleLocateItem(item.videoPath)}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: 'var(--secondary-label)',
-                          fontSize: 10.5,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 2,
-                        }}
-                        title="Locate Video File in Explorer"
-                      >
-                        <Video size={11} /> Video
-                      </button>
-                      <button
-                        onClick={() => handleOpenPath(item.photoFolderPath, 'Photo Subfolder')}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: 'var(--system-blue)',
-                          fontSize: 10.5,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 2,
-                        }}
-                        title="Open Photo Subfolder in Explorer"
-                      >
-                        <FolderOpen size={11} /> Photo
-                      </button>
+                      {/* 5. Photo Thumbnail (_P) */}
+                      <div>
+                        {item.hasPhotoThumb && item.photoThumbPath ? (
+                          <button
+                            onClick={() =>
+                              setPreviewThumb({
+                                url: `file://${item.photoThumbPath!.replace(/\\/g, '/')}`,
+                                title: item.photoFolder,
+                                type: '_P',
+                                path: item.photoThumbPath!,
+                              })
+                            }
+                            style={{
+                              padding: '3px 8px',
+                              borderRadius: 6,
+                              backgroundColor: 'rgba(139, 92, 246, 0.12)',
+                              border: '1px solid rgba(139, 92, 246, 0.35)',
+                              color: '#A78BFA',
+                              fontSize: 10.5,
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
+                            title="Click to view thumbnail"
+                          >
+                            <Eye size={11} />
+                            <span>Found (_P)</span>
+                          </button>
+                        ) : (
+                          <span style={{ fontSize: 10.5, color: 'var(--tertiary-label)' }}>— None</span>
+                        )}
+                      </div>
+
+                      {/* 6. Action Buttons */}
+                      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
+                        <button
+                          onClick={() => handleLocateItem(item.videoPath)}
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.04)',
+                            border: '1px solid var(--border)',
+                            borderRadius: 6,
+                            padding: '3px 8px',
+                            color: 'var(--label)',
+                            fontSize: 10.5,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}
+                          title="Locate Video in Explorer"
+                        >
+                          <Video size={11} color="#10B981" />
+                          <span>Video</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleOpenPath(item.photoFolderPath, 'Photo Subfolder')}
+                          style={{
+                            background: 'rgba(0, 122, 255, 0.08)',
+                            border: '1px solid rgba(0, 122, 255, 0.3)',
+                            borderRadius: 6,
+                            padding: '3px 8px',
+                            color: '#38BDF8',
+                            fontSize: 10.5,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}
+                          title="Open Target Photo Folder in Explorer"
+                        >
+                          <FolderOpen size={11} color="#38BDF8" />
+                          <span>Folder</span>
+                        </button>
+
+                        <button
+                          onClick={() => setReassigningItem(isReassigning ? null : item.videoPath)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--secondary-label)',
+                            fontSize: 10.5,
+                            cursor: 'pointer',
+                            padding: '3px 4px',
+                          }}
+                          title="Re-assign to another photo folder"
+                        >
+                          <Link size={12} />
+                        </button>
+
+                        <button
+                          onClick={() => handleUnpair(item)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#EF4444',
+                            fontSize: 10.5,
+                            cursor: 'pointer',
+                            padding: '3px 4px',
+                          }}
+                          title="Unpair clip"
+                        >
+                          <Unlink size={12} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
         )}
 
-        {/* Tab 2: Missing Photo Folder / Unmatched Video Clips */}
+        {/* Tab 2: Unmatched Video Clips (with Smart Pair Dropdown & Suggested Match) */}
         {activeTab === 'unmatched' && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            {/* Table Header */}
             <div
               style={{
-                height: 36,
+                height: 38,
                 backgroundColor: 'rgba(255, 255, 255, 0.02)',
                 borderBottom: '1px solid var(--border)',
                 display: 'grid',
-                gridTemplateColumns: '2fr 0.9fr 1fr 2fr 1.8fr',
+                gridTemplateColumns: '2.5fr 1fr 1fr 2.5fr 2fr',
                 alignItems: 'center',
                 padding: '0 16px',
-                fontSize: 10.5,
+                fontSize: 11,
                 fontWeight: 700,
                 color: 'var(--tertiary-label)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
               }}
             >
-              <span>VIDEO MASTER CLIP</span>
-              <span>SHOT TOKEN</span>
-              <span>DATE FOLDER</span>
-              <span>DIAGNOSTIC STATUS (MISSING PHOTO)</span>
-              <span style={{ textAlign: 'right' }}>EXPLORER ACTIONS</span>
+              <span>Unmatched Video File</span>
+              <span>Shot Token</span>
+              <span>Date Scope</span>
+              <span>Diagnostic / Reason</span>
+              <span style={{ textAlign: 'right' }}>Pair with Photo Folder</span>
             </div>
 
             <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -1379,144 +1741,173 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                 <div
                   style={{
                     height: '100%',
-                    minHeight: 180,
+                    minHeight: 240,
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: 8,
-                    padding: 30,
+                    gap: 10,
+                    padding: 32,
                     textAlign: 'center',
                   }}
                 >
-                  <CheckCircle2 size={28} color={scanResult ? '#10B981' : 'var(--tertiary-label)'} style={{ opacity: scanResult ? 1 : 0.4 }} />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: scanResult ? 'var(--label)' : 'var(--secondary-label)' }}>
-                    {scanResult ? 'All video clips paired successfully — zero orphans detected.' : 'Run sequence scan to check for missing photo folders.'}
+                  <CheckCircle2 size={32} color="#10B981" />
+                  <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--label)' }}>
+                    All video clips paired successfully — zero orphans detected!
+                  </span>
+                  <span style={{ fontSize: 12, color: 'var(--secondary-label)' }}>
+                    Every single video file has been accurately matched with a photo subfolder.
                   </span>
                 </div>
               ) : (
-                filteredUnmatched.map((item, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      height: 46,
-                      display: 'grid',
-                      gridTemplateColumns: '2fr 0.9fr 1fr 2fr 1.8fr',
-                      alignItems: 'center',
-                      padding: '0 16px',
-                      borderBottom: '1px solid var(--border-subtle)',
-                      fontSize: 11,
-                      fontFamily: 'var(--font-mono)',
-                      color: 'var(--label)',
-                      backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.015)',
-                    }}
-                  >
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.videoPath}>
-                      {item.videoFile}
-                    </span>
+                filteredUnmatched.map((item, idx) => {
+                  const candidateFolders = scanResult.photoFoldersByDate[item.dateFolder] || [];
 
-                    <span
+                  return (
+                    <div
+                      key={idx}
                       style={{
-                        display: 'inline-block',
-                        width: 'fit-content',
-                        padding: '1px 6px',
-                        borderRadius: 4,
-                        fontSize: 9.5,
-                        fontWeight: 700,
-                        color: 'var(--system-orange)',
-                        backgroundColor: 'rgba(245, 158, 11, 0.12)',
-                        border: '1px solid rgba(245, 158, 11, 0.3)',
+                        minHeight: 52,
+                        display: 'grid',
+                        gridTemplateColumns: '2.5fr 1fr 1fr 2.5fr 2fr',
+                        alignItems: 'center',
+                        padding: '8px 16px',
+                        borderBottom: '1px solid var(--border-subtle)',
+                        fontSize: 11.5,
+                        color: 'var(--label)',
+                        backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.012)',
                       }}
                     >
-                      {item.shotCode}
-                    </span>
+                      <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', paddingRight: 10 }}>
+                        <span style={{ fontWeight: 700, fontFamily: 'var(--font-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.videoPath}>
+                          {item.videoFile}
+                        </span>
+                        <span style={{ fontSize: 10.5, color: 'var(--tertiary-label)' }}>
+                          {item.videoPath}
+                        </span>
+                      </div>
 
-                    <span style={{ color: 'var(--secondary-label)' }}>
-                      {item.dateFolder || '(Root)'}
-                    </span>
+                      <div>
+                        <span
+                          style={{
+                            padding: '2px 7px',
+                            borderRadius: 4,
+                            fontSize: 10,
+                            fontWeight: 700,
+                            color: '#F59E0B',
+                            backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                            border: '1px solid rgba(245, 158, 11, 0.3)',
+                          }}
+                        >
+                          {item.shotCode || 'None'}
+                        </span>
+                      </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, overflow: 'hidden' }}>
-                      <span style={{ color: 'var(--system-red)', fontWeight: 700, fontSize: 10 }}>
-                        [MISSING PHOTO SUBFOLDER]
+                      <span style={{ color: 'var(--secondary-label)' }}>
+                        {item.dateFolder}
                       </span>
-                      <span style={{ color: 'var(--secondary-label)', fontSize: 10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.reason}>
-                        {item.reason}
-                      </span>
-                    </div>
 
-                    <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
-                      {/* Open Video Folder */}
-                      <button
-                        onClick={() => handleLocateItem(item.videoPath)}
-                        style={{
-                          background: 'rgba(255, 255, 255, 0.06)',
-                          border: '1px solid var(--border)',
-                          borderRadius: 6,
-                          padding: '4px 8px',
-                          color: 'var(--label)',
-                          fontSize: 10.5,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 4,
-                        }}
-                        title="Open Video Folder to locate this video clip"
-                      >
-                        <Video size={12} color="var(--system-green)" />
-                        <span>Open Video</span>
-                      </button>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingRight: 10 }}>
+                        <span style={{ color: '#EF4444', fontWeight: 700, fontSize: 10.5 }}>
+                          [UNMATCHED]
+                        </span>
+                        <span style={{ fontSize: 10.5, color: 'var(--secondary-label)' }} title={item.reason}>
+                          {item.reason}
+                        </span>
+                        {item.suggestedFolder && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                            <span style={{ fontSize: 10.5, color: '#38BDF8' }}>Suggested:</span>
+                            <button
+                              onClick={() => handleManualPair(item, item.suggestedFolder!.path)}
+                              style={{
+                                padding: '2px 8px',
+                                borderRadius: 4,
+                                backgroundColor: 'rgba(56, 189, 248, 0.15)',
+                                border: '1px solid rgba(56, 189, 248, 0.35)',
+                                color: '#38BDF8',
+                                fontSize: 10.5,
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Pair with "{item.suggestedFolder.name}"
+                            </button>
+                          </div>
+                        )}
+                      </div>
 
-                      {/* Open Photo Folder to check if photo folder exists or create it */}
-                      <button
-                        onClick={() => handleOpenPath(item.targetExpectedDir || photoDir, `Target Photo Folder (${item.dateFolder})`)}
-                        style={{
-                          background: 'rgba(0, 122, 255, 0.1)',
-                          border: '1px solid rgba(0, 122, 255, 0.35)',
-                          borderRadius: 6,
-                          padding: '4px 8px',
-                          color: 'var(--system-blue)',
-                          fontSize: 10.5,
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 4,
-                        }}
-                        title="Open Photo Folder in Explorer where this photo subfolder should be placed"
-                      >
-                        <FolderOpen size={12} color="var(--system-blue)" />
-                        <span>Open Photo Folder</span>
-                      </button>
+                      {/* Manual Pairing Selector */}
+                      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
+                        <select
+                          defaultValue=""
+                          onChange={(e) => {
+                            if (e.target.value) handleManualPair(item, e.target.value);
+                          }}
+                          style={{
+                            maxWidth: 160,
+                            padding: '4px 6px',
+                            borderRadius: 6,
+                            backgroundColor: 'var(--surface-elevated)',
+                            border: '1px solid var(--border)',
+                            color: 'var(--label)',
+                            fontSize: 10.5,
+                            outline: 'none',
+                          }}
+                        >
+                          <option value="" disabled>Choose Photo Folder...</option>
+                          {candidateFolders.map((cf) => (
+                            <option key={cf.path} value={cf.path}>
+                              {cf.name}
+                            </option>
+                          ))}
+                        </select>
+
+                        <button
+                          onClick={() => handleLocateItem(item.videoPath)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--secondary-label)',
+                            cursor: 'pointer',
+                            padding: '4px 6px',
+                          }}
+                          title="Locate Video File"
+                        >
+                          <Video size={13} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
         )}
 
-        {/* Tab 3: Missing Video Files / Photo Subfolders Without Video */}
+        {/* Tab 3: Photo Folders Without Video */}
         {activeTab === 'unmatchedFolders' && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div
               style={{
-                height: 36,
+                height: 38,
                 backgroundColor: 'rgba(255, 255, 255, 0.02)',
                 borderBottom: '1px solid var(--border)',
                 display: 'grid',
-                gridTemplateColumns: '2fr 0.9fr 1fr 2fr 1.8fr',
+                gridTemplateColumns: '2.5fr 1fr 1fr 2.5fr 1.5fr',
                 alignItems: 'center',
                 padding: '0 16px',
-                fontSize: 10.5,
+                fontSize: 11,
                 fontWeight: 700,
                 color: 'var(--tertiary-label)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
               }}
             >
-              <span>PHOTO SUBFOLDER</span>
-              <span>SEQUENCE TOKEN</span>
-              <span>DATE FOLDER</span>
-              <span>DIAGNOSTIC STATUS (MISSING VIDEO)</span>
-              <span style={{ textAlign: 'right' }}>EXPLORER ACTIONS</span>
+              <span>Photo Subfolder</span>
+              <span>Sequence Token</span>
+              <span>Date Scope</span>
+              <span>Status</span>
+              <span style={{ textAlign: 'right' }}>Explorer Action</span>
             </div>
 
             <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -1524,19 +1915,19 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                 <div
                   style={{
                     height: '100%',
-                    minHeight: 180,
+                    minHeight: 240,
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: 8,
-                    padding: 30,
+                    gap: 10,
+                    padding: 32,
                     textAlign: 'center',
                   }}
                 >
-                  <CheckCircle2 size={28} color={scanResult ? '#10B981' : 'var(--tertiary-label)'} style={{ opacity: scanResult ? 1 : 0.4 }} />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: scanResult ? 'var(--label)' : 'var(--secondary-label)' }}>
-                    {scanResult ? 'All photo subfolders matched with corresponding video clips.' : 'Run sequence scan to inspect photo subfolder coverage.'}
+                  <CheckCircle2 size={32} color="#10B981" />
+                  <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--label)' }}>
+                    All photo subfolders have matching video coverage.
                   </span>
                 </div>
               ) : (
@@ -1544,19 +1935,18 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                   <div
                     key={idx}
                     style={{
-                      height: 46,
+                      height: 48,
                       display: 'grid',
-                      gridTemplateColumns: '2fr 0.9fr 1fr 2fr 1.8fr',
+                      gridTemplateColumns: '2.5fr 1fr 1fr 2.5fr 1.5fr',
                       alignItems: 'center',
                       padding: '0 16px',
                       borderBottom: '1px solid var(--border-subtle)',
-                      fontSize: 11,
-                      fontFamily: 'var(--font-mono)',
+                      fontSize: 11.5,
                       color: 'var(--label)',
-                      backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.015)',
+                      backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.012)',
                     }}
                   >
-                    <span style={{ color: 'var(--system-cyan)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.folderPath}>
+                    <span style={{ color: 'var(--system-cyan)', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.folderPath}>
                       {item.folderName}
                     </span>
 
@@ -1568,58 +1958,24 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                       {item.dateFolder}
                     </span>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, overflow: 'hidden' }}>
-                      <span style={{ color: 'var(--system-orange)', fontWeight: 700, fontSize: 10 }}>
-                        [MISSING VIDEO FILE]
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ color: '#F59E0B', fontWeight: 700, fontSize: 10.5 }}>
+                        [PHOTO-ONLY SESSION]
                       </span>
-                      <span style={{ color: 'var(--secondary-label)', fontSize: 10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.reason}>
-                        {item.reason}
+                      <span style={{ fontSize: 10.5, color: 'var(--secondary-label)' }}>
+                        No video master clip paired with this folder
                       </span>
                     </div>
 
                     <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
-                      {/* Open Photo Folder */}
-                      <button
+                      <StudioButton
+                        variant="glass"
+                        icon={<FolderOpen size={12} />}
                         onClick={() => handleOpenPath(item.folderPath, `Photo Folder (${item.folderName})`)}
-                        style={{
-                          background: 'rgba(0, 122, 255, 0.1)',
-                          border: '1px solid rgba(0, 122, 255, 0.35)',
-                          borderRadius: 6,
-                          padding: '4px 8px',
-                          color: 'var(--system-blue)',
-                          fontSize: 10.5,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 4,
-                        }}
-                        title="Open Photo Subfolder in Explorer"
+                        style={{ fontSize: 10.5, padding: '4px 8px', height: 26 }}
                       >
-                        <FolderOpen size={12} color="var(--system-blue)" />
-                        <span>Open Photo</span>
-                      </button>
-
-                      {/* Open Video Folder */}
-                      <button
-                        onClick={() => handleOpenPath(item.videoFolderPath || videoDir, `Video Folder (${item.dateFolder})`)}
-                        style={{
-                          background: 'rgba(52, 199, 89, 0.1)',
-                          border: '1px solid rgba(52, 199, 89, 0.35)',
-                          borderRadius: 6,
-                          padding: '4px 8px',
-                          color: 'var(--system-green)',
-                          fontSize: 10.5,
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 4,
-                        }}
-                        title="Open Video Folder in Explorer to check for missing video clips"
-                      >
-                        <Video size={12} color="var(--system-green)" />
-                        <span>Open Video Folder</span>
-                      </button>
+                        Open Folder
+                      </StudioButton>
                     </div>
                   </div>
                 ))
@@ -1628,28 +1984,29 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
           </div>
         )}
 
-        {/* 4. Empty Photo Folders Tab View */}
+        {/* Tab 4: Empty Folders */}
         {activeTab === 'emptyFolders' && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            {/* Table Header */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div
               style={{
-                height: 32,
+                height: 38,
+                backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                borderBottom: '1px solid var(--border)',
                 display: 'grid',
-                gridTemplateColumns: '2fr 1fr 2fr 1.6fr',
+                gridTemplateColumns: '2.5fr 1fr 2.5fr 1.5fr',
                 alignItems: 'center',
                 padding: '0 16px',
-                borderBottom: '1px solid var(--border)',
-                backgroundColor: 'var(--surface-elevated)',
-                fontSize: 10.5,
+                fontSize: 11,
                 fontWeight: 700,
                 color: 'var(--tertiary-label)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
               }}
             >
-              <span>EMPTY PHOTO SUBFOLDER</span>
-              <span>DATE FOLDER</span>
-              <span>STATUS / CONDITION</span>
-              <span style={{ textAlign: 'right' }}>ACTIONS</span>
+              <span>Empty Photo Subfolder</span>
+              <span>Date Scope</span>
+              <span>Condition</span>
+              <span style={{ textAlign: 'right' }}>Actions</span>
             </div>
 
             <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -1657,19 +2014,19 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                 <div
                   style={{
                     height: '100%',
-                    minHeight: 180,
+                    minHeight: 240,
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: 8,
-                    padding: 30,
+                    gap: 10,
+                    padding: 32,
                     textAlign: 'center',
                   }}
                 >
-                  <CheckCircle2 size={28} color="#10B981" />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--label)' }}>
-                    No empty photo folders detected. All folders contain active photos or subfolders.
+                  <CheckCircle2 size={32} color="#10B981" />
+                  <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--label)' }}>
+                    Zero empty photo folders detected.
                   </span>
                 </div>
               ) : (
@@ -1677,82 +2034,48 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                   <div
                     key={item.id || idx}
                     style={{
-                      height: 52,
+                      height: 50,
                       display: 'grid',
-                      gridTemplateColumns: '2fr 1fr 2fr 1.6fr',
+                      gridTemplateColumns: '2.5fr 1fr 2.5fr 1.5fr',
                       alignItems: 'center',
                       padding: '0 16px',
                       borderBottom: '1px solid var(--border-subtle)',
-                      fontSize: 11,
-                      fontFamily: 'var(--font-mono)',
+                      fontSize: 11.5,
                       color: 'var(--label)',
-                      backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.015)',
+                      backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.012)',
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
-                      <FolderX size={15} color="#EC4899" style={{ flexShrink: 0 }} />
-                      <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                        <span
-                          style={{ color: '#EC4899', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                          title={item.folderPath}
-                        >
-                          {item.folderName}
-                        </span>
-                        <span
-                          style={{ fontSize: 9.5, color: 'var(--tertiary-label)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                          title={item.folderPath}
-                        >
-                          {item.folderPath}
-                        </span>
-                      </div>
+                      <FolderX size={15} color="#EC4899" />
+                      <span style={{ color: '#EC4899', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.folderPath}>
+                        {item.folderName}
+                      </span>
                     </div>
 
                     <span style={{ color: 'var(--secondary-label)' }}>
                       {item.dateFolder}
                     </span>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span
-                        style={{
-                          fontSize: 9.5,
-                          fontFamily: 'var(--font-mono)',
-                          padding: '2px 7px',
-                          borderRadius: 4,
-                          backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                          color: 'var(--system-red)',
-                          border: '1px solid rgba(239, 68, 68, 0.25)',
-                          whiteSpace: 'nowrap',
-                          fontWeight: 700,
-                        }}
-                      >
-                        ⚠️ No photos
-                      </span>
-                      <span style={{ fontSize: 10, color: 'var(--tertiary-label)' }}>
-                        (0 photos, {item.totalFileCount} files)
-                      </span>
-                    </div>
+                    <span style={{ color: '#EF4444', fontWeight: 600, fontSize: 11 }}>
+                      Contains 0 photos and 0 child subfolders
+                    </span>
 
                     <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
-                      {/* Option 1: Go to folder */}
                       <StudioButton
                         variant="secondary"
                         icon={<FolderOpen size={12} />}
                         onClick={() => handleGoToFolder(item.folderPath)}
                         style={{ fontSize: 10.5, height: 26, padding: '4px 8px' }}
-                        title="Open in Windows Explorer"
                       >
-                        Go to folder
+                        Inspect
                       </StudioButton>
-
-                      {/* Option 2: Delete folder */}
                       <StudioButton
                         variant="danger"
                         icon={<Trash2 size={12} />}
                         onClick={() => handleDeleteEmptyFolder(item.folderPath, item.folderName)}
                         style={{ fontSize: 10.5, height: 26, padding: '4px 8px' }}
-                        title="Delete empty folder"
                       >
-                        Delete folder
+                        Delete
                       </StudioButton>
                     </div>
                   </div>
@@ -1763,7 +2086,98 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
         )}
       </div>
 
-      {/* Empty Photo Folders Pop-up Modal */}
+      {/* 6. Thumbnail Preview Lightbox Popover Modal */}
+      {previewThumb && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(12px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 24,
+          }}
+          onClick={() => setPreviewThumb(null)}
+        >
+          <div
+            className="glass-card"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: 680,
+              width: '100%',
+              backgroundColor: 'var(--surface-card)',
+              borderRadius: 16,
+              border: '1px solid var(--border)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.7)',
+            }}
+          >
+            <div
+              style={{
+                padding: '14px 18px',
+                borderBottom: '1px solid var(--border)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span
+                  style={{
+                    padding: '2px 8px',
+                    borderRadius: 6,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    backgroundColor: previewThumb.type === '_V' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(139, 92, 246, 0.2)',
+                    color: previewThumb.type === '_V' ? '#10B981' : '#A78BFA',
+                  }}
+                >
+                  {previewThumb.type} Thumbnail
+                </span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--label)' }}>
+                  {previewThumb.title}
+                </span>
+              </div>
+              <button
+                onClick={() => setPreviewThumb(null)}
+                style={{ background: 'none', border: 'none', color: 'var(--secondary-label)', cursor: 'pointer' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ padding: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#090B10' }}>
+              <img
+                src={previewThumb.url}
+                alt={previewThumb.title}
+                style={{ maxWidth: '100%', maxHeight: 420, borderRadius: 8, objectFit: 'contain' }}
+                onError={(e) => {
+                  (e.target as any).style.display = 'none';
+                }}
+              />
+            </div>
+
+            <div style={{ padding: '10px 18px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--secondary-label)' }}>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '80%' }}>
+                {previewThumb.path}
+              </span>
+              <button
+                onClick={() => handleLocateItem(previewThumb.path)}
+                style={{ background: 'none', border: 'none', color: '#38BDF8', cursor: 'pointer', fontWeight: 600 }}
+              >
+                Reveal in Explorer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 7. Empty Folders Modal */}
       {showEmptyModal && emptyFolders.length > 0 && (
         <div
           style={{
@@ -1795,7 +2209,6 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
               overflow: 'hidden',
             }}
           >
-            {/* Modal Header */}
             <div
               style={{
                 padding: '16px 20px',
@@ -1807,172 +2220,65 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 10,
-                    backgroundColor: 'rgba(236, 72, 153, 0.15)',
-                    border: '1px solid rgba(236, 72, 153, 0.35)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <FolderX size={20} color="#EC4899" />
-                </div>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--label)', fontFamily: 'var(--font-display)' }}>
-                      Empty Photo Folders Detected
-                    </span>
-                    <span
-                      style={{
-                        padding: '1.5px 8px',
-                        borderRadius: 10,
-                        fontSize: 10,
-                        fontWeight: 700,
-                        fontFamily: 'var(--font-mono)',
-                        backgroundColor: 'rgba(236, 72, 153, 0.2)',
-                        color: '#EC4899',
-                        border: '1px solid rgba(236, 72, 153, 0.4)',
-                      }}
-                    >
-                      {emptyFolders.length} EMPTY
-                    </span>
-                  </div>
-                  <div style={{ fontSize: 11, color: 'var(--secondary-label)', marginTop: 2 }}>
-                    These folders contain no photos. (Folders containing child subfolders are preserved as active).
-                  </div>
-                </div>
+                <FolderX size={20} color="#EC4899" />
+                <span style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--label)' }}>
+                  Empty Photo Folders Detected ({emptyFolders.length})
+                </span>
               </div>
-
               <button
                 onClick={() => setShowEmptyModal(false)}
-                style={{
-                  width: 30,
-                  height: 30,
-                  borderRadius: 6,
-                  background: 'transparent',
-                  border: '1px solid var(--border-subtle)',
-                  color: 'var(--secondary-label)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                }}
+                style={{ background: 'none', border: 'none', color: 'var(--secondary-label)', cursor: 'pointer' }}
               >
                 <X size={16} />
               </button>
             </div>
 
-            {/* Modal Body / Folder Cards */}
-            <div
-              style={{
-                padding: '14px 20px',
-                flex: 1,
-                overflowY: 'auto',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 10,
-              }}
-            >
+            <div style={{ padding: '14px 20px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
               {emptyFolders.map((item) => (
                 <div
                   key={item.id}
                   style={{
-                    padding: '12px 16px',
-                    borderRadius: 10,
+                    padding: '10px 14px',
+                    borderRadius: 8,
                     border: '1px solid var(--border)',
                     backgroundColor: 'var(--surface-elevated)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    gap: 14,
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
-                    <FolderX size={18} color="#EC4899" style={{ flexShrink: 0 }} />
-                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, gap: 2 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span
-                          style={{
-                            fontSize: 13,
-                            fontWeight: 700,
-                            fontFamily: 'var(--font-mono)',
-                            color: 'var(--label)',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                          title={item.folderPath}
-                        >
-                          {item.folderName}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: 9.5,
-                            fontFamily: 'var(--font-mono)',
-                            padding: '1.5px 6px',
-                            borderRadius: 4,
-                            backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                            color: 'var(--system-red)',
-                            border: '1px solid rgba(239, 68, 68, 0.25)',
-                            whiteSpace: 'nowrap',
-                            fontWeight: 700,
-                          }}
-                        >
-                          There are no photos
-                        </span>
-                      </div>
-                      <span
-                        style={{
-                          fontSize: 10.5,
-                          color: 'var(--tertiary-label)',
-                          fontFamily: 'var(--font-mono)',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                        title={item.folderPath}
-                      >
-                        {item.folderPath}
-                      </span>
-                    </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+                    <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--label)' }}>
+                      {item.folderName}
+                    </span>
+                    <span style={{ fontSize: 10.5, color: 'var(--tertiary-label)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {item.folderPath}
+                    </span>
                   </div>
-
-                  {/* 2 Options: Go to folder & Delete folder */}
-                  <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                  <div style={{ display: 'flex', gap: 6 }}>
                     <StudioButton
                       variant="secondary"
-                      icon={<FolderOpen size={12} />}
+                      size="sm"
                       onClick={() => handleGoToFolder(item.folderPath)}
-                      style={{ fontSize: 11, padding: '5px 12px', height: 30 }}
-                      title="Open this folder in Windows Explorer"
                     >
-                      Go to folder
+                      Inspect
                     </StudioButton>
-
                     <StudioButton
                       variant="danger"
-                      icon={<Trash2 size={12} />}
+                      size="sm"
                       onClick={() => handleDeleteEmptyFolder(item.folderPath, item.folderName)}
-                      style={{ fontSize: 11, padding: '5px 12px', height: 30 }}
-                      title="Safely remove empty folder"
                     >
-                      Delete folder
+                      Delete
                     </StudioButton>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Modal Footer */}
             <div
               style={{
                 padding: '12px 20px',
                 display: 'flex',
-                alignItems: 'center',
                 justifyContent: 'space-between',
                 borderTop: '1px solid var(--border)',
                 backgroundColor: 'var(--surface-elevated)',
@@ -1982,15 +2288,12 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                 variant="danger"
                 icon={<Trash2 size={13} />}
                 onClick={handleDeleteAllEmptyFolders}
-                style={{ fontSize: 11.5 }}
               >
-                Delete All ({emptyFolders.length}) Empty Folders
+                Delete All Empty Folders
               </StudioButton>
-
               <StudioButton
                 variant="glass"
                 onClick={() => setShowEmptyModal(false)}
-                style={{ fontSize: 11.5 }}
               >
                 Dismiss / Keep Folders
               </StudioButton>
@@ -1999,21 +2302,17 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
         </div>
       )}
 
-      {/* Live Operation Loading Overlay */}
+      {/* 8. Operation Overlay */}
       <OperationLoadingOverlay
-        isOpen={isScanning || isTransferring || isMovingFolder}
+        isOpen={isScanning || isMovingFolder}
         title={
           isScanning
             ? 'Scanning & Pairing Video Sequences...'
-            : isTransferring
-            ? 'Transferring Paired Video Clips...'
             : 'Relocating Merged Media to Upload Structure...'
         }
         subtitle={
           isScanning
-            ? 'Inspecting video tokens and matching them to corresponding photo subfolders...'
-            : isTransferring
-            ? 'Copying verified video sequence pairs into the target project hierarchy...'
+            ? 'Inspecting multi-pass camera tokens, shot codes, and companion thumbnails...'
             : 'Moving merged event folders into Main Data upload structure...'
         }
         accentColor="#10B981"
