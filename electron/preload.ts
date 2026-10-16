@@ -85,6 +85,8 @@ export const electronAPI = {
     ipcRenderer.invoke('video:undo-transfer', manifestPath),
   deleteEmptyFolder: (folderPath: string) =>
     ipcRenderer.invoke('folder:delete-empty', folderPath),
+  readThumbnailDataUrl: (filePath: string) =>
+    ipcRenderer.invoke('media:read-thumbnail', filePath),
   onVideoTransferProgress: (callback: (curr: number, total: number, file: string, speed: string) => void) => {
     const handler = (_: any, curr: number, total: number, file: string, speed: string) =>
       callback(curr, total, file, speed);

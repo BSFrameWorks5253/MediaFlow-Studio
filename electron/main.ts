@@ -90,6 +90,7 @@ function createWindow() {
       contextIsolation: true,
       sandbox: false,
       webviewTag: true,
+      webSecurity: false,
     },
   });
 
@@ -442,6 +443,20 @@ function setupIpcHandlers() {
     } catch {
       await fs.promises.rm(cleanPath, { recursive: true, force: true });
       return { success: true, trashed: false };
+    }
+  });
+
+  ipcMain.handle('media:read-thumbnail', async (_, filePath: string) => {
+    if (!filePath || !filePath.trim()) return null;
+    try {
+      const cleanPath = path.resolve(filePath.replace(/^file:\/\/\/?/, ''));
+      if (!fs.existsSync(cleanPath)) return null;
+      const data = await fs.promises.readFile(cleanPath);
+      const ext = path.extname(cleanPath).toLowerCase();
+      const mime = ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : 'image/jpeg';
+      return `data:${mime};base64,${data.toString('base64')}`;
+    } catch {
+      return null;
     }
   });
 

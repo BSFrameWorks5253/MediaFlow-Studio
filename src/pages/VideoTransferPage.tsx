@@ -19,6 +19,7 @@ import {
   X,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   Eye,
   Sparkles,
   Filter,
@@ -45,6 +46,90 @@ import { PageKey } from '../components/Sidebar';
 import { StudioFolderInput } from '../components/StudioFolderInput';
 import { OperationLoadingOverlay } from '../components/OperationLoadingOverlay';
 import { toUserErrorMessage } from '../utils/errorSanitizer';
+
+// Fast, reliable thumbnail image renderer with IPC fallback
+const ThumbnailImg: React.FC<{
+  filePath?: string;
+  alt: string;
+  style?: React.CSSProperties;
+  className?: string;
+}> = ({ filePath, alt, style, className }) => {
+  const [imgSrc, setImgSrc] = useState<string | null>(null);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    if (!filePath) {
+      setImgSrc(null);
+      setHasError(false);
+      return;
+    }
+    setHasError(false);
+    // Directly try file:// protocol
+    const normalized = filePath.replace(/\\/g, '/');
+    const directUrl = normalized.startsWith('file://') ? normalized : `file:///${normalized}`;
+    setImgSrc(directUrl);
+
+    return () => {
+      active = false;
+    };
+  }, [filePath]);
+
+  const handleImgError = async () => {
+    if (!filePath) {
+      setHasError(true);
+      return;
+    }
+    // Fallback: Read via Electron IPC to bypass any web security/protocol constraints
+    try {
+      if (window.electronAPI?.readThumbnailDataUrl) {
+        const base64 = await window.electronAPI.readThumbnailDataUrl(filePath);
+        if (base64) {
+          setImgSrc(base64);
+          return;
+        }
+      }
+    } catch {}
+    setHasError(true);
+  };
+
+  if (!filePath || hasError) {
+    return (
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'rgba(255, 255, 255, 0.04)',
+          color: 'var(--tertiary-label)',
+          fontSize: 9,
+          ...style,
+        }}
+        className={className}
+      >
+        <span>No Img</span>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={imgSrc || undefined}
+      alt={alt}
+      onError={handleImgError}
+      style={{
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+        display: 'block',
+        ...style,
+      }}
+      className={className}
+    />
+  );
+};
 
 interface VideoTransferPageProps {
   onShowToast: (text: string, type: 'success' | 'danger' | 'warning' | 'info') => void;
@@ -77,16 +162,11 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
   const [activeTab, setActiveTab] = useState<'matched' | 'unmatched' | 'unmatchedFolders' | 'emptyFolders'>('matched');
   const [searchFilter, setSearchFilter] = useState('');
   const [selectedDateFilter, setSelectedDateFilter] = useState<string>('ALL');
-  const [showEmptyModal, setShowEmptyModal] = useState(false);
+  const [dismissedEmptyBanner, setDismissedEmptyBanner] = useState(false);
   const [emptyFolders, setEmptyFolders] = useState<EmptyPhotoFolderItem[]>([]);
 
-  // Thumbnail Preview Modal State
-  const [previewThumb, setPreviewThumb] = useState<{
-    url: string;
-    title: string;
-    type: '_V' | '_P';
-    path: string;
-  } | null>(null);
+  // Dual Comparison Modal State (Single unified verification experience)
+  const [activeCompareIndex, setActiveCompareIndex] = useState<number | null>(null);
 
   // Manual Re-assignment / Pairing State
   const [reassigningItem, setReassigningItem] = useState<string | null>(null);
@@ -209,7 +289,6 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
     }
     setEmptyFolders([]);
     setScanResult((prev) => (prev ? { ...prev, emptyPhotoFolders: [] } : null));
-    setShowEmptyModal(false);
     onShowToast(`Deleted ${count} empty folder(s) successfully`, 'success');
   };
 
@@ -301,9 +380,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
       setScanResult(res);
       const foundEmpty = res.emptyPhotoFolders || [];
       setEmptyFolders(foundEmpty);
-      if (foundEmpty.length > 0) {
-        setShowEmptyModal(true);
-      }
+      setDismissedEmptyBanner(false);
 
       if (res.unmatched.length === 0 && res.matched.length > 0) {
         onShowToast(
@@ -564,6 +641,24 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
     const total = scanResult.matched.length + scanResult.unmatched.length;
     return total > 0 ? Math.round((scanResult.matched.length / total) * 100) : 0;
   }, [scanResult]);
+
+  // Keyboard Arrow & Esc Navigation for Dual Verification Modal
+  useEffect(() => {
+    if (activeCompareIndex === null) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setActiveCompareIndex(null);
+      } else if (e.key === 'ArrowLeft') {
+        setActiveCompareIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : prev));
+      } else if (e.key === 'ArrowRight') {
+        setActiveCompareIndex((prev) =>
+          prev !== null && prev < filteredMatched.length - 1 ? prev + 1 : prev
+        );
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeCompareIndex, filteredMatched.length]);
 
   return (
     <div
@@ -1087,6 +1182,110 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
         </div>
       )}
 
+      {/* Non-intrusive Empty Folders Alert Ribbon (Replaces blocking popup) */}
+      {emptyFolders.length > 0 && !dismissedEmptyBanner && (
+        <div
+          className="glass-card"
+          style={{
+            padding: '12px 18px',
+            borderRadius: 12,
+            border: '1px solid rgba(244, 63, 94, 0.35)',
+            background:
+              'linear-gradient(90deg, rgba(244, 63, 94, 0.12) 0%, rgba(236, 72, 153, 0.05) 50%, rgba(255, 255, 255, 0.02) 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 16,
+            boxShadow: '0 4px 20px rgba(244, 63, 94, 0.15)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 8,
+                backgroundColor: 'rgba(244, 63, 94, 0.2)',
+                border: '1px solid rgba(244, 63, 94, 0.4)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <FolderX size={17} color="#FB7185" />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 800, color: '#FB7185' }}>
+                  {emptyFolders.length} Empty Photo Folders Detected
+                </span>
+                <span
+                  style={{
+                    fontSize: 10,
+                    padding: '1px 6px',
+                    borderRadius: 4,
+                    backgroundColor: 'rgba(244, 63, 94, 0.2)',
+                    color: '#FECDD3',
+                    fontWeight: 700,
+                  }}
+                >
+                  Contains 0 Media
+                </span>
+              </div>
+              <span
+                style={{
+                  fontSize: 11,
+                  color: 'var(--secondary-label)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                These target event folders contain zero photos. You can inspect or purge them without affecting valid clips.
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            <StudioButton
+              variant="secondary"
+              size="sm"
+              icon={<Eye size={12} />}
+              onClick={() => setActiveTab('emptyFolders')}
+              style={{ fontSize: 11, height: 28, padding: '4px 10px' }}
+            >
+              Review in Tab ({emptyFolders.length})
+            </StudioButton>
+            <StudioButton
+              variant="danger"
+              size="sm"
+              icon={<Trash2 size={12} />}
+              onClick={handleDeleteAllEmptyFolders}
+              style={{ fontSize: 11, height: 28, padding: '4px 10px' }}
+            >
+              Purge All Empty ({emptyFolders.length})
+            </StudioButton>
+            <button
+              onClick={() => setDismissedEmptyBanner(true)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--tertiary-label)',
+                cursor: 'pointer',
+                padding: 4,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              title="Dismiss notification"
+            >
+              <X size={15} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 5. Main Workstation Multi-Tab Table */}
       <div
         className="glass-card"
@@ -1293,7 +1492,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                 backgroundColor: 'rgba(255, 255, 255, 0.02)',
                 borderBottom: '1px solid var(--border)',
                 display: 'grid',
-                gridTemplateColumns: '2.5fr 1.2fr 2.5fr 1fr 1fr 1.5fr',
+                gridTemplateColumns: '2.4fr 1.1fr 2.3fr 2.4fr 1.2fr',
                 alignItems: 'center',
                 padding: '0 16px',
                 fontSize: 11,
@@ -1304,10 +1503,9 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
               }}
             >
               <span>Video Master Clip</span>
-              <span>Match Confidence</span>
+              <span>Match Details</span>
               <span>Target Photo Subfolder</span>
-              <span>Video Thumb (_V)</span>
-              <span>Photo Thumb (_P)</span>
+              <span>Visual Verification (_V ⇄ _P)</span>
               <span style={{ textAlign: 'right' }}>Actions</span>
             </div>
 
@@ -1374,9 +1572,9 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                     <div
                       key={idx}
                       style={{
-                        minHeight: 48,
+                        minHeight: 52,
                         display: 'grid',
-                        gridTemplateColumns: '2.5fr 1.2fr 2.5fr 1fr 1fr 1.5fr',
+                        gridTemplateColumns: '2.4fr 1.1fr 2.3fr 2.4fr 1.2fr',
                         alignItems: 'center',
                         padding: '6px 16px',
                         borderBottom: '1px solid var(--border-subtle)',
@@ -1559,74 +1757,176 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                         )}
                       </div>
 
-                      {/* 4. Video Thumbnail (_V) */}
+                      {/* 4. Unified Visual Verification (_V ⇄ _P) */}
                       <div>
-                        {item.hasVideoThumb && item.videoThumbPath ? (
-                          <button
-                            onClick={() =>
-                              setPreviewThumb({
-                                url: `file://${item.videoThumbPath!.replace(/\\/g, '/')}`,
-                                title: item.videoFile,
-                                type: '_V',
-                                path: item.videoThumbPath!,
-                              })
-                            }
+                        <div
+                          onClick={() => setActiveCompareIndex(idx)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            cursor: 'pointer',
+                            padding: '4px 10px',
+                            borderRadius: 8,
+                            backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                            border: '1px solid rgba(255, 255, 255, 0.08)',
+                            transition: 'all 0.15s ease-in-out',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                            e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+                            e.currentTarget.style.transform = 'translateY(-1px)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.02)';
+                            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                            e.currentTarget.style.transform = 'none';
+                          }}
+                          title="Click for Dual Side-by-Side Visual Verification"
+                        >
+                          {/* Video Thumbnail Mini Card */}
+                          <div
                             style={{
-                              padding: '3px 8px',
+                              position: 'relative',
+                              width: 44,
+                              height: 32,
                               borderRadius: 6,
-                              backgroundColor: 'rgba(16, 185, 129, 0.12)',
-                              border: '1px solid rgba(16, 185, 129, 0.35)',
-                              color: '#10B981',
-                              fontSize: 10.5,
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                              display: 'inline-flex',
+                              overflow: 'hidden',
+                              border: item.hasVideoThumb
+                                ? '1px solid rgba(16, 185, 129, 0.45)'
+                                : '1px dashed rgba(255, 255, 255, 0.15)',
+                              backgroundColor: '#090B10',
+                              flexShrink: 0,
+                              display: 'flex',
                               alignItems: 'center',
-                              gap: 4,
+                              justifyContent: 'center',
                             }}
-                            title="Click to view thumbnail"
                           >
-                            <Eye size={11} />
-                            <span>Found (_V)</span>
-                          </button>
-                        ) : (
-                          <span style={{ fontSize: 10.5, color: 'var(--tertiary-label)' }}>— None</span>
-                        )}
-                      </div>
+                            {item.hasVideoThumb && item.videoThumbPath ? (
+                              <ThumbnailImg filePath={item.videoThumbPath} alt={item.videoFile} />
+                            ) : (
+                              <Video size={13} color="var(--tertiary-label)" />
+                            )}
+                            <span
+                              style={{
+                                position: 'absolute',
+                                bottom: 1,
+                                left: 2,
+                                fontSize: 8,
+                                fontWeight: 800,
+                                padding: '0 3px',
+                                borderRadius: 3,
+                                backgroundColor: item.hasVideoThumb ? 'rgba(16, 185, 129, 0.9)' : 'rgba(0,0,0,0.6)',
+                                color: '#FFFFFF',
+                                lineHeight: '11px',
+                              }}
+                            >
+                              _V
+                            </span>
+                          </div>
 
-                      {/* 5. Photo Thumbnail (_P) */}
-                      <div>
-                        {item.hasPhotoThumb && item.photoThumbPath ? (
-                          <button
-                            onClick={() =>
-                              setPreviewThumb({
-                                url: `file://${item.photoThumbPath!.replace(/\\/g, '/')}`,
-                                title: item.photoFolder,
-                                type: '_P',
-                                path: item.photoThumbPath!,
-                              })
-                            }
+                          {/* Comparison / Sync Status Pill */}
+                          <div
                             style={{
-                              padding: '3px 8px',
-                              borderRadius: 6,
-                              backgroundColor: 'rgba(139, 92, 246, 0.12)',
-                              border: '1px solid rgba(139, 92, 246, 0.35)',
-                              color: '#A78BFA',
-                              fontSize: 10.5,
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                              display: 'inline-flex',
+                              display: 'flex',
+                              flexDirection: 'column',
                               alignItems: 'center',
-                              gap: 4,
+                              gap: 2,
+                              minWidth: 54,
                             }}
-                            title="Click to view thumbnail"
                           >
-                            <Eye size={11} />
-                            <span>Found (_P)</span>
-                          </button>
-                        ) : (
-                          <span style={{ fontSize: 10.5, color: 'var(--tertiary-label)' }}>— None</span>
-                        )}
+                            {item.hasVideoThumb && item.hasPhotoThumb ? (
+                              <span
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 3,
+                                  fontSize: 9.5,
+                                  fontWeight: 800,
+                                  color: '#38BDF8',
+                                  backgroundColor: 'rgba(56, 189, 248, 0.12)',
+                                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                                  padding: '1px 6px',
+                                  borderRadius: 10,
+                                }}
+                              >
+                                <span>⇄</span> Both
+                              </span>
+                            ) : item.hasVideoThumb ? (
+                              <span
+                                style={{
+                                  fontSize: 9,
+                                  fontWeight: 700,
+                                  color: '#10B981',
+                                  backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                                  padding: '1px 5px',
+                                  borderRadius: 8,
+                                }}
+                              >
+                                _V only
+                              </span>
+                            ) : item.hasPhotoThumb ? (
+                              <span
+                                style={{
+                                  fontSize: 9,
+                                  fontWeight: 700,
+                                  color: '#A78BFA',
+                                  backgroundColor: 'rgba(139, 92, 246, 0.12)',
+                                  padding: '1px 5px',
+                                  borderRadius: 8,
+                                }}
+                              >
+                                _P only
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: 9, color: 'var(--tertiary-label)' }}>No thumbs</span>
+                            )}
+                            <span style={{ fontSize: 8.5, color: 'var(--tertiary-label)', display: 'flex', alignItems: 'center', gap: 2 }}>
+                              <Eye size={9} /> Inspect
+                            </span>
+                          </div>
+
+                          {/* Photo Thumbnail Mini Card */}
+                          <div
+                            style={{
+                              position: 'relative',
+                              width: 44,
+                              height: 32,
+                              borderRadius: 6,
+                              overflow: 'hidden',
+                              border: item.hasPhotoThumb
+                                ? '1px solid rgba(139, 92, 246, 0.45)'
+                                : '1px dashed rgba(255, 255, 255, 0.15)',
+                              backgroundColor: '#090B10',
+                              flexShrink: 0,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            {item.hasPhotoThumb && item.photoThumbPath ? (
+                              <ThumbnailImg filePath={item.photoThumbPath} alt={item.photoFolder} />
+                            ) : (
+                              <Folder size={13} color="var(--tertiary-label)" />
+                            )}
+                            <span
+                              style={{
+                                position: 'absolute',
+                                bottom: 1,
+                                right: 2,
+                                fontSize: 8,
+                                fontWeight: 800,
+                                padding: '0 3px',
+                                borderRadius: 3,
+                                backgroundColor: item.hasPhotoThumb ? 'rgba(139, 92, 246, 0.9)' : 'rgba(0,0,0,0.6)',
+                                color: '#FFFFFF',
+                                lineHeight: '11px',
+                              }}
+                            >
+                              _P
+                            </span>
+                          </div>
+                        </div>
                       </div>
 
                       {/* 6. Action Buttons */}
@@ -1987,6 +2287,38 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
         {/* Tab 4: Empty Folders */}
         {activeTab === 'emptyFolders' && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            {/* Action Bar for Empty Folders */}
+            <div
+              style={{
+                padding: '10px 16px',
+                borderBottom: '1px solid var(--border)',
+                backgroundColor: 'rgba(244, 63, 94, 0.06)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <FolderX size={16} color="#FB7185" />
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--label)' }}>
+                  Empty Target Photo Folders ({filteredEmptyFolders.length})
+                </span>
+                <span style={{ fontSize: 11, color: 'var(--secondary-label)' }}>
+                  — Folders with 0 media. Cleaning them prevents clutter in upload structures.
+                </span>
+              </div>
+              {filteredEmptyFolders.length > 0 && (
+                <StudioButton
+                  variant="danger"
+                  size="sm"
+                  icon={<Trash2 size={12} />}
+                  onClick={handleDeleteAllEmptyFolders}
+                >
+                  Purge All ({filteredEmptyFolders.length}) Empty Folders
+                </StudioButton>
+              )}
+            </div>
+
             <div
               style={{
                 height: 38,
@@ -2028,6 +2360,9 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                   <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--label)' }}>
                     Zero empty photo folders detected.
                   </span>
+                  <span style={{ fontSize: 12, color: 'var(--secondary-label)' }}>
+                    All photo folders in the directory contain media.
+                  </span>
                 </div>
               ) : (
                 filteredEmptyFolders.map((item, idx) => (
@@ -2046,8 +2381,8 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
-                      <FolderX size={15} color="#EC4899" />
-                      <span style={{ color: '#EC4899', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.folderPath}>
+                      <FolderX size={15} color="#FB7185" />
+                      <span style={{ color: '#FB7185', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.folderPath}>
                         {item.folderName}
                       </span>
                     </div>
@@ -2086,221 +2421,502 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
         )}
       </div>
 
-      {/* 6. Thumbnail Preview Lightbox Popover Modal */}
-      {previewThumb && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            backgroundColor: 'rgba(0, 0, 0, 0.85)',
-            backdropFilter: 'blur(12px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 24,
-          }}
-          onClick={() => setPreviewThumb(null)}
-        >
+      {/* 6. Dual Side-by-Side Visual Verification Inspector Modal */}
+      {activeCompareIndex !== null && filteredMatched[activeCompareIndex] && (() => {
+        const item = filteredMatched[activeCompareIndex];
+        const hasPrev = activeCompareIndex > 0;
+        const hasNext = activeCompareIndex < filteredMatched.length - 1;
+        const candidateFolders = scanResult ? (scanResult.photoFoldersByDate[item.dateFolder] || []) : [];
+
+        return (
           <div
-            className="glass-card"
-            onClick={(e) => e.stopPropagation()}
             style={{
-              maxWidth: 680,
-              width: '100%',
-              backgroundColor: 'var(--surface-card)',
-              borderRadius: 16,
-              border: '1px solid var(--border)',
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9999,
+              backgroundColor: 'rgba(0, 0, 0, 0.88)',
+              backdropFilter: 'blur(16px)',
               display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.7)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 24,
             }}
+            onClick={() => setActiveCompareIndex(null)}
           >
             <div
+              className="glass-card"
+              onClick={(e) => e.stopPropagation()}
               style={{
-                padding: '14px 18px',
-                borderBottom: '1px solid var(--border)',
+                maxWidth: 1060,
+                width: '100%',
+                maxHeight: '92vh',
+                backgroundColor: 'var(--surface-card)',
+                borderRadius: 18,
+                border: '1px solid rgba(56, 189, 248, 0.35)',
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
+                flexDirection: 'column',
+                overflow: 'hidden',
+                boxShadow: '0 30px 80px rgba(0, 0, 0, 0.85), 0 0 40px rgba(56, 189, 248, 0.15)',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span
-                  style={{
-                    padding: '2px 8px',
-                    borderRadius: 6,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    backgroundColor: previewThumb.type === '_V' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(139, 92, 246, 0.2)',
-                    color: previewThumb.type === '_V' ? '#10B981' : '#A78BFA',
-                  }}
-                >
-                  {previewThumb.type} Thumbnail
-                </span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--label)' }}>
-                  {previewThumb.title}
-                </span>
-              </div>
-              <button
-                onClick={() => setPreviewThumb(null)}
-                style={{ background: 'none', border: 'none', color: 'var(--secondary-label)', cursor: 'pointer' }}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div style={{ padding: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#090B10' }}>
-              <img
-                src={previewThumb.url}
-                alt={previewThumb.title}
-                style={{ maxWidth: '100%', maxHeight: 420, borderRadius: 8, objectFit: 'contain' }}
-                onError={(e) => {
-                  (e.target as any).style.display = 'none';
+              {/* Modal Top Bar */}
+              <div
+                style={{
+                  padding: '14px 22px',
+                  borderBottom: '1px solid var(--border)',
+                  background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
                 }}
-              />
-            </div>
-
-            <div style={{ padding: '10px 18px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--secondary-label)' }}>
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '80%' }}>
-                {previewThumb.path}
-              </span>
-              <button
-                onClick={() => handleLocateItem(previewThumb.path)}
-                style={{ background: 'none', border: 'none', color: '#38BDF8', cursor: 'pointer', fontWeight: 600 }}
               >
-                Reveal in Explorer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 7. Empty Folders Modal */}
-      {showEmptyModal && emptyFolders.length > 0 && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            backgroundColor: 'rgba(0, 0, 0, 0.72)',
-            backdropFilter: 'blur(10px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 20,
-          }}
-          onClick={() => setShowEmptyModal(false)}
-        >
-          <div
-            className="glass-card"
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: '100%',
-              maxWidth: 720,
-              maxHeight: '85vh',
-              display: 'flex',
-              flexDirection: 'column',
-              borderRadius: 16,
-              border: '1px solid rgba(236, 72, 153, 0.35)',
-              backgroundColor: 'var(--surface-card)',
-              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(236, 72, 153, 0.15)',
-              overflow: 'hidden',
-            }}
-          >
-            <div
-              style={{
-                padding: '16px 20px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                borderBottom: '1px solid var(--border)',
-                background: 'linear-gradient(180deg, rgba(236, 72, 153, 0.12) 0%, transparent 100%)',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <FolderX size={20} color="#EC4899" />
-                <span style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--label)' }}>
-                  Empty Photo Folders Detected ({emptyFolders.length})
-                </span>
-              </div>
-              <button
-                onClick={() => setShowEmptyModal(false)}
-                style={{ background: 'none', border: 'none', color: 'var(--secondary-label)', cursor: 'pointer' }}
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div style={{ padding: '14px 20px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {emptyFolders.map((item) => (
-                <div
-                  key={item.id}
-                  style={{
-                    padding: '10px 14px',
-                    borderRadius: 8,
-                    border: '1px solid var(--border)',
-                    backgroundColor: 'var(--surface-elevated)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-                    <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--label)' }}>
-                      {item.folderName}
-                    </span>
-                    <span style={{ fontSize: 10.5, color: 'var(--tertiary-label)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {item.folderPath}
-                    </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div
+                    style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: 10,
+                      background: 'linear-gradient(135deg, #10B981, #06B6D4)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                    }}
+                  >
+                    <Layers size={18} color="#FFFFFF" />
                   </div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <StudioButton
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => handleGoToFolder(item.folderPath)}
-                    >
-                      Inspect
-                    </StudioButton>
-                    <StudioButton
-                      variant="danger"
-                      size="sm"
-                      onClick={() => handleDeleteEmptyFolder(item.folderPath, item.folderName)}
-                    >
-                      Delete
-                    </StudioButton>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--label)' }}>
+                        Dual Thumbnail Visual Verification
+                      </span>
+                      <span
+                        style={{
+                          padding: '2px 8px',
+                          borderRadius: 6,
+                          fontSize: 10.5,
+                          fontWeight: 700,
+                          backgroundColor: 'rgba(56, 189, 248, 0.15)',
+                          color: '#38BDF8',
+                          border: '1px solid rgba(56, 189, 248, 0.3)',
+                        }}
+                      >
+                        Clip {activeCompareIndex + 1} of {filteredMatched.length}
+                      </span>
+                      <span
+                        style={{
+                          padding: '2px 8px',
+                          borderRadius: 6,
+                          fontSize: 10.5,
+                          fontWeight: 700,
+                          backgroundColor:
+                            item.matchType === 'exact'
+                              ? 'rgba(16, 185, 129, 0.15)'
+                              : 'rgba(56, 189, 248, 0.15)',
+                          color: item.matchType === 'exact' ? '#10B981' : '#38BDF8',
+                          border:
+                            item.matchType === 'exact'
+                              ? '1px solid rgba(16, 185, 129, 0.3)'
+                              : '1px solid rgba(56, 189, 248, 0.3)',
+                        }}
+                      >
+                        {item.matchType === 'exact'
+                          ? 'Exact Stem (100%)'
+                          : item.matchType === 'camera_id'
+                          ? 'Camera Clip ID (90%)'
+                          : item.matchType === 'normalized'
+                          ? 'Normalized Key (95%)'
+                          : item.matchType === 'shot_token'
+                          ? `Shot Token ${item.shotCode} (85%)`
+                          : 'Sequence (75%)'}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: 11, color: 'var(--secondary-label)' }}>
+                      Date Session: <strong style={{ color: 'var(--label)' }}>{item.dateFolder}</strong> • Side-by-side visual comparison for 100% confidence.
+                    </span>
                   </div>
                 </div>
-              ))}
-            </div>
 
-            <div
-              style={{
-                padding: '12px 20px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                borderTop: '1px solid var(--border)',
-                backgroundColor: 'var(--surface-elevated)',
-              }}
-            >
-              <StudioButton
-                variant="danger"
-                icon={<Trash2 size={13} />}
-                onClick={handleDeleteAllEmptyFolders}
+                {/* Navigation and Close */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button
+                    disabled={!hasPrev}
+                    onClick={() => setActiveCompareIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : prev))}
+                    style={{
+                      padding: '5px 12px',
+                      borderRadius: 6,
+                      border: '1px solid var(--border)',
+                      backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                      color: hasPrev ? 'var(--label)' : 'var(--tertiary-label)',
+                      cursor: hasPrev ? 'pointer' : 'not-allowed',
+                      fontSize: 11.5,
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                    }}
+                    title="Previous Pair (Left Arrow ←)"
+                  >
+                    <ChevronLeft size={14} />
+                    <span>Prev</span>
+                  </button>
+
+                  <button
+                    disabled={!hasNext}
+                    onClick={() => setActiveCompareIndex((prev) => (prev !== null && prev < filteredMatched.length - 1 ? prev + 1 : prev))}
+                    style={{
+                      padding: '5px 12px',
+                      borderRadius: 6,
+                      border: '1px solid var(--border)',
+                      backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                      color: hasNext ? 'var(--label)' : 'var(--tertiary-label)',
+                      cursor: hasNext ? 'pointer' : 'not-allowed',
+                      fontSize: 11.5,
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                    }}
+                    title="Next Pair (Right Arrow →)"
+                  >
+                    <span>Next</span>
+                    <ChevronRight size={14} />
+                  </button>
+
+                  <button
+                    onClick={() => setActiveCompareIndex(null)}
+                    style={{
+                      padding: '6px',
+                      borderRadius: 6,
+                      border: 'none',
+                      backgroundColor: 'transparent',
+                      color: 'var(--secondary-label)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                    title="Close (Esc)"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Side-by-Side Dual Visual Canvas */}
+              <div
+                style={{
+                  padding: 20,
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: 18,
+                  overflowY: 'auto',
+                  flex: 1,
+                }}
               >
-                Delete All Empty Folders
-              </StudioButton>
-              <StudioButton
-                variant="glass"
-                onClick={() => setShowEmptyModal(false)}
+                {/* Left Card: Master Video Clip */}
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    borderRadius: 14,
+                    border: '1px solid rgba(16, 185, 129, 0.35)',
+                    backgroundColor: 'rgba(16, 185, 129, 0.02)',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: '10px 14px',
+                      backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                      borderBottom: '1px solid rgba(16, 185, 129, 0.2)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Video size={14} color="#10B981" />
+                      <span style={{ fontSize: 12, fontWeight: 800, color: '#10B981' }}>
+                        Video Master Clip (_V)
+                      </span>
+                    </div>
+                    {item.hasVideoThumb ? (
+                      <span style={{ fontSize: 10, color: '#10B981', fontWeight: 700 }}>
+                        ✓ Thumbnail Present
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: 10, color: 'var(--tertiary-label)' }}>
+                        — No Video Thumb
+                      </span>
+                    )}
+                  </div>
+
+                  <div
+                    style={{
+                      height: 290,
+                      backgroundColor: '#07090E',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      overflow: 'hidden',
+                      position: 'relative',
+                    }}
+                  >
+                    {item.hasVideoThumb && item.videoThumbPath ? (
+                      <ThumbnailImg
+                        filePath={item.videoThumbPath}
+                        alt={item.videoFile}
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                      />
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, color: 'var(--tertiary-label)' }}>
+                        <Video size={42} strokeWidth={1.5} />
+                        <span style={{ fontSize: 11 }}>No companion video thumbnail file</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Metadata & Actions */}
+                  <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8, fontSize: 11 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontWeight: 700, color: 'var(--label)', fontFamily: 'var(--font-mono)' }}>
+                        {item.videoFile}
+                      </span>
+                      <button
+                        onClick={() => handleCopyText(item.videoFile, 'video file')}
+                        style={{ background: 'none', border: 'none', color: 'var(--tertiary-label)', cursor: 'pointer', padding: 2 }}
+                        title="Copy filename"
+                      >
+                        <Copy size={12} />
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--secondary-label)' }}>
+                      <span>Size: <strong style={{ color: 'var(--label)' }}>{formatBytes(item.videoSize)}</strong></span>
+                      <span>•</span>
+                      <span>Shot: <strong style={{ color: '#10B981' }}>{item.shotCode || 'N/A'}</strong></span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                      <StudioButton
+                        variant="secondary"
+                        size="sm"
+                        icon={<Video size={12} />}
+                        onClick={() => handleLocateItem(item.videoPath)}
+                        style={{ fontSize: 10.5, height: 26, padding: '2px 8px' }}
+                      >
+                        Locate Video
+                      </StudioButton>
+                      {item.videoThumbPath && (
+                        <StudioButton
+                          variant="glass"
+                          size="sm"
+                          icon={<Eye size={12} />}
+                          onClick={() => handleLocateItem(item.videoThumbPath)}
+                          style={{ fontSize: 10.5, height: 26, padding: '2px 8px' }}
+                        >
+                          Locate Thumb
+                        </StudioButton>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Card: Clean Photo Subfolder */}
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    borderRadius: 14,
+                    border: '1px solid rgba(139, 92, 246, 0.35)',
+                    backgroundColor: 'rgba(139, 92, 246, 0.02)',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: '10px 14px',
+                      backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                      borderBottom: '1px solid rgba(139, 92, 246, 0.2)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Folder size={14} color="#A78BFA" />
+                      <span style={{ fontSize: 12, fontWeight: 800, color: '#A78BFA' }}>
+                        Target Photo Subfolder (_P)
+                      </span>
+                    </div>
+                    {item.hasPhotoThumb ? (
+                      <span style={{ fontSize: 10, color: '#A78BFA', fontWeight: 700 }}>
+                        ✓ Thumbnail Present
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: 10, color: 'var(--tertiary-label)' }}>
+                        — No Photo Thumb
+                      </span>
+                    )}
+                  </div>
+
+                  <div
+                    style={{
+                      height: 290,
+                      backgroundColor: '#07090E',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      overflow: 'hidden',
+                      position: 'relative',
+                    }}
+                  >
+                    {item.hasPhotoThumb && item.photoThumbPath ? (
+                      <ThumbnailImg
+                        filePath={item.photoThumbPath}
+                        alt={item.photoFolder}
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                      />
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, color: 'var(--tertiary-label)' }}>
+                        <Folder size={42} strokeWidth={1.5} />
+                        <span style={{ fontSize: 11 }}>No companion photo thumbnail found</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Metadata & Actions */}
+                  <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8, fontSize: 11 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontWeight: 700, color: 'var(--system-cyan)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.photoFolder}>
+                        {item.photoFolder}
+                      </span>
+                      <button
+                        onClick={() => handleCopyText(item.photoFolder, 'photo folder')}
+                        style={{ background: 'none', border: 'none', color: 'var(--tertiary-label)', cursor: 'pointer', padding: 2 }}
+                        title="Copy folder name"
+                      >
+                        <Copy size={12} />
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--secondary-label)' }}>
+                      <span>Category: <strong style={{ color: 'var(--label)' }}>{item.parentCategoryFolder || 'Root'}</strong></span>
+                      <span>•</span>
+                      <span>Date: <strong style={{ color: 'var(--label)' }}>{item.dateFolder}</strong></span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                      <StudioButton
+                        variant="secondary"
+                        size="sm"
+                        icon={<FolderOpen size={12} />}
+                        onClick={() => handleOpenPath(item.photoFolderPath, 'Photo Subfolder')}
+                        style={{ fontSize: 10.5, height: 26, padding: '2px 8px' }}
+                      >
+                        Open Subfolder
+                      </StudioButton>
+                      {item.photoThumbPath && (
+                        <StudioButton
+                          variant="glass"
+                          size="sm"
+                          icon={<Eye size={12} />}
+                          onClick={() => handleLocateItem(item.photoThumbPath)}
+                          style={{ fontSize: 10.5, height: 26, padding: '2px 8px' }}
+                        >
+                          Locate Thumb
+                        </StudioButton>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer Controls */}
+              <div
+                style={{
+                  padding: '12px 22px',
+                  borderTop: '1px solid var(--border)',
+                  backgroundColor: 'var(--surface-elevated)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 16,
+                }}
               >
-                Dismiss / Keep Folders
-              </StudioButton>
+                {/* Reassign Target Folder dropdown right in the modal */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
+                  <span style={{ fontSize: 11, color: 'var(--secondary-label)', whiteSpace: 'nowrap' }}>
+                    Reassign Target:
+                  </span>
+                  <select
+                    value={item.photoFolderPath}
+                    onChange={(e) => handleReassignTarget(item.videoPath, e.target.value)}
+                    style={{
+                      maxWidth: 380,
+                      width: '100%',
+                      padding: '5px 10px',
+                      borderRadius: 6,
+                      backgroundColor: 'var(--surface-card)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--label)',
+                      fontSize: 11,
+                      outline: 'none',
+                    }}
+                  >
+                    {candidateFolders.map((cf) => (
+                      <option key={cf.path} value={cf.path}>
+                        {cf.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <StudioButton
+                    variant="glass"
+                    size="sm"
+                    icon={<Unlink size={12} />}
+                    onClick={() => {
+                      handleUnpair(item);
+                      if (hasNext) {
+                        setActiveCompareIndex(activeCompareIndex);
+                      } else {
+                        setActiveCompareIndex(null);
+                      }
+                    }}
+                  >
+                    Unpair Clip
+                  </StudioButton>
+
+                  {hasNext ? (
+                    <StudioButton
+                      variant="primary"
+                      size="sm"
+                      icon={<CheckCircle2 size={12} />}
+                      onClick={() => setActiveCompareIndex(activeCompareIndex + 1)}
+                      style={{ background: 'linear-gradient(135deg, #10B981, #059669)' }}
+                    >
+                      Verified • Next Pair →
+                    </StudioButton>
+                  ) : (
+                    <StudioButton
+                      variant="primary"
+                      size="sm"
+                      icon={<Check size={12} />}
+                      onClick={() => setActiveCompareIndex(null)}
+                      style={{ background: 'linear-gradient(135deg, #10B981, #059669)' }}
+                    >
+                      All Verified • Done
+                    </StudioButton>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* 8. Operation Overlay */}
       <OperationLoadingOverlay
