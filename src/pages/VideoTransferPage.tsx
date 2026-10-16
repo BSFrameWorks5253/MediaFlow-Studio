@@ -778,31 +778,51 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
 
         {/* Dual Path Selectors */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-          <StudioFolderInput
-            label="1. Video Master Clips Directory (_V)"
-            description="Folder containing source camera video files and companion _V thumbnails"
-            value={videoDir}
-            onChange={(val) => {
-              setVideoDir(val);
-              if (pathErrors?.video) setPathErrors((p) => (p ? { ...p, video: undefined } : null));
+          <div
+            style={{
+              padding: '12px 14px',
+              borderRadius: 12,
+              backgroundColor: 'rgba(16, 185, 129, 0.03)',
+              border: videoDir ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid var(--border)',
+              transition: 'border-color 0.2s ease',
             }}
-            onBrowse={handleBrowseVideo}
-            placeholder="e.g. E:\In Process\Morbi Atraaf Safar\Morbi Atraaf Safar_V"
-            error={pathErrors?.video}
-          />
+          >
+            <StudioFolderInput
+              label="1. Video Master Clips Directory (_V)"
+              description="Folder containing source camera video files and companion _V thumbnails"
+              value={videoDir}
+              onChange={(val) => {
+                setVideoDir(val);
+                if (pathErrors?.video) setPathErrors((p) => (p ? { ...p, video: undefined } : null));
+              }}
+              onBrowse={handleBrowseVideo}
+              placeholder="e.g. E:\In Process\Morbi Atraaf Safar\Morbi Atraaf Safar_V"
+              error={pathErrors?.video}
+            />
+          </div>
 
-          <StudioFolderInput
-            label="2. Clean Photo Subfolders Directory (_P)"
-            description="Target event photo subfolders where videos will be placed"
-            value={photoDir}
-            onChange={(val) => {
-              setPhotoDir(val);
-              if (pathErrors?.photo) setPathErrors((p) => (p ? { ...p, photo: undefined } : null));
+          <div
+            style={{
+              padding: '12px 14px',
+              borderRadius: 12,
+              backgroundColor: 'rgba(56, 189, 248, 0.03)',
+              border: photoDir ? '1px solid rgba(56, 189, 248, 0.35)' : '1px solid var(--border)',
+              transition: 'border-color 0.2s ease',
             }}
-            onBrowse={handleBrowsePhoto}
-            placeholder="e.g. E:\In Process\Morbi Atraaf Safar\Morbi Atraaf Safar_P"
-            error={pathErrors?.photo}
-          />
+          >
+            <StudioFolderInput
+              label="2. Clean Photo Subfolders Directory (_P)"
+              description="Target event photo subfolders where videos will be placed"
+              value={photoDir}
+              onChange={(val) => {
+                setPhotoDir(val);
+                if (pathErrors?.photo) setPathErrors((p) => (p ? { ...p, photo: undefined } : null));
+              }}
+              onBrowse={handleBrowsePhoto}
+              placeholder="e.g. E:\In Process\Morbi Atraaf Safar\Morbi Atraaf Safar_P"
+              error={pathErrors?.photo}
+            />
+          </div>
         </div>
 
         {/* Storage Capacity Bar */}
@@ -829,46 +849,104 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ color: 'var(--secondary-label)', fontWeight: 600 }}>Transfer Mode:</span>
-              <select
-                value={transferMode}
-                onChange={(e) => setTransferMode(e.target.value as any)}
+              <div
                 style={{
-                  padding: '4px 10px',
-                  borderRadius: 6,
-                  backgroundColor: 'var(--surface-elevated)',
+                  display: 'inline-flex',
+                  padding: 2,
+                  borderRadius: 8,
+                  backgroundColor: 'rgba(0, 0, 0, 0.35)',
                   border: '1px solid var(--border)',
-                  color: 'var(--label)',
-                  fontSize: 11.5,
-                  fontWeight: 600,
-                  outline: 'none',
                 }}
               >
-                <option value="copy">COPY (Safe: Preserves Source Files)</option>
-                <option value="move">MOVE (Fast: Move into Target Folders)</option>
-              </select>
+                <button
+                  type="button"
+                  onClick={() => setTransferMode('copy')}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: 6,
+                    border: 'none',
+                    backgroundColor: transferMode === 'copy' ? 'rgba(16, 185, 129, 0.25)' : 'transparent',
+                    color: transferMode === 'copy' ? '#10B981' : 'var(--secondary-label)',
+                    fontWeight: 700,
+                    fontSize: 11,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    boxShadow: transferMode === 'copy' ? '0 2px 8px rgba(16, 185, 129, 0.2)' : 'none',
+                  }}
+                >
+                  ⚡ COPY (Safe)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTransferMode('move')}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: 6,
+                    border: 'none',
+                    backgroundColor: transferMode === 'move' ? 'rgba(6, 182, 212, 0.25)' : 'transparent',
+                    color: transferMode === 'move' ? '#06B6D4' : 'var(--secondary-label)',
+                    fontWeight: 700,
+                    fontSize: 11,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    boxShadow: transferMode === 'move' ? '0 2px 8px rgba(6, 182, 212, 0.2)' : 'none',
+                  }}
+                >
+                  🚀 MOVE (Fast)
+                </button>
+              </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ color: 'var(--secondary-label)', fontWeight: 600 }}>File Collisions:</span>
-              <select
-                value={collisionPolicy}
-                onChange={(e) => setCollisionPolicy(e.target.value as any)}
+              <div
                 style={{
-                  padding: '4px 10px',
-                  borderRadius: 6,
-                  backgroundColor: 'var(--surface-elevated)',
+                  display: 'inline-flex',
+                  padding: 2,
+                  borderRadius: 8,
+                  backgroundColor: 'rgba(0, 0, 0, 0.35)',
                   border: '1px solid var(--border)',
-                  color: 'var(--label)',
-                  fontSize: 11.5,
-                  fontWeight: 600,
-                  outline: 'none',
                 }}
               >
-                <option value="keepBoth">Auto-Rename (_1, _2)</option>
-                <option value="skip">Skip Existing</option>
-              </select>
+                <button
+                  type="button"
+                  onClick={() => setCollisionPolicy('keepBoth')}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: 6,
+                    border: 'none',
+                    backgroundColor: collisionPolicy === 'keepBoth' ? 'rgba(56, 189, 248, 0.25)' : 'transparent',
+                    color: collisionPolicy === 'keepBoth' ? '#38BDF8' : 'var(--secondary-label)',
+                    fontWeight: 700,
+                    fontSize: 11,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    boxShadow: collisionPolicy === 'keepBoth' ? '0 2px 8px rgba(56, 189, 248, 0.2)' : 'none',
+                  }}
+                >
+                  Auto-Rename (_1, _2)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCollisionPolicy('skip')}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: 6,
+                    border: 'none',
+                    backgroundColor: collisionPolicy === 'skip' ? 'rgba(245, 158, 11, 0.25)' : 'transparent',
+                    color: collisionPolicy === 'skip' ? '#F59E0B' : 'var(--secondary-label)',
+                    fontWeight: 700,
+                    fontSize: 11,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    boxShadow: collisionPolicy === 'skip' ? '0 2px 8px rgba(245, 158, 11, 0.2)' : 'none',
+                  }}
+                >
+                  Skip Existing
+                </button>
+              </div>
             </div>
 
             {uploadStructure.mainDataPath && (
@@ -976,24 +1054,27 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
             className="glass-card"
             style={{
               padding: '16px 18px',
-              borderRadius: 12,
+              borderRadius: 14,
               border: '1px solid var(--border)',
+              borderTop: '3px solid #38BDF8',
+              background: 'linear-gradient(180deg, rgba(56, 189, 248, 0.08) 0%, transparent 100%)',
               display: 'flex',
               flexDirection: 'column',
               gap: 4,
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--tertiary-label)', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--tertiary-label)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 Total Videos Found
               </span>
-              <Video size={16} color="var(--system-blue)" />
+              <Video size={16} color="#38BDF8" />
             </div>
-            <span style={{ fontSize: 24, fontWeight: 800, color: 'var(--label)', fontFamily: 'var(--font-mono)' }}>
+            <span style={{ fontSize: 26, fontWeight: 800, color: 'var(--label)', fontFamily: 'var(--font-mono)' }}>
               {scanResult.matched.length + scanResult.unmatched.length}
             </span>
             <span style={{ fontSize: 11, color: 'var(--secondary-label)' }}>
-              Payload: {formatBytes(totalVideoBytes)}
+              Payload: <strong style={{ color: 'var(--label)' }}>{formatBytes(totalVideoBytes)}</strong>
             </span>
           </div>
 
@@ -1002,35 +1083,38 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
             className="glass-card"
             style={{
               padding: '16px 18px',
-              borderRadius: 12,
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              background: 'linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, transparent 100%)',
+              borderRadius: 14,
+              border: '1px solid rgba(16, 185, 129, 0.35)',
+              borderTop: '3px solid #10B981',
+              background: 'linear-gradient(180deg, rgba(16, 185, 129, 0.12) 0%, transparent 100%)',
               display: 'flex',
               flexDirection: 'column',
               gap: 4,
+              boxShadow: '0 4px 20px rgba(16, 185, 129, 0.15)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: '#10B981', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#10B981', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 Matched Sequences
               </span>
               <CheckCircle2 size={16} color="#10B981" />
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <span style={{ fontSize: 24, fontWeight: 800, color: '#10B981', fontFamily: 'var(--font-mono)' }}>
+              <span style={{ fontSize: 26, fontWeight: 800, color: '#10B981', fontFamily: 'var(--font-mono)' }}>
                 {scanResult.matched.length}
               </span>
               <span
                 style={{
                   fontSize: 11,
-                  fontWeight: 700,
+                  fontWeight: 800,
                   color: '#10B981',
-                  backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                  backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                  border: '1px solid rgba(16, 185, 129, 0.4)',
                   padding: '2px 8px',
                   borderRadius: 10,
                 }}
               >
-                {matchPercentage}%
+                {matchPercentage}% Ready
               </span>
             </div>
             <span style={{ fontSize: 11, color: 'var(--secondary-label)' }}>
@@ -1043,23 +1127,30 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
             className="glass-card"
             style={{
               padding: '16px 18px',
-              borderRadius: 12,
+              borderRadius: 14,
               border:
                 scanResult.unmatched.length > 0
-                  ? '1px solid rgba(239, 68, 68, 0.35)'
+                  ? '1px solid rgba(239, 68, 68, 0.4)'
                   : '1px solid var(--border)',
+              borderTop:
+                scanResult.unmatched.length > 0 ? '3px solid #EF4444' : '3px solid var(--border)',
+              background:
+                scanResult.unmatched.length > 0
+                  ? 'linear-gradient(180deg, rgba(239, 68, 68, 0.12) 0%, transparent 100%)'
+                  : 'transparent',
               display: 'flex',
               flexDirection: 'column',
               gap: 4,
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: scanResult.unmatched.length > 0 ? '#EF4444' : 'var(--tertiary-label)', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: scanResult.unmatched.length > 0 ? '#EF4444' : 'var(--tertiary-label)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 Unmatched Clips
               </span>
               <AlertTriangle size={16} color={scanResult.unmatched.length > 0 ? '#EF4444' : 'var(--tertiary-label)'} />
             </div>
-            <span style={{ fontSize: 24, fontWeight: 800, color: scanResult.unmatched.length > 0 ? '#EF4444' : 'var(--label)', fontFamily: 'var(--font-mono)' }}>
+            <span style={{ fontSize: 26, fontWeight: 800, color: scanResult.unmatched.length > 0 ? '#EF4444' : 'var(--label)', fontFamily: 'var(--font-mono)' }}>
               {scanResult.unmatched.length}
             </span>
             <span style={{ fontSize: 11, color: 'var(--secondary-label)' }}>
@@ -1072,20 +1163,23 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
             className="glass-card"
             style={{
               padding: '16px 18px',
-              borderRadius: 12,
+              borderRadius: 14,
               border: '1px solid var(--border)',
+              borderTop: '3px solid #A78BFA',
+              background: 'linear-gradient(180deg, rgba(139, 92, 246, 0.08) 0%, transparent 100%)',
               display: 'flex',
               flexDirection: 'column',
               gap: 4,
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--tertiary-label)', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--tertiary-label)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 Event Date Folders
               </span>
-              <Calendar size={16} color="var(--system-purple)" />
+              <Calendar size={16} color="#A78BFA" />
             </div>
-            <span style={{ fontSize: 24, fontWeight: 800, color: 'var(--label)', fontFamily: 'var(--font-mono)' }}>
+            <span style={{ fontSize: 26, fontWeight: 800, color: 'var(--label)', fontFamily: 'var(--font-mono)' }}>
               {availableDates.length}
             </span>
             <span style={{ fontSize: 11, color: 'var(--secondary-label)' }}>
@@ -1505,7 +1599,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
               <span>Video Master Clip</span>
               <span>Match Details</span>
               <span>Target Photo Subfolder</span>
-              <span>Visual Verification (_V ⇄ _P)</span>
+              <span style={{ textAlign: 'center' }}>Visual Verification (_V ⇄ _P)</span>
               <span style={{ textAlign: 'right' }}>Actions</span>
             </div>
 
@@ -1758,54 +1852,58 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                       </div>
 
                       {/* 4. Unified Visual Verification (_V ⇄ _P) */}
-                      <div>
+                      <div style={{ display: 'flex', justifyContent: 'center' }}>
                         <div
                           onClick={() => setActiveCompareIndex(idx)}
                           style={{
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: 8,
+                            gap: 10,
                             cursor: 'pointer',
-                            padding: '4px 10px',
-                            borderRadius: 8,
-                            backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                            padding: '4px 12px',
+                            borderRadius: 10,
+                            backgroundColor: 'rgba(255, 255, 255, 0.025)',
                             border: '1px solid rgba(255, 255, 255, 0.08)',
-                            transition: 'all 0.15s ease-in-out',
+                            transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.25)',
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-                            e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.4)';
-                            e.currentTarget.style.transform = 'translateY(-1px)';
+                            e.currentTarget.style.backgroundColor = 'rgba(56, 189, 248, 0.06)';
+                            e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.45)';
+                            e.currentTarget.style.transform = 'translateY(-1.5px) scale(1.02)';
+                            e.currentTarget.style.boxShadow = '0 6px 20px rgba(56, 189, 248, 0.22)';
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.02)';
+                            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.025)';
                             e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
                             e.currentTarget.style.transform = 'none';
+                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.25)';
                           }}
-                          title="Click for Dual Side-by-Side Visual Verification"
+                          title="Click to open Side-by-Side Dual Visual Verification Inspector"
                         >
-                          {/* Video Thumbnail Mini Card */}
+                          {/* Video Thumbnail Mini Card (16:9) */}
                           <div
                             style={{
                               position: 'relative',
-                              width: 44,
-                              height: 32,
-                              borderRadius: 6,
+                              width: 56,
+                              height: 36,
+                              borderRadius: 7,
                               overflow: 'hidden',
                               border: item.hasVideoThumb
-                                ? '1px solid rgba(16, 185, 129, 0.45)'
-                                : '1px dashed rgba(255, 255, 255, 0.15)',
-                              backgroundColor: '#090B10',
+                                ? '1.5px solid rgba(16, 185, 129, 0.65)'
+                                : '1px dashed rgba(255, 255, 255, 0.18)',
+                              backgroundColor: '#06080D',
                               flexShrink: 0,
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
+                              boxShadow: item.hasVideoThumb ? '0 0 10px rgba(16, 185, 129, 0.2)' : 'none',
                             }}
                           >
                             {item.hasVideoThumb && item.videoThumbPath ? (
                               <ThumbnailImg filePath={item.videoThumbPath} alt={item.videoFile} />
                             ) : (
-                              <Video size={13} color="var(--tertiary-label)" />
+                              <Video size={15} color="var(--tertiary-label)" />
                             )}
                             <span
                               style={{
@@ -1814,25 +1912,26 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                                 left: 2,
                                 fontSize: 8,
                                 fontWeight: 800,
-                                padding: '0 3px',
+                                padding: '0 4px',
                                 borderRadius: 3,
-                                backgroundColor: item.hasVideoThumb ? 'rgba(16, 185, 129, 0.9)' : 'rgba(0,0,0,0.6)',
+                                backgroundColor: item.hasVideoThumb ? 'rgba(16, 185, 129, 0.95)' : 'rgba(0,0,0,0.7)',
                                 color: '#FFFFFF',
-                                lineHeight: '11px',
+                                lineHeight: '12px',
+                                letterSpacing: '0.02em',
                               }}
                             >
                               _V
                             </span>
                           </div>
 
-                          {/* Comparison / Sync Status Pill */}
+                          {/* Center Comparison Connector Badge */}
                           <div
                             style={{
                               display: 'flex',
                               flexDirection: 'column',
                               alignItems: 'center',
                               gap: 2,
-                              minWidth: 54,
+                              minWidth: 64,
                             }}
                           >
                             {item.hasVideoThumb && item.hasPhotoThumb ? (
@@ -1840,17 +1939,18 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                                 style={{
                                   display: 'inline-flex',
                                   alignItems: 'center',
-                                  gap: 3,
+                                  gap: 4,
                                   fontSize: 9.5,
                                   fontWeight: 800,
                                   color: '#38BDF8',
-                                  backgroundColor: 'rgba(56, 189, 248, 0.12)',
-                                  border: '1px solid rgba(56, 189, 248, 0.3)',
-                                  padding: '1px 6px',
-                                  borderRadius: 10,
+                                  background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(16, 185, 129, 0.15) 100%)',
+                                  border: '1px solid rgba(56, 189, 248, 0.4)',
+                                  padding: '1.5px 7px',
+                                  borderRadius: 12,
+                                  boxShadow: '0 0 10px rgba(56, 189, 248, 0.2)',
                                 }}
                               >
-                                <span>⇄</span> Both
+                                <span>⇄</span> Synced
                               </span>
                             ) : item.hasVideoThumb ? (
                               <span
@@ -1858,12 +1958,13 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                                   fontSize: 9,
                                   fontWeight: 700,
                                   color: '#10B981',
-                                  backgroundColor: 'rgba(16, 185, 129, 0.12)',
-                                  padding: '1px 5px',
+                                  backgroundColor: 'rgba(16, 185, 129, 0.14)',
+                                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                                  padding: '1px 6px',
                                   borderRadius: 8,
                                 }}
                               >
-                                _V only
+                                _V ready
                               </span>
                             ) : item.hasPhotoThumb ? (
                               <span
@@ -1871,43 +1972,54 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                                   fontSize: 9,
                                   fontWeight: 700,
                                   color: '#A78BFA',
-                                  backgroundColor: 'rgba(139, 92, 246, 0.12)',
-                                  padding: '1px 5px',
+                                  backgroundColor: 'rgba(139, 92, 246, 0.14)',
+                                  border: '1px solid rgba(139, 92, 246, 0.3)',
+                                  padding: '1px 6px',
                                   borderRadius: 8,
                                 }}
                               >
-                                _P only
+                                _P ready
                               </span>
                             ) : (
                               <span style={{ fontSize: 9, color: 'var(--tertiary-label)' }}>No thumbs</span>
                             )}
-                            <span style={{ fontSize: 8.5, color: 'var(--tertiary-label)', display: 'flex', alignItems: 'center', gap: 2 }}>
-                              <Eye size={9} /> Inspect
+                            <span
+                              style={{
+                                fontSize: 8.5,
+                                color: 'var(--tertiary-label)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 3,
+                                fontWeight: 600,
+                              }}
+                            >
+                              <Eye size={9.5} color="#38BDF8" /> Inspect
                             </span>
                           </div>
 
-                          {/* Photo Thumbnail Mini Card */}
+                          {/* Photo Thumbnail Mini Card (16:9) */}
                           <div
                             style={{
                               position: 'relative',
-                              width: 44,
-                              height: 32,
-                              borderRadius: 6,
+                              width: 56,
+                              height: 36,
+                              borderRadius: 7,
                               overflow: 'hidden',
                               border: item.hasPhotoThumb
-                                ? '1px solid rgba(139, 92, 246, 0.45)'
-                                : '1px dashed rgba(255, 255, 255, 0.15)',
-                              backgroundColor: '#090B10',
+                                ? '1.5px solid rgba(139, 92, 246, 0.65)'
+                                : '1px dashed rgba(255, 255, 255, 0.18)',
+                              backgroundColor: '#06080D',
                               flexShrink: 0,
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
+                              boxShadow: item.hasPhotoThumb ? '0 0 10px rgba(139, 92, 246, 0.2)' : 'none',
                             }}
                           >
                             {item.hasPhotoThumb && item.photoThumbPath ? (
                               <ThumbnailImg filePath={item.photoThumbPath} alt={item.photoFolder} />
                             ) : (
-                              <Folder size={13} color="var(--tertiary-label)" />
+                              <Folder size={15} color="var(--tertiary-label)" />
                             )}
                             <span
                               style={{
@@ -1916,11 +2028,12 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                                 right: 2,
                                 fontSize: 8,
                                 fontWeight: 800,
-                                padding: '0 3px',
+                                padding: '0 4px',
                                 borderRadius: 3,
-                                backgroundColor: item.hasPhotoThumb ? 'rgba(139, 92, 246, 0.9)' : 'rgba(0,0,0,0.6)',
+                                backgroundColor: item.hasPhotoThumb ? 'rgba(139, 92, 246, 0.95)' : 'rgba(0,0,0,0.7)',
                                 color: '#FFFFFF',
-                                lineHeight: '11px',
+                                lineHeight: '12px',
+                                letterSpacing: '0.02em',
                               }}
                             >
                               _P
@@ -2606,63 +2719,143 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
               {/* Side-by-Side Dual Visual Canvas */}
               <div
                 style={{
-                  padding: 20,
+                  position: 'relative',
+                  padding: 22,
                   display: 'grid',
                   gridTemplateColumns: '1fr 1fr',
-                  gap: 18,
+                  gap: 20,
                   overflowY: 'auto',
                   flex: 1,
+                  backgroundColor: 'rgba(0, 0, 0, 0.25)',
                 }}
               >
+                {/* Center Visual Sequence Connector Bridge */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: '50%',
+                    top: '42%',
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: 20,
+                    pointerEvents: 'none',
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: '7px 16px',
+                      borderRadius: 24,
+                      backgroundColor: '#090D16',
+                      border: '1.5px solid #38BDF8',
+                      boxShadow: '0 0 30px rgba(56, 189, 248, 0.45), 0 8px 30px rgba(0, 0, 0, 0.9)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 7,
+                      color: '#38BDF8',
+                      fontSize: 11,
+                      fontWeight: 800,
+                      letterSpacing: '0.04em',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <Sparkles size={14} color="#38BDF8" />
+                    <span>⇄ 100% SEQUENCE ALIGNED</span>
+                  </div>
+                </div>
+
                 {/* Left Card: Master Video Clip */}
                 <div
                   style={{
                     display: 'flex',
                     flexDirection: 'column',
                     borderRadius: 14,
-                    border: '1px solid rgba(16, 185, 129, 0.35)',
-                    backgroundColor: 'rgba(16, 185, 129, 0.02)',
+                    border: '1px solid rgba(16, 185, 129, 0.4)',
+                    backgroundColor: 'rgba(16, 185, 129, 0.025)',
                     overflow: 'hidden',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
                   }}
                 >
                   <div
                     style={{
-                      padding: '10px 14px',
-                      backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                      borderBottom: '1px solid rgba(16, 185, 129, 0.2)',
+                      padding: '11px 16px',
+                      backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                      borderBottom: '1px solid rgba(16, 185, 129, 0.25)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <Video size={14} color="#10B981" />
-                      <span style={{ fontSize: 12, fontWeight: 800, color: '#10B981' }}>
-                        Video Master Clip (_V)
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                      <Video size={15} color="#10B981" />
+                      <span style={{ fontSize: 12.5, fontWeight: 800, color: '#10B981' }}>
+                        Video Master Feed (_V)
                       </span>
                     </div>
                     {item.hasVideoThumb ? (
-                      <span style={{ fontSize: 10, color: '#10B981', fontWeight: 700 }}>
-                        ✓ Thumbnail Present
+                      <span
+                        style={{
+                          fontSize: 10,
+                          color: '#10B981',
+                          fontWeight: 800,
+                          backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                          padding: '2px 8px',
+                          borderRadius: 6,
+                          border: '1px solid rgba(16, 185, 129, 0.4)',
+                        }}
+                      >
+                        ✓ _V THUMB READY
                       </span>
                     ) : (
-                      <span style={{ fontSize: 10, color: 'var(--tertiary-label)' }}>
-                        — No Video Thumb
+                      <span style={{ fontSize: 10, color: 'var(--tertiary-label)', fontStyle: 'italic' }}>
+                        — No companion video thumb
                       </span>
                     )}
                   </div>
 
+                  {/* Cinema Monitor Viewport */}
                   <div
                     style={{
-                      height: 290,
-                      backgroundColor: '#07090E',
+                      height: 330,
+                      backgroundColor: '#04060A',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       overflow: 'hidden',
                       position: 'relative',
+                      boxShadow: 'inset 0 0 40px rgba(0, 0, 0, 0.9)',
                     }}
                   >
+                    {/* Live Indicator Beacon */}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 10,
+                        left: 12,
+                        zIndex: 5,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        backdropFilter: 'blur(8px)',
+                        border: '1px solid rgba(16, 185, 129, 0.4)',
+                        padding: '3px 8px',
+                        borderRadius: 6,
+                        fontSize: 9.5,
+                        fontWeight: 800,
+                        color: '#10B981',
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: '50%',
+                          backgroundColor: '#10B981',
+                          boxShadow: '0 0 8px #10B981',
+                        }}
+                      />
+                      <span>MASTER CLIP 16:9</span>
+                    </div>
+
                     {item.hasVideoThumb && item.videoThumbPath ? (
                       <ThumbnailImg
                         filePath={item.videoThumbPath}
@@ -2670,15 +2863,23 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                         style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                       />
                     ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, color: 'var(--tertiary-label)' }}>
-                        <Video size={42} strokeWidth={1.5} />
-                        <span style={{ fontSize: 11 }}>No companion video thumbnail file</span>
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: 10,
+                          color: 'var(--tertiary-label)',
+                        }}
+                      >
+                        <Video size={48} strokeWidth={1.5} color="rgba(255, 255, 255, 0.2)" />
+                        <span style={{ fontSize: 11.5, fontWeight: 600 }}>No companion video thumbnail file</span>
                       </div>
                     )}
                   </div>
 
                   {/* Metadata & Actions */}
-                  <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8, fontSize: 11 }}>
+                  <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 9, fontSize: 11.5 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span style={{ fontWeight: 700, color: 'var(--label)', fontFamily: 'var(--font-mono)' }}>
                         {item.videoFile}
@@ -2688,25 +2889,27 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                         style={{ background: 'none', border: 'none', color: 'var(--tertiary-label)', cursor: 'pointer', padding: 2 }}
                         title="Copy filename"
                       >
-                        <Copy size={12} />
+                        <Copy size={13} />
                       </button>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--secondary-label)' }}>
                       <span>Size: <strong style={{ color: 'var(--label)' }}>{formatBytes(item.videoSize)}</strong></span>
                       <span>•</span>
-                      <span>Shot: <strong style={{ color: '#10B981' }}>{item.shotCode || 'N/A'}</strong></span>
+                      <span>Shot Token: <strong style={{ color: '#10B981' }}>{item.shotCode || 'General'}</strong></span>
+                      <span>•</span>
+                      <span>Date: <strong style={{ color: 'var(--label)' }}>{item.dateFolder}</strong></span>
                     </div>
 
-                    <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                       <StudioButton
                         variant="secondary"
                         size="sm"
                         icon={<Video size={12} />}
                         onClick={() => handleLocateItem(item.videoPath)}
-                        style={{ fontSize: 10.5, height: 26, padding: '2px 8px' }}
+                        style={{ fontSize: 11, height: 28, padding: '3px 10px' }}
                       >
-                        Locate Video
+                        Locate Video in Explorer
                       </StudioButton>
                       {item.videoThumbPath && (
                         <StudioButton
@@ -2714,7 +2917,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                           size="sm"
                           icon={<Eye size={12} />}
                           onClick={() => handleLocateItem(item.videoThumbPath)}
-                          style={{ fontSize: 10.5, height: 26, padding: '2px 8px' }}
+                          style={{ fontSize: 11, height: 28, padding: '3px 10px' }}
                         >
                           Locate Thumb
                         </StudioButton>
@@ -2729,49 +2932,94 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                     display: 'flex',
                     flexDirection: 'column',
                     borderRadius: 14,
-                    border: '1px solid rgba(139, 92, 246, 0.35)',
-                    backgroundColor: 'rgba(139, 92, 246, 0.02)',
+                    border: '1px solid rgba(139, 92, 246, 0.4)',
+                    backgroundColor: 'rgba(139, 92, 246, 0.025)',
                     overflow: 'hidden',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
                   }}
                 >
                   <div
                     style={{
-                      padding: '10px 14px',
-                      backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                      borderBottom: '1px solid rgba(139, 92, 246, 0.2)',
+                      padding: '11px 16px',
+                      backgroundColor: 'rgba(139, 92, 246, 0.12)',
+                      borderBottom: '1px solid rgba(139, 92, 246, 0.25)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <Folder size={14} color="#A78BFA" />
-                      <span style={{ fontSize: 12, fontWeight: 800, color: '#A78BFA' }}>
-                        Target Photo Subfolder (_P)
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                      <Folder size={15} color="#A78BFA" />
+                      <span style={{ fontSize: 12.5, fontWeight: 800, color: '#A78BFA' }}>
+                        Target Photo Album (_P)
                       </span>
                     </div>
                     {item.hasPhotoThumb ? (
-                      <span style={{ fontSize: 10, color: '#A78BFA', fontWeight: 700 }}>
-                        ✓ Thumbnail Present
+                      <span
+                        style={{
+                          fontSize: 10,
+                          color: '#A78BFA',
+                          fontWeight: 800,
+                          backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                          padding: '2px 8px',
+                          borderRadius: 6,
+                          border: '1px solid rgba(139, 92, 246, 0.4)',
+                        }}
+                      >
+                        ✓ _P THUMB READY
                       </span>
                     ) : (
-                      <span style={{ fontSize: 10, color: 'var(--tertiary-label)' }}>
-                        — No Photo Thumb
+                      <span style={{ fontSize: 10, color: 'var(--tertiary-label)', fontStyle: 'italic' }}>
+                        — No companion photo thumb
                       </span>
                     )}
                   </div>
 
+                  {/* Cinema Monitor Viewport */}
                   <div
                     style={{
-                      height: 290,
-                      backgroundColor: '#07090E',
+                      height: 330,
+                      backgroundColor: '#04060A',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       overflow: 'hidden',
                       position: 'relative',
+                      boxShadow: 'inset 0 0 40px rgba(0, 0, 0, 0.9)',
                     }}
                   >
+                    {/* Live Indicator Beacon */}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 10,
+                        left: 12,
+                        zIndex: 5,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        backdropFilter: 'blur(8px)',
+                        border: '1px solid rgba(139, 92, 246, 0.4)',
+                        padding: '3px 8px',
+                        borderRadius: 6,
+                        fontSize: 9.5,
+                        fontWeight: 800,
+                        color: '#A78BFA',
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: '50%',
+                          backgroundColor: '#A78BFA',
+                          boxShadow: '0 0 8px #A78BFA',
+                        }}
+                      />
+                      <span>EVENT ALBUM</span>
+                    </div>
+
                     {item.hasPhotoThumb && item.photoThumbPath ? (
                       <ThumbnailImg
                         filePath={item.photoThumbPath}
@@ -2779,15 +3027,23 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                         style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                       />
                     ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, color: 'var(--tertiary-label)' }}>
-                        <Folder size={42} strokeWidth={1.5} />
-                        <span style={{ fontSize: 11 }}>No companion photo thumbnail found</span>
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: 10,
+                          color: 'var(--tertiary-label)',
+                        }}
+                      >
+                        <Folder size={48} strokeWidth={1.5} color="rgba(255, 255, 255, 0.2)" />
+                        <span style={{ fontSize: 11.5, fontWeight: 600 }}>No companion photo thumbnail found</span>
                       </div>
                     )}
                   </div>
 
                   {/* Metadata & Actions */}
-                  <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8, fontSize: 11 }}>
+                  <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 9, fontSize: 11.5 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span style={{ fontWeight: 700, color: 'var(--system-cyan)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.photoFolder}>
                         {item.photoFolder}
@@ -2797,23 +3053,23 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                         style={{ background: 'none', border: 'none', color: 'var(--tertiary-label)', cursor: 'pointer', padding: 2 }}
                         title="Copy folder name"
                       >
-                        <Copy size={12} />
+                        <Copy size={13} />
                       </button>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--secondary-label)' }}>
                       <span>Category: <strong style={{ color: 'var(--label)' }}>{item.parentCategoryFolder || 'Root'}</strong></span>
                       <span>•</span>
-                      <span>Date: <strong style={{ color: 'var(--label)' }}>{item.dateFolder}</strong></span>
+                      <span>Scope: <strong style={{ color: 'var(--label)' }}>{item.dateFolder}</strong></span>
                     </div>
 
-                    <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                       <StudioButton
                         variant="secondary"
                         size="sm"
                         icon={<FolderOpen size={12} />}
                         onClick={() => handleOpenPath(item.photoFolderPath, 'Photo Subfolder')}
-                        style={{ fontSize: 10.5, height: 26, padding: '2px 8px' }}
+                        style={{ fontSize: 11, height: 28, padding: '3px 10px' }}
                       >
                         Open Subfolder
                       </StudioButton>
@@ -2823,7 +3079,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                           size="sm"
                           icon={<Eye size={12} />}
                           onClick={() => handleLocateItem(item.photoThumbPath)}
-                          style={{ fontSize: 10.5, height: 26, padding: '2px 8px' }}
+                          style={{ fontSize: 11, height: 28, padding: '3px 10px' }}
                         >
                           Locate Thumb
                         </StudioButton>
@@ -2836,7 +3092,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
               {/* Modal Footer Controls */}
               <div
                 style={{
-                  padding: '12px 22px',
+                  padding: '14px 24px',
                   borderTop: '1px solid var(--border)',
                   backgroundColor: 'var(--surface-elevated)',
                   display: 'flex',
@@ -2846,8 +3102,8 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                 }}
               >
                 {/* Reassign Target Folder dropdown right in the modal */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
-                  <span style={{ fontSize: 11, color: 'var(--secondary-label)', whiteSpace: 'nowrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+                  <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--secondary-label)', whiteSpace: 'nowrap' }}>
                     Reassign Target:
                   </span>
                   <select
@@ -2856,12 +3112,12 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                     style={{
                       maxWidth: 380,
                       width: '100%',
-                      padding: '5px 10px',
-                      borderRadius: 6,
+                      padding: '6px 12px',
+                      borderRadius: 7,
                       backgroundColor: 'var(--surface-card)',
                       border: '1px solid var(--border)',
                       color: 'var(--label)',
-                      fontSize: 11,
+                      fontSize: 11.5,
                       outline: 'none',
                     }}
                   >
@@ -2873,11 +3129,22 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                   </select>
                 </div>
 
+                {/* Keyboard Shortcut Indicator */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--tertiary-label)' }}>
+                  <span>⌨ Shortcuts:</span>
+                  <kbd style={{ padding: '2px 6px', borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.08)', color: 'var(--secondary-label)', fontFamily: 'var(--font-mono)' }}>←</kbd>
+                  <kbd style={{ padding: '2px 6px', borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.08)', color: 'var(--secondary-label)', fontFamily: 'var(--font-mono)' }}>→</kbd>
+                  <span>navigate •</span>
+                  <kbd style={{ padding: '2px 6px', borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.08)', color: 'var(--secondary-label)', fontFamily: 'var(--font-mono)' }}>Esc</kbd>
+                  <span>close</span>
+                </div>
+
+                {/* Actions */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <StudioButton
                     variant="glass"
                     size="sm"
-                    icon={<Unlink size={12} />}
+                    icon={<Unlink size={13} />}
                     onClick={() => {
                       handleUnpair(item);
                       if (hasNext) {
@@ -2894,9 +3161,9 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                     <StudioButton
                       variant="primary"
                       size="sm"
-                      icon={<CheckCircle2 size={12} />}
+                      icon={<CheckCircle2 size={13} />}
                       onClick={() => setActiveCompareIndex(activeCompareIndex + 1)}
-                      style={{ background: 'linear-gradient(135deg, #10B981, #059669)' }}
+                      style={{ background: 'linear-gradient(135deg, #10B981, #059669)', boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)' }}
                     >
                       Verified • Next Pair →
                     </StudioButton>
@@ -2904,9 +3171,9 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                     <StudioButton
                       variant="primary"
                       size="sm"
-                      icon={<Check size={12} />}
+                      icon={<Check size={13} />}
                       onClick={() => setActiveCompareIndex(null)}
-                      style={{ background: 'linear-gradient(135deg, #10B981, #059669)' }}
+                      style={{ background: 'linear-gradient(135deg, #10B981, #059669)', boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)' }}
                     >
                       All Verified • Done
                     </StudioButton>
