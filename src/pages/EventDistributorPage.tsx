@@ -11,8 +11,10 @@ import {
   Layers,
   ArrowRight,
   ExternalLink,
+  X,
 } from 'lucide-react';
 import { StudioButton } from '../components/StudioButton';
+import { StudioFolderInput } from '../components/StudioFolderInput';
 import { PageKey } from '../types/pipelineStages';
 import { usePipeline } from '../context/PipelineContext';
 import { OperationLoadingOverlay } from '../components/OperationLoadingOverlay';
@@ -116,13 +118,9 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
           if (cfg.eventImagesDirPath && !imagesDir) {
             setImagesDir(cfg.eventImagesDirPath);
             setSetupImagesPath(cfg.eventImagesDirPath);
-          } else if (!cfg.eventImagesDirPath) {
-            // Path has not been set yet: ask the user immediately on opening Event Image Shift
-            setIsPathSetupOpen(true);
           }
         } else {
           setExcelPath('C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Pla Cards.xlsx');
-          setIsPathSetupOpen(true);
         }
       });
     } else {
@@ -467,81 +465,6 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
           >
             {imagesDir ? '⚙ Change in Settings' : 'Set Fixed Path →'}
           </button>
-        </div>
-
-        {/* Event Abbreviations & Placard Excel Configuration */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--label)', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <FileSpreadsheet size={15} color="#10B981" />
-              Event Placard Excel Mapping (Pla Cards.xlsx):
-            </label>
-            {excelPath && (
-              <span
-                style={{
-                  fontSize: 10.5,
-                  padding: '2px 8px',
-                  borderRadius: 6,
-                  backgroundColor: 'rgba(16, 185, 129, 0.12)',
-                  color: '#10B981',
-                  border: '1px solid rgba(16, 185, 129, 0.3)',
-                  fontWeight: 700,
-                  fontFamily: 'var(--font-mono)',
-                }}
-              >
-                Pla Cards.xlsx Active (17 Placards Mapped)
-              </span>
-            )}
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <div
-              style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                backgroundColor: 'var(--surface-elevated)',
-                border: '1px solid var(--border)',
-                borderRadius: 10,
-                padding: '0 12px',
-                gap: 8,
-                height: 38,
-              }}
-            >
-              <FileSpreadsheet size={16} color="#10B981" />
-              <input
-                value={excelPath}
-                onChange={(e) => setExcelPath(e.target.value)}
-                placeholder="C:\Users\Burhanuddin\OneDrive\Desktop\Pla Cards.xlsx"
-                style={{
-                  flex: 1,
-                  background: 'transparent',
-                  border: 'none',
-                  outline: 'none',
-                  color: 'var(--label)',
-                  fontSize: 13,
-                  fontFamily: 'var(--font-system)',
-                }}
-              />
-            </div>
-            <StudioButton variant="secondary" size="sm" onClick={handleBrowseExcel}>
-              <FileSpreadsheet size={14} />
-              Browse Excel
-            </StudioButton>
-            {excelPath !== 'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Pla Cards.xlsx' && (
-              <StudioButton
-                variant="secondary"
-                size="sm"
-                onClick={() => {
-                  const def = 'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Pla Cards.xlsx';
-                  setExcelPath(def);
-                  if (window.electronAPI) window.electronAPI.saveConfig({ eventExcelPath: def });
-                  onShowToast('Reset to default Pla Cards.xlsx', 'info');
-                }}
-              >
-                Reset Default
-              </StudioButton>
-            )}
-          </div>
         </div>
 
         {/* Target Workspace Directory */}
@@ -897,15 +820,16 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
       )}
 
       {/* Permanent Event Images Path Setup Modal */}
+      {/* Master Reference Badges Path Setup Modal */}
       {isPathSetupOpen && (
         <div
           style={{
             position: 'fixed',
             inset: 0,
             zIndex: 99999,
-            background: 'rgba(5, 8, 14, 0.85)',
-            backdropFilter: 'blur(14px)',
-            WebkitBackdropFilter: 'blur(14px)',
+            background: 'rgba(5, 8, 14, 0.75)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -916,12 +840,12 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
         >
           <div
             style={{
-              width: 580,
-              maxWidth: '94vw',
-              background: '#0D111A',
-              border: '1px solid rgba(99, 102, 241, 0.4)',
+              width: 540,
+              maxWidth: '92vw',
+              background: 'var(--surface-base, #131722)',
+              border: '1px solid var(--border, rgba(255, 255, 255, 0.12))',
               borderRadius: 16,
-              boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 35px rgba(99, 102, 241, 0.2)',
+              boxShadow: '0 24px 48px -12px rgba(0, 0, 0, 0.6), 0 0 24px rgba(99, 102, 241, 0.15)',
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
@@ -930,118 +854,107 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
             {/* Modal Header */}
             <div
               style={{
-                padding: '18px 24px',
-                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(0, 242, 254, 0.08) 100%)',
-                borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                padding: '16px 20px',
+                borderBottom: '1px solid var(--border, rgba(255, 255, 255, 0.08))',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 12,
+                justifyContent: 'space-between',
               }}
             >
-              <div
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 8,
+                    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                    border: '1px solid rgba(99, 102, 241, 0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <ImageIcon size={18} color="#6366F1" />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--label)' }}>
+                    Master Reference Badges Folder
+                  </h3>
+                  <p style={{ margin: '2px 0 0 0', fontSize: 11.5, color: 'var(--label-secondary)' }}>
+                    Permanent path for event instructions and placards
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsPathSetupOpen(false)}
+                className="btn-tactile"
                 style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 10,
-                  backgroundColor: 'rgba(99, 102, 241, 0.2)',
-                  border: '1px solid rgba(99, 102, 241, 0.4)',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--label-secondary)',
+                  cursor: 'pointer',
+                  padding: 6,
+                  borderRadius: 6,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
+                title="Close"
               >
-                <ImageIcon size={20} color="#6366F1" />
-              </div>
-              <div>
-                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#F8FAFC' }}>
-                  Set Master Event Reference Images Path
-                </h3>
-                <p style={{ margin: '3px 0 0 0', fontSize: 12, color: '#94A3B8' }}>
-                  This path will remain permanently fixed until you change it in Settings.
-                </p>
-              </div>
+                <X size={18} />
+              </button>
             </div>
 
             {/* Modal Body */}
-            <div style={{ padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: 18 }}>
-              {/* Images Folder */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <label style={{ fontSize: 12, fontWeight: 700, color: '#E2E8F0', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Folder size={14} color="#6366F1" />
-                  Master Event Badge Images Folder (Contains Q.jpg, M.jpg, Z.jpg, etc.):
-                </label>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <input
-                    value={setupImagesPath}
-                    onChange={(e) => setSetupImagesPath(e.target.value)}
-                    placeholder="e.g. D:\APP_DATA\EVENT_BADGES"
-                    style={{
-                      flex: 1,
-                      background: 'rgba(15, 23, 42, 0.8)',
-                      border: '1px solid rgba(255, 255, 255, 0.15)',
-                      borderRadius: 8,
-                      padding: '8px 12px',
-                      color: '#F8FAFC',
-                      fontSize: 12.5,
-                      fontFamily: 'var(--font-mono)',
-                      outline: 'none',
-                    }}
-                  />
-                  <StudioButton variant="secondary" size="sm" onClick={handleBrowseSetupImages}>
-                    <Folder size={13} />
-                    Browse
-                  </StudioButton>
-                </div>
-              </div>
+            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <StudioFolderInput
+                label="Master Badges Directory"
+                value={setupImagesPath}
+                onChange={setSetupImagesPath}
+                onBrowse={handleBrowseSetupImages}
+                placeholder="e.g. C:\Users\Burhanuddin\Downloads\Warning and iltemas"
+                description="Directory containing instruction placards (__01 Ziyafat..., __03 Qadam..., etc.)"
+              />
 
-              {/* Hardcoded Built-in Dictionary Notice */}
               <div
                 style={{
-                  padding: '12px 14px',
-                  borderRadius: 10,
+                  padding: '10px 12px',
+                  borderRadius: 8,
                   backgroundColor: 'rgba(16, 231, 157, 0.08)',
-                  border: '1px solid rgba(16, 231, 157, 0.25)',
+                  border: '1px solid rgba(16, 231, 157, 0.2)',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 10,
                 }}
               >
                 <CheckCircle2 size={16} color="#10E79D" style={{ flexShrink: 0 }} />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#10E79D' }}>
-                    Event Code Abbreviations: Hardcoded & Pre-Configured
-                  </span>
-                  <span style={{ fontSize: 11, color: '#94A3B8', lineHeight: 1.4 }}>
-                    Standard 34-code dictionary (Q, M, Z, AQ, BM, BQ, BZ, FMB, H, ID, IF, NAMAZ, N, etc.) is permanently hardcoded. No spreadsheet required.
-                  </span>
-                </div>
+                <span style={{ fontSize: 11.5, color: 'var(--label-secondary)', lineHeight: 1.4 }}>
+                  Built-in 34-code event dictionary is pre-configured. Placards match folders with exact whole-token precision.
+                </span>
               </div>
             </div>
 
             {/* Modal Footer */}
             <div
               style={{
-                padding: '14px 24px',
-                background: 'rgba(15, 23, 42, 0.5)',
-                borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                padding: '12px 20px',
+                borderTop: '1px solid var(--border, rgba(255, 255, 255, 0.08))',
                 display: 'flex',
                 justifyContent: 'flex-end',
-                gap: 10,
+                gap: 8,
+                backgroundColor: 'rgba(0, 0, 0, 0.2)',
               }}
             >
-              {imagesDir && (
-                <StudioButton variant="secondary" size="sm" onClick={() => setIsPathSetupOpen(false)}>
-                  Cancel
-                </StudioButton>
-              )}
+              <StudioButton variant="secondary" size="sm" onClick={() => setIsPathSetupOpen(false)}>
+                Cancel
+              </StudioButton>
               <StudioButton
                 variant="primary"
                 size="sm"
                 onClick={handleSaveFixedPath}
                 disabled={!setupImagesPath.trim()}
-                style={{ backgroundColor: '#6366F1' }}
               >
-                Save &amp; Fix Path
+                Save Path
               </StudioButton>
             </div>
           </div>

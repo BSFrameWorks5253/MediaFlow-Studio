@@ -93,12 +93,37 @@ export const BUILTIN_EVENT_MAPPINGS: EventMappingItem[] = [
   { eventName: 'Zafaf Olda', abbreviation: 'ZO', placardFileName: '__10 Zafaf Olda Tasaweer Instructions.jpg' },
 ];
 
+function normalizePlacardName(s: string): string {
+  return (s || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .replace('aqeeqa', 'aqiqa')
+    .replace('talaqqi', 'talaqi')
+    .replace('instructions', 'instruction');
+}
+
+function isDateSessionContainer(name: string): boolean {
+  const clean = name.trim();
+  // Matches e.g. "1448-04-02 _01M", "1448-03-27_02E", "1448-04-02", "2026-10-17 _01M"
+  return /^\d{4}[-_.]\d{2}[-_.]\d{2}(?:[\s_-]*\w+)?$/i.test(clean);
+}
+
+function isCategoryContainer(name: string): boolean {
+  const clean = name.trim();
+  // e.g. 01-Bhuj-Waaz, 02-Bhuj-QMZ, 01-Surendranagar-QMZ, 01-Mumbai-Bethak
+  return (
+    /^\d{2}[-_][a-zA-Z0-9\s]+[-_][a-zA-Z0-9\s]+$/i.test(clean) &&
+    !/^\d{4}[-_.]\d{2}/.test(clean)
+  );
+}
+
 export class EventImageDistributorEngine {
   /**
    * Parse folder name into tokens.
    * Examples:
    *   1448-04-09_02E-27-12Q-40905764
    *   1448-04-09_02E-27-Q-
+   *   1448-04-02 _01M-04-04Z-20389834
    *   1448-04-09_01M-05-1M-
    *   27-12Q-40905764
    *   01-Q
@@ -115,13 +140,13 @@ export class EventImageDistributorEngine {
     const clean = folderName.trim();
     if (!clean) return null;
 
-    // 0. Ignore category container folders (e.g. 01-Mumbai-Bethak, 02-Mumbai-Waaz, 03-Mumbai-Namaz, 04-Mumbai-Ziyarat)
-    // They are category groups holding item folders, not item folders themselves.
-    if (/^\d{2}[-_][a-zA-Z0-9\s]+[-_](bethak|waaz|namaz|ziyarat|majlis|event|[a-zA-Z]+)$/i.test(clean) && !/\d{4}[-_]\d{2}/.test(clean)) {
+    // 0. Ignore date session containers (e.g. 1448-04-02 _01M) and category containers (e.g. 01-Bhuj-Waaz, 01-Surendranagar-QMZ)
+    // They are parent grouping folders, NOT leaf event shot folders!
+    if (isDateSessionContainer(clean) || isCategoryContainer(clean)) {
       return null;
     }
 
-    // 1. Standard full canonical pattern: e.g. 1448-03-13 _01M-01-TNQ-50458093, 1448-04-09_02E-27-12Q-40905764, or 1448-04-09_01M-05-1M-
+    // 1. Standard full canonical pattern: e.g. 1448-03-13 _01M-01-TNQ-50458093, 1448-04-02 _01M-04-04Z-20389834, 1448-03-27 _01M-01-Waaz-
     const fullMatch = clean.match(/^(\d{4}[-_.]\d{2}[-_.]\d{2}(?:[\s_-]*\w+)?)[\-_](\d+[a-zA-Z]?)[\-_]([a-zA-Z0-9]+)(?:[\-_](\d*))?[\-_]?$/i);
     if (fullMatch) {
       const dateSlot = fullMatch[1];
@@ -143,7 +168,7 @@ export class EventImageDistributorEngine {
       };
     }
 
-    // 2. Local pattern: e.g. 27-12Q-40905764 or 27-12Q or 01-Q
+    // 2. Local pattern: e.g. 27-12Q-40905764, 01-01Q-50427546, 04-04Z-20389834, 01-Q
     const localMatch = clean.match(/^(\d+[a-zA-Z]?)[\-_]([a-zA-Z0-9]+)(?:[\-_](\d*))?[\-_]?$/i);
     if (localMatch) {
       const seq = localMatch[1];
@@ -164,8 +189,11 @@ export class EventImageDistributorEngine {
       };
     }
 
-    // 3. Fallback: split by hyphens/underscores/spaces, e.g. 0042_Ceremony_Q_Bride or 1448-04-09-02E-27-12Q
-    const tokens = clean.split(/[\-_.\s]+/);
+    // 3. Fallback: Strip date header if present so date slot tokens (e.g. 01M) don't get mistaken for event tokens!
+    let remainder = clean.replace(/^(\d{4}[-_.]\d{2}[-_.]\d{2}(?:[\s_-]*\w+)?)[-_]?/i, '').trim();
+    if (!remainder) return null;
+
+    const tokens = remainder.split(/[\-_.\s]+/);
     for (let i = 0; i < tokens.length; i++) {
       const tok = tokens[i];
       const subM = tok.match(/^(\d+)?([a-zA-Z]+)$/);
@@ -298,20 +326,8 @@ except Exception as e:
       matchedAbbreviations: string[];
     }[] = [];
 
-    // Helper maps for fast lookups
-    const abbrMap = new Map<string, EventMappingItem[]>();
-    const nameMap = new Map<string, EventMappingItem[]>();
-
-    for (const m of mappings) {
-      const a = m.abbreviation.toUpperCase();
-      const n = m.eventName.toLowerCase().replace(/[^a-z0-9]/g, '');
-
-      if (!abbrMap.has(a)) abbrMap.set(a, []);
-      abbrMap.get(a)!.push(m);
-
-      if (!nameMap.has(n)) nameMap.set(n, []);
-      nameMap.get(n)!.push(m);
-    }
+    // Sort mappings by eventName length descending so composite names ('Bethak Ziyafat') take precedence over simple ('Ziyafat')
+    const sortedMappings = [...mappings].sort((a, b) => b.eventName.length - a.eventName.length);
 
     for (const file of files) {
       const ext = path.extname(file).toLowerCase();
@@ -322,63 +338,62 @@ except Exception as e:
       if (!stat.isFile()) continue;
 
       const stem = path.basename(file, ext).trim();
-      const stemUpper = stem.toUpperCase();
-      const stemNorm = stem.toLowerCase().replace(/[^a-z0-9]/g, '');
-      const stemNormNoDigits = stemNorm.replace(/^\d+/, '');
       const fileLower = file.toLowerCase();
+      const fileNorm = normalizePlacardName(file);
+
+      // Clean stem without leading numbers or underscores e.g. "__01 Ziyafat" -> "Ziyafat", "01-Q" -> "Q"
+      const cleanStem = stem.replace(/^__?\d+[-_.\s]*/, '').trim();
+      const cleanStemUpper = cleanStem.toUpperCase();
+      const cleanStemNorm = normalizePlacardName(cleanStem);
 
       const matchedNames = new Set<string>();
       const matchedAbbrs = new Set<string>();
 
-      // 1. Direct or normalized match with mapping placardFileName (e.g. "__03 Qadam Tasaweer Instructions.jpg")
-      for (const m of mappings) {
+      // Rule 1: Check placard filename and placard number prefix (__01, __18, __08, etc.)
+      for (const m of sortedMappings) {
         if (!m.placardFileName) continue;
-        const pFile = m.placardFileName.toLowerCase();
-        const pStem = path.basename(m.placardFileName, path.extname(m.placardFileName));
-        const pNorm = pStem.toLowerCase().replace(/[^a-z0-9]/g, '');
-        const pNormNoDigits = pNorm.replace(/^\d+/, '');
+        const pFileLower = m.placardFileName.toLowerCase();
+        const pFileNorm = normalizePlacardName(m.placardFileName);
 
-        if (
-          fileLower === pFile ||
-          stemNorm === pNorm ||
-          (stemNormNoDigits && stemNormNoDigits === pNormNoDigits) ||
-          (pNormNoDigits && stemNorm.includes(pNormNoDigits))
-        ) {
+        // Exact filename match or exact normalized match
+        if (fileLower === pFileLower || fileNorm === pFileNorm) {
           matchedAbbrs.add(m.abbreviation);
           matchedNames.add(m.eventName);
+          break; // Strict match found
+        }
+
+        // Exact placard number prefix match (e.g. file starts with __01 and placard is __01)
+        const pNumMatch = m.placardFileName.match(/^__?(\d+)/);
+        const fNumMatch = file.match(/^__?(\d+)/);
+        if (pNumMatch && fNumMatch && pNumMatch[1] === fNumMatch[1]) {
+          matchedAbbrs.add(m.abbreviation);
+          matchedNames.add(m.eventName);
+          break; // Strict match found
         }
       }
 
-      // 2. Direct abbreviation match (e.g. Q.jpg, 12Q.jpg)
-      if (abbrMap.has(stemUpper)) {
-        for (const item of abbrMap.get(stemUpper)!) {
-          matchedAbbrs.add(item.abbreviation);
-          matchedNames.add(item.eventName);
+      // Rule 2: Exact abbreviation match (e.g. Z.jpg, Q.jpg, 01-Z.jpg, BZ.jpg, MZ.jpg)
+      // Must be EXACT EQUALITY (Z === Z, BZ === BZ), NEVER substring inclusion!
+      if (matchedAbbrs.size === 0 && cleanStemUpper) {
+        for (const m of sortedMappings) {
+          if (cleanStemUpper === m.abbreviation.toUpperCase()) {
+            matchedAbbrs.add(m.abbreviation);
+            matchedNames.add(m.eventName);
+            break;
+          }
         }
       }
 
-      // 3. Abbreviation with leading digits stripped (e.g. "12Q" -> "Q")
-      const numStripped = stemUpper.replace(/^\d+/, '');
-      if (numStripped && abbrMap.has(numStripped)) {
-        for (const item of abbrMap.get(numStripped)!) {
-          matchedAbbrs.add(item.abbreviation);
-          matchedNames.add(item.eventName);
-        }
-      }
-
-      // 4. Exact event name match (e.g. Qadam.jpg, Ziyafat.jpg)
-      if (nameMap.has(stemNorm)) {
-        for (const item of nameMap.get(stemNorm)!) {
-          matchedAbbrs.add(item.abbreviation);
-          matchedNames.add(item.eventName);
-        }
-      }
-
-      // 5. Event name with leading digits stripped (e.g. "01 Ziyafat" -> "Ziyafat")
-      if (stemNormNoDigits && nameMap.has(stemNormNoDigits)) {
-        for (const item of nameMap.get(stemNormNoDigits)!) {
-          matchedAbbrs.add(item.abbreviation);
-          matchedNames.add(item.eventName);
+      // Rule 3: Exact event name match (e.g. Ziyafat.jpg, Bethak Ziyafat.jpg, Majmui Ziyafat.jpg, Qadam.jpg)
+      // Sorted longest first, exact equality or clean prefix with whole token
+      if (matchedAbbrs.size === 0 && cleanStemNorm) {
+        for (const m of sortedMappings) {
+          const eNorm = normalizePlacardName(m.eventName);
+          if (cleanStemNorm === eNorm || cleanStemNorm.startsWith(eNorm)) {
+            matchedAbbrs.add(m.abbreviation);
+            matchedNames.add(m.eventName);
+            break;
+          }
         }
       }
 
@@ -435,11 +450,12 @@ except Exception as e:
           }
 
           const fullSub = path.join(dir, entry.name);
-          const isCategory = /^\d{2}[-_][a-zA-Z0-9\s]+[-_][a-zA-Z0-9\s]+$/i.test(entry.name) ||
-                             /^\d{2}[-_].*?(bethak|waaz|namaz|ziyarat|majlis)/i.test(entry.name);
+          const isDateContainer = isDateSessionContainer(entry.name);
+          const isCategory = isCategoryContainer(entry.name) ||
+                             /^\d{2}[-_].*?(bethak|waaz|namaz|ziyarat|majlis|qmz)/i.test(entry.name);
 
-          if (isCategory) {
-            // Category container folder (e.g. 01-Mumbai-Bethak): recurse directly into it to find the individual item folders
+          if (isDateContainer || isCategory) {
+            // Container folder (e.g. 1448-04-02 _01M or 01-Surendranagar-QMZ): recurse directly into it
             const subCandidates = await findCandidateFolders(fullSub, depth + 1);
             candidates.push(...subCandidates);
             continue;
@@ -448,8 +464,8 @@ except Exception as e:
           const parsed = EventImageDistributorEngine.parseFolderTokens(entry.name);
           if (parsed) {
             candidates.push(fullSub);
-          } else if (depth < 4) {
-            // Check subfolders (e.g. Master session folder or date folder containing event folders)
+          } else if (depth < 6) {
+            // Check subfolders
             const subCandidates = await findCandidateFolders(fullSub, depth + 1);
             candidates.push(...subCandidates);
           }
@@ -458,7 +474,14 @@ except Exception as e:
       return candidates;
     };
 
-    const candidatePaths = await findCandidateFolders(targetWorkingDir);
+    // If targetWorkingDir itself is directly an event folder
+    let candidatePaths: string[] = [];
+    const rootParsed = EventImageDistributorEngine.parseFolderTokens(path.basename(targetWorkingDir));
+    if (rootParsed) {
+      candidatePaths = [targetWorkingDir];
+    } else {
+      candidatePaths = await findCandidateFolders(targetWorkingDir);
+    }
 
     for (const folderPath of candidatePaths) {
       const folderName = path.basename(folderPath);

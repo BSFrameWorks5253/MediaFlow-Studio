@@ -87,46 +87,6 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
         </span>
       </div>
 
-      {/* Middle Quick Actions: Onto Animation */}
-      <div className="window-no-drag" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        {onPlayBootLoader && (
-          <button
-            onClick={() => {
-              if (typeof window !== 'undefined') {
-                localStorage.setItem('dataflow_loading_screen_template', 'onto');
-              }
-              onPlayBootLoader();
-            }}
-            className="btn-tactile"
-            style={{
-              padding: '4px 11px',
-              borderRadius: 8,
-              border: '1px solid rgba(0, 122, 255, 0.4)',
-              background: 'linear-gradient(135deg, rgba(0, 122, 255, 0.15) 0%, rgba(0, 242, 254, 0.15) 100%)',
-              color: '#007AFF',
-              fontSize: 11,
-              fontWeight: 800,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
-            title="Preview Onto Kinetic Animation (onto.mp4)"
-          >
-            <span
-              style={{
-                width: 7,
-                height: 7,
-                borderRadius: '50%',
-                backgroundColor: '#007AFF',
-                boxShadow: '0 0 6px #007AFF',
-              }}
-            />
-            <span>ONTO Animation</span>
-          </button>
-        )}
-      </div>
-
       {/* Right: Window Controls */}
       {hasElectron && (
         <div
