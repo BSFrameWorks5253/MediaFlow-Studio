@@ -50,6 +50,7 @@ import { PageKey } from '../components/Sidebar';
 import { StudioFolderInput } from '../components/StudioFolderInput';
 import { OperationLoadingOverlay } from '../components/OperationLoadingOverlay';
 import { toUserErrorMessage } from '../utils/errorSanitizer';
+import { playSuccessSound, playRefreshSound } from '../utils/soundEffects';
 
 // Fast, reliable thumbnail image renderer with IPC fallback
 const ThumbnailImg: React.FC<{
@@ -57,7 +58,8 @@ const ThumbnailImg: React.FC<{
   alt: string;
   style?: React.CSSProperties;
   className?: string;
-}> = ({ filePath, alt, style, className }) => {
+  cacheKey?: number | string;
+}> = ({ filePath, alt, style, className, cacheKey }) => {
   const [imgSrc, setImgSrc] = useState<string | null>(null);
   const [hasError, setHasError] = useState(false);
 
@@ -69,15 +71,16 @@ const ThumbnailImg: React.FC<{
       return;
     }
     setHasError(false);
-    // Directly try file:// protocol
+    // Directly try file:// protocol with cache buster
     const normalized = filePath.replace(/\\/g, '/');
     const directUrl = normalized.startsWith('file://') ? normalized : `file:///${normalized}`;
-    setImgSrc(directUrl);
+    const bustParam = cacheKey ? `?t=${cacheKey}` : '';
+    setImgSrc(`${directUrl}${bustParam}`);
 
     return () => {
       active = false;
     };
-  }, [filePath]);
+  }, [filePath, cacheKey]);
 
   const handleImgError = async () => {
     if (!filePath) {
@@ -144,10 +147,12 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
   const { uploadStructure } = usePipeline();
   const [videoDir, setVideoDir] = useState('');
   const [photoDir, setPhotoDir] = useState('');
-  const [transferMode, setTransferMode] = useState<'copy' | 'move'>('copy');
+  const [transferMode, setTransferMode] = useState<'copy' | 'move'>('move');
   const [collisionPolicy, setCollisionPolicy] = useState<'skip' | 'keepBoth'>('keepBoth');
 
   const [scanResult, setScanResult] = useState<VideoScanResult | null>(null);
+  const [refreshKey, setRefreshKey] = useState<number>(Date.now());
+  const [lastRefreshedTime, setLastRefreshedTime] = useState<string>('');
   const [isScanning, setIsScanning] = useState(false);
   const [isTransferring, setIsTransferring] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
@@ -543,34 +548,57 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
     }
   };
 
+  const handleRefreshScan = async () => {
+    const key = Date.now();
+    setRefreshKey(key);
+    playRefreshSound();
+    await handleScan();
+    const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setLastRefreshedTime(nowStr);
+    onShowToast(`Refreshed! Folders and video clips re-scanned from disk at ${nowStr}`, 'info');
+  };
+
   const handleTransfer = async () => {
     if (!scanResult || scanResult.matched.length === 0) {
       onShowToast('No matched clips to transfer. Run scan first.', 'warning');
       return;
     }
 
+    const targetPairs = selectedDateFilter === 'ALL'
+      ? scanResult.matched
+      : scanResult.matched.filter((m) => m.dateFolder === selectedDateFilter);
+
+    if (targetPairs.length === 0) {
+      onShowToast(`No matched clips found to transfer for date "${selectedDateFilter}".`, 'warning');
+      return;
+    }
+
     setIsTransferring(true);
     setTransferProgress({
       current: 0,
-      total: scanResult.matched.length,
-      currentFile: scanResult.matched[0].videoFile,
+      total: targetPairs.length,
+      currentFile: targetPairs[0].videoFile,
       speedStr: 'Initiating transfer...',
       percent: 0,
     });
 
     try {
       const res = await window.electronAPI.executeVideoTransfer(
-        scanResult.matched,
+        targetPairs,
         transferMode,
         collisionPolicy
       );
       setLastManifest(res.manifestPath);
-      onShowToast(`Transfer complete: ${res.transferred} video clips aligned successfully!`, 'success');
+      playSuccessSound();
+      onShowToast(
+        `Transfer complete: ${res.transferred} video clip${res.transferred === 1 ? '' : 's'} ${transferMode === 'move' ? 'moved' : 'copied'} successfully!`,
+        'success'
+      );
 
       if (autoMoveToMainData && uploadStructure.mainDataPath && photoDir) {
         await handleMoveMergedFolder(uploadStructure.mainDataPath);
       } else {
-        handleScan();
+        await handleScan();
       }
     } catch (e: any) {
       console.error('Video transfer failed:', e);
@@ -917,6 +945,17 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
               variant="secondary"
               loading={isScanning}
               icon={<RefreshCw size={13} />}
+              onClick={handleRefreshScan}
+              title="Reload folders from disk to pick up newly rendered or copied videos"
+              style={{ fontSize: 11.5, height: 34 }}
+            >
+              Refresh Module
+            </StudioButton>
+
+            <StudioButton
+              variant="secondary"
+              loading={isScanning}
+              icon={<Play size={13} />}
               onClick={handleScan}
               style={{ fontSize: 11.5, height: 34 }}
             >
@@ -942,7 +981,9 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                 transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
               }}
             >
-              Start Synchronization ({scanResult?.matched.length || 0})
+              {selectedDateFilter === 'ALL'
+                ? `Start ${transferMode === 'move' ? 'Move' : 'Copy'} (${scanResult?.matched.length || 0})`
+                : `Start ${transferMode === 'move' ? 'Move' : 'Copy'} ${selectedDateFilter} (${scanResult?.matched.filter((m) => m.dateFolder === selectedDateFilter).length || 0})`}
             </StudioButton>
           </div>
         </div>
@@ -993,6 +1034,34 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
               placeholder="e.g. E:\In Process\Morbi Atraaf Safar\Morbi Atraaf Safar_P"
               error={pathErrors?.photo}
             />
+            {photoDir.trim() && videoDir !== photoDir && (
+              <div style={{ marginTop: 8, display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVideoDir(photoDir);
+                    onShowToast('Direct mode: Video directory set to same folder!', 'info');
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#38BDF8',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    padding: '2px 6px',
+                    borderRadius: 4,
+                    backgroundColor: 'rgba(56, 189, 248, 0.08)',
+                  }}
+                >
+                  <Sparkles size={11} />
+                  <span>Direct Session Mode: Use this same folder for videos</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1033,39 +1102,39 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
               >
                 <button
                   type="button"
-                  onClick={() => setTransferMode('copy')}
-                  style={{
-                    padding: '4px 10px',
-                    borderRadius: 6,
-                    border: 'none',
-                    backgroundColor: transferMode === 'copy' ? 'rgba(16, 185, 129, 0.25)' : 'transparent',
-                    color: transferMode === 'copy' ? '#10B981' : 'var(--secondary-label)',
-                    fontWeight: 700,
-                    fontSize: 11,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    boxShadow: transferMode === 'copy' ? '0 2px 8px rgba(16, 185, 129, 0.2)' : 'none',
-                  }}
-                >
-                  ⚡ COPY (Safe)
-                </button>
-                <button
-                  type="button"
                   onClick={() => setTransferMode('move')}
                   style={{
                     padding: '4px 10px',
                     borderRadius: 6,
                     border: 'none',
-                    backgroundColor: transferMode === 'move' ? 'rgba(6, 182, 212, 0.25)' : 'transparent',
-                    color: transferMode === 'move' ? '#06B6D4' : 'var(--secondary-label)',
+                    backgroundColor: transferMode === 'move' ? 'rgba(16, 185, 129, 0.25)' : 'transparent',
+                    color: transferMode === 'move' ? '#10B981' : 'var(--secondary-label)',
                     fontWeight: 700,
                     fontSize: 11,
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
-                    boxShadow: transferMode === 'move' ? '0 2px 8px rgba(6, 182, 212, 0.2)' : 'none',
+                    boxShadow: transferMode === 'move' ? '0 2px 8px rgba(16, 185, 129, 0.2)' : 'none',
                   }}
                 >
-                  🚀 MOVE (Fast)
+                  🚀 MOVE (Default)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTransferMode('copy')}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: 6,
+                    border: 'none',
+                    backgroundColor: transferMode === 'copy' ? 'rgba(56, 189, 248, 0.25)' : 'transparent',
+                    color: transferMode === 'copy' ? '#38BDF8' : 'var(--secondary-label)',
+                    fontWeight: 700,
+                    fontSize: 11,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    boxShadow: transferMode === 'copy' ? '0 2px 8px rgba(56, 189, 248, 0.2)' : 'none',
+                  }}
+                >
+                  ⚡ COPY (Safe)
                 </button>
               </div>
             </div>
@@ -1444,6 +1513,66 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
               </button>
             );
           })}
+
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            {lastRefreshedTime && (
+              <span style={{ fontSize: 10, color: 'var(--tertiary-label)', fontFamily: 'var(--font-mono)' }}>
+                Scanned: {lastRefreshedTime}
+              </span>
+            )}
+            <button
+              onClick={handleRefreshScan}
+              disabled={isScanning}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                padding: '4px 10px',
+                borderRadius: 6,
+                border: '1px solid rgba(56, 189, 248, 0.35)',
+                backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                color: '#38BDF8',
+                fontSize: 11,
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              title="Re-read folders from disk and refresh pairs (useful when rendering new videos)"
+            >
+              <RefreshCw size={12} className={isScanning ? 'animate-spin' : ''} />
+              <span>Refresh Clips</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Single-Session / Direct Date Fast Track Banner */}
+      {availableDates.length === 1 && (
+        <div
+          className="glass-card"
+          style={{
+            padding: '10px 16px',
+            borderRadius: 10,
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            background: 'linear-gradient(90deg, rgba(16, 185, 129, 0.08) 0%, rgba(56, 189, 248, 0.04) 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontSize: 11.5,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Sparkles size={14} color="#10B981" />
+            <span style={{ fontWeight: 700, color: '#10B981' }}>
+              ⚡ Single-Session Direct Sync:
+            </span>
+            <span style={{ color: 'var(--label)', fontWeight: 600 }}>
+              "{availableDates[0]}" is loaded and ready for 1-click execution.
+            </span>
+          </div>
+          <span style={{ fontSize: 10.5, color: 'var(--secondary-label)' }}>
+            All sequence pairs scoped exclusively to this session.
+          </span>
         </div>
       )}
 
@@ -2103,7 +2232,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                             }}
                           >
                             {item.hasVideoThumb && item.videoThumbPath ? (
-                              <ThumbnailImg filePath={item.videoThumbPath} alt={item.videoFile} />
+                              <ThumbnailImg filePath={item.videoThumbPath} alt={item.videoFile} cacheKey={refreshKey} />
                             ) : (
                               <Video size={15} color="var(--tertiary-label)" />
                             )}
@@ -2219,7 +2348,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                             }}
                           >
                             {item.hasPhotoThumb && item.photoThumbPath ? (
-                              <ThumbnailImg filePath={item.photoThumbPath} alt={item.photoFolder} />
+                              <ThumbnailImg filePath={item.photoThumbPath} alt={item.photoFolder} cacheKey={refreshKey} />
                             ) : (
                               <Folder size={15} color="var(--tertiary-label)" />
                             )}

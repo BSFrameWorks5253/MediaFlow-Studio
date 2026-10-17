@@ -163,9 +163,18 @@ export class VideoTransferEngine {
     return null;
   }
 
+  static extractBaseDate(name: string): string {
+    const trimmed = name.trim();
+    const m = trimmed.match(/^(\d{4}[-_.]\d{2}[-_.]\d{2}|\d{2}[-_.]\d{2}[-_.]\d{4})/);
+    if (m) return m[1].replace(/[-_.]/g, '-');
+    const m2 = trimmed.match(/^(?:day|date|event|session)[\s_\-]*(\d+)/i);
+    if (m2) return `day-${m2[1]}`;
+    return trimmed.toLowerCase();
+  }
+
   static isDateFolderName(name: string): boolean {
     const trimmed = name.trim();
-    if (/^(?:\d{4}[-_.]\d{2}[-_.]\d{2}|\d{2}[-_.]\d{2}[-_.]\d{4})(?:[\s_-]+_?\d{1,2}[A-Za-z]*)?$/i.test(trimmed)) {
+    if (/^(?:\d{4}[-_.]\d{2}[-_.]\d{2}|\d{2}[-_.]\d{2}[-_.]\d{4})(?:[\s_-].*)?$/i.test(trimmed)) {
       return true;
     }
     if (/^(?:day|date|event|session)[\s_\-]*\d+/i.test(trimmed)) {
@@ -285,50 +294,54 @@ export class VideoTransferEngine {
     const videoDates = new Set<string>();
     const photoDates = new Set<string>();
 
+    let vidIsDirectDate = false;
+    let photoIsDirectDate = false;
+
     if (vidChildDateEntries.length > 0) {
       for (const e of vidChildDateEntries) videoDates.add(e.name);
-    } else if (VideoTransferEngine.isDateFolderName(path.basename(cleanVid))) {
-      videoDates.add(path.basename(cleanVid));
-    }
-
-    if (photoChildDateEntries.length > 0) {
-      for (const e of photoChildDateEntries) photoDates.add(e.name);
-    } else if (VideoTransferEngine.isDateFolderName(path.basename(cleanPhoto))) {
-      photoDates.add(path.basename(cleanPhoto));
-    }
-
-    // Handle intermediate wrappers like "Videos" / "Photos" if child dates not found
-    if (videoDates.size === 0) {
+    } else {
+      // Check intermediate wrappers like "Videos" if child dates not found
       for (const e of vidDirectEntries.filter((d) => d.isDirectory())) {
         try {
           const sub = path.join(cleanVid, e.name);
           const subEnts = await fs.promises.readdir(sub, { withFileTypes: true });
-          for (const se of subEnts) {
-            if (se.isDirectory() && VideoTransferEngine.isDateFolderName(se.name)) {
-              videoDates.add(se.name);
-            }
+          const nestedDates = subEnts.filter((se) => se.isDirectory() && VideoTransferEngine.isDateFolderName(se.name));
+          if (nestedDates.length > 0) {
+            for (const nd of nestedDates) videoDates.add(nd.name);
+            break;
           }
         } catch {}
       }
+      if (videoDates.size === 0) {
+        vidIsDirectDate = true;
+        videoDates.add(path.basename(cleanVid));
+      }
     }
-    if (photoDates.size === 0) {
+
+    if (photoChildDateEntries.length > 0) {
+      for (const e of photoChildDateEntries) photoDates.add(e.name);
+    } else {
+      // Check intermediate wrappers like "Photos" if child dates not found
       for (const e of photoDirectEntries.filter((d) => d.isDirectory())) {
         try {
           const sub = path.join(cleanPhoto, e.name);
           const subEnts = await fs.promises.readdir(sub, { withFileTypes: true });
-          for (const se of subEnts) {
-            if (se.isDirectory() && VideoTransferEngine.isDateFolderName(se.name)) {
-              photoDates.add(se.name);
-            }
+          const nestedDates = subEnts.filter((se) => se.isDirectory() && VideoTransferEngine.isDateFolderName(se.name));
+          if (nestedDates.length > 0) {
+            for (const nd of nestedDates) photoDates.add(nd.name);
+            break;
           }
         } catch {}
+      }
+      if (photoDates.size === 0) {
+        photoIsDirectDate = true;
+        photoDates.add(path.basename(cleanPhoto));
       }
     }
 
     // Date folder status comparison
     const issues: ScanIssue[] = [];
     const dateFolderStatuses: DateFolderStatus[] = [];
-    const allDates = new Set<string>([...videoDates, ...photoDates]);
 
     const videoDatesLower = new Map<string, string>();
     for (const vd of videoDates) videoDatesLower.set(vd.toLowerCase(), vd);
@@ -336,46 +349,81 @@ export class VideoTransferEngine {
     const photoDatesLower = new Map<string, string>();
     for (const pd of photoDates) photoDatesLower.set(pd.toLowerCase(), pd);
 
-    for (const d of allDates) {
-      const inVid = videoDatesLower.has(d.toLowerCase());
-      const inPhoto = photoDatesLower.has(d.toLowerCase());
-      const matchedVidName = videoDatesLower.get(d.toLowerCase()) || d;
-      const matchedPhotoName = photoDatesLower.get(d.toLowerCase()) || d;
+    if (vidIsDirectDate && photoIsDirectDate) {
+      const singleDate = path.basename(cleanPhoto);
+      dateFolderStatuses.push({
+        date: singleDate,
+        inVideo: true,
+        videoPath: cleanVid,
+        inPhoto: true,
+        photoPath: cleanPhoto,
+        status: 'ok',
+      });
+    } else {
+      const allDates = new Set<string>([...videoDates, ...photoDates]);
 
-      const vidPath = path.join(cleanVid, matchedVidName);
-      const photoPath = path.join(cleanPhoto, matchedPhotoName);
+      for (const d of allDates) {
+        let inVid = videoDatesLower.has(d.toLowerCase());
+        let matchedVidName = videoDatesLower.get(d.toLowerCase()) || d;
+        if (!inVid) {
+          const base = VideoTransferEngine.extractBaseDate(d);
+          for (const [vKey, vVal] of videoDatesLower.entries()) {
+            if (VideoTransferEngine.extractBaseDate(vKey) === base) {
+              inVid = true;
+              matchedVidName = vVal;
+              break;
+            }
+          }
+        }
 
-      let status: 'ok' | 'missing_in_photo' | 'missing_in_video' = 'ok';
-      if (inVid && !inPhoto) {
-        status = 'missing_in_photo';
-        issues.push({
-          type: 'warning',
-          category: 'date',
-          message: `Date folder "${matchedVidName}" exists in Video folder, but is MISSING in Photo folder.`,
-          dateFolder: matchedVidName,
-          folderPath: vidPath,
-          missingOn: 'photo',
-        });
-      } else if (!inVid && inPhoto) {
-        status = 'missing_in_video';
-        issues.push({
-          type: 'warning',
-          category: 'date',
-          message: `Date folder "${matchedPhotoName}" exists in Photo folder, but is MISSING in Video folder.`,
-          dateFolder: matchedPhotoName,
-          folderPath: photoPath,
-          missingOn: 'video',
+        let inPhoto = photoDatesLower.has(d.toLowerCase());
+        let matchedPhotoName = photoDatesLower.get(d.toLowerCase()) || d;
+        if (!inPhoto) {
+          const base = VideoTransferEngine.extractBaseDate(d);
+          for (const [pKey, pVal] of photoDatesLower.entries()) {
+            if (VideoTransferEngine.extractBaseDate(pKey) === base) {
+              inPhoto = true;
+              matchedPhotoName = pVal;
+              break;
+            }
+          }
+        }
+
+        const vidPath = vidIsDirectDate ? cleanVid : path.join(cleanVid, matchedVidName);
+        const photoPath = photoIsDirectDate ? cleanPhoto : path.join(cleanPhoto, matchedPhotoName);
+
+        let status: 'ok' | 'missing_in_photo' | 'missing_in_video' = 'ok';
+        if (inVid && !inPhoto) {
+          status = 'missing_in_photo';
+          issues.push({
+            type: 'warning',
+            category: 'date',
+            message: `Date folder "${matchedVidName}" exists in Video folder, but is MISSING in Photo folder.`,
+            dateFolder: matchedVidName,
+            folderPath: vidPath,
+            missingOn: 'photo',
+          });
+        } else if (!inVid && inPhoto) {
+          status = 'missing_in_video';
+          issues.push({
+            type: 'warning',
+            category: 'date',
+            message: `Date folder "${matchedPhotoName}" exists in Photo folder, but is MISSING in Video folder.`,
+            dateFolder: matchedPhotoName,
+            folderPath: photoPath,
+            missingOn: 'video',
+          });
+        }
+
+        dateFolderStatuses.push({
+          date: d,
+          inVideo: inVid,
+          videoPath: vidPath,
+          inPhoto: inPhoto,
+          photoPath: photoPath,
+          status,
         });
       }
-
-      dateFolderStatuses.push({
-        date: d,
-        inVideo: inVid,
-        videoPath: vidPath,
-        inPhoto: inPhoto,
-        photoPath: photoPath,
-        status,
-      });
     }
 
     // 2. Discover Photo Subfolders per Date Folder
@@ -408,9 +456,20 @@ export class VideoTransferEngine {
           const childDirs = childEnts.filter(
             (c) => c.isDirectory() && !c.name.toLowerCase().includes('remaining')
           );
+
+          const isVideoFile = (fileName: string) =>
+            VIDEO_TRANSFER_EXTS.has(path.extname(fileName).toLowerCase());
+          const isVideoThumb = (fileName: string) =>
+            /[-_]v\.(?:jpe?g|png|webp|thm)$/i.test(fileName);
+          const isSystemJunk = (fileName: string) =>
+            /^(?:thumbs\.db|\.ds_store|desktop\.ini)$/i.test(fileName);
+
           const photoFiles = childEnts.filter(
             (c) =>
               c.isFile() &&
+              !isVideoFile(c.name) &&
+              !isVideoThumb(c.name) &&
+              !isSystemJunk(c.name) &&
               (ALL_PHOTO_EXTS.has(path.extname(c.name).toLowerCase()) ||
                 THUMB_EXTS.has(path.extname(c.name).toLowerCase()))
           );
@@ -435,7 +494,7 @@ export class VideoTransferEngine {
           const hasPhotos = photoFiles.length > 0;
           const isLeaf = childDirs.length === 0;
 
-          if (isLeaf && !hasPhotos && childEnts.length === 0) {
+          if (isLeaf && !hasPhotos) {
             emptyPhotoFolders.push({
               id: `empty-${ent.name}-${emptyPhotoFolders.length + 1}`,
               folderName: ent.name,
@@ -443,8 +502,8 @@ export class VideoTransferEngine {
               dateFolder: dateTag,
               subfolderCount: 0,
               photoCount: 0,
-              totalFileCount: 0,
-              reason: 'Empty folder with 0 photos and 0 subfolders',
+              totalFileCount: photoFiles.length,
+              reason: 'Empty folder with 0 photos',
             });
           }
 
@@ -473,7 +532,9 @@ export class VideoTransferEngine {
       photoSubfoldersByDate[dateTag] = list;
     };
 
-    if (photoDates.size > 0) {
+    if (photoIsDirectDate) {
+      await collectPhotoSubfolders(cleanPhoto, path.basename(cleanPhoto));
+    } else if (photoDates.size > 0) {
       for (const d of photoDates) {
         const dLower = d.toLowerCase();
         const actualName = photoDatesLower.get(dLower) || d;
@@ -569,7 +630,9 @@ export class VideoTransferEngine {
       await walk(dateDir, 1);
     };
 
-    if (videoDates.size > 0) {
+    if (vidIsDirectDate) {
+      await collectVideos(cleanVid, path.basename(cleanVid));
+    } else if (videoDates.size > 0) {
       for (const d of videoDates) {
         const dLower = d.toLowerCase();
         const actualName = videoDatesLower.get(dLower) || d;
@@ -590,7 +653,19 @@ export class VideoTransferEngine {
     for (const vid of videosList) {
       // Find candidate photo subfolders within the same date
       let candidates = photoSubfoldersByDate[vid.dateFolder] || [];
-      if (candidates.length === 0 && (videoDates.size <= 1 || photoDates.size <= 1)) {
+      if (candidates.length === 0) {
+        const vidBase = VideoTransferEngine.extractBaseDate(vid.dateFolder);
+        for (const [pDate, cands] of Object.entries(photoSubfoldersByDate)) {
+          if (VideoTransferEngine.extractBaseDate(pDate) === vidBase) {
+            candidates = cands;
+            break;
+          }
+        }
+      }
+      if (
+        candidates.length === 0 &&
+        (videoDates.size <= 1 || photoDates.size <= 1 || (vidIsDirectDate && photoIsDirectDate))
+      ) {
         candidates = Object.values(photoSubfoldersByDate).flat();
       }
 
@@ -785,10 +860,16 @@ export class VideoTransferEngine {
 
     // Date mismatch flag
     const hasDateMismatch =
-      videoDates.size > 0 &&
-      photoDates.size > 0 &&
+      !vidIsDirectDate &&
+      !photoIsDirectDate &&
+      videoDates.size > 1 &&
+      photoDates.size > 1 &&
       !Array.from(videoDates).some((vd) =>
-        Array.from(photoDates).some((pd) => pd.toLowerCase() === vd.toLowerCase())
+        Array.from(photoDates).some(
+          (pd) =>
+            pd.toLowerCase() === vd.toLowerCase() ||
+            VideoTransferEngine.extractBaseDate(pd) === VideoTransferEngine.extractBaseDate(vd)
+        )
       );
 
     // Clean photoFoldersByDate for UI dropdowns
@@ -815,7 +896,7 @@ export class VideoTransferEngine {
 
   async executeTransfer(
     pairs: VideoMatchedPair[],
-    mode: 'copy' | 'move' = 'copy',
+    mode: 'copy' | 'move' = 'move',
     collisionPolicy: 'skip' | 'keepBoth' = 'keepBoth',
     onProgress?: (curr: number, total: number, file: string, speedStr: string) => void
   ): Promise<{ transferred: number; errors: number; manifestPath: string }> {
@@ -833,6 +914,12 @@ export class VideoTransferEngine {
       const pair = pairs[i];
       let targetName = pair.videoFile;
       let targetFile = path.join(pair.photoFolderPath, targetName);
+
+      // Check if file is already inside target folder
+      if (path.resolve(pair.videoPath) === path.resolve(targetFile)) {
+        transferred++;
+        continue;
+      }
 
       if (fs.existsSync(targetFile)) {
         if (collisionPolicy === 'skip') {
