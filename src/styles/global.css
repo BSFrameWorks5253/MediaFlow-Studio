@@ -378,3 +378,38 @@ button {
   box-shadow: 0 0 20px -3px var(--border-glow);
   border-color: var(--border-hover);
 }
+
+/* Floating Action Deck Entry & Pulsing Glow */
+@keyframes floatDeckEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-floating-deck {
+  animation: floatDeckEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes actionTargetGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(0, 242, 254, 0.7), 0 0 20px rgba(16, 185, 129, 0.5);
+    border-color: #00F2FE;
+    transform: scale(1.05);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(0, 242, 254, 0), 0 0 35px rgba(0, 242, 254, 0.8);
+    border-color: #10B981;
+    transform: scale(1.08);
+  }
+}
+
+.action-highlight-pulse {
+  animation: actionTargetGlow 0.8s ease-in-out infinite !important;
+}
+

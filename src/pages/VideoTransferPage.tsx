@@ -968,6 +968,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
 
             <StudioButton
               variant="primary"
+              className={isActionHighlighted ? 'action-highlight-pulse' : ''}
               loading={isTransferring}
               icon={<Play size={13} />}
               onClick={handleTransfer}
@@ -2770,6 +2771,31 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                             <Video size={10.5} color="#10B981" />
                             <span>Open Video Folder</span>
                           </button>
+
+                          <button
+                            onClick={() => {
+                              const targetPhotoPath = videoItem.suggestedFolder?.path || (photoDir ? `${photoDir}\\${videoItem.dateFolder}` : undefined);
+                              handleOpenPath(targetPhotoPath, `Photo Folder (${videoItem.dateFolder})`);
+                            }}
+                            style={{
+                              background: 'rgba(56, 189, 248, 0.12)',
+                              border: '1px solid rgba(56, 189, 248, 0.35)',
+                              borderRadius: 6,
+                              padding: '3px 8px',
+                              color: '#38BDF8',
+                              fontSize: 10,
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              height: 24,
+                            }}
+                            title="Open Photo Date Folder in Explorer"
+                          >
+                            <FolderOpen size={10.5} color="#38BDF8" />
+                            <span>Open Photo Folder</span>
+                          </button>
                         </div>
                       </div>
                     );
@@ -2853,6 +2879,31 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
 
                         {/* Actions for Photo Folder */}
                         <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <button
+                            onClick={() => {
+                              const targetVideoPath = videoDir ? `${videoDir}\\${folderItem.dateFolder}` : undefined;
+                              handleOpenPath(targetVideoPath, `Video Folder (${folderItem.dateFolder})`);
+                            }}
+                            style={{
+                              background: 'rgba(16, 185, 129, 0.12)',
+                              border: '1px solid rgba(16, 185, 129, 0.35)',
+                              borderRadius: 6,
+                              padding: '3px 8px',
+                              color: '#10B981',
+                              fontSize: 10,
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              height: 24,
+                            }}
+                            title="Open Video Date Folder in Explorer"
+                          >
+                            <Video size={10.5} color="#10B981" />
+                            <span>Open Video Folder</span>
+                          </button>
+
                           <button
                             onClick={() => handleOpenPath(folderItem.folderPath, `Photo Folder (${folderItem.folderName})`)}
                             style={{
@@ -2980,6 +3031,31 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                         {/* Actions for Empty Folder */}
                         <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
                           <button
+                            onClick={() => {
+                              const targetVideoPath = videoDir ? `${videoDir}\\${emptyItem.dateFolder}` : undefined;
+                              handleOpenPath(targetVideoPath, `Video Folder (${emptyItem.dateFolder})`);
+                            }}
+                            style={{
+                              background: 'rgba(16, 185, 129, 0.12)',
+                              border: '1px solid rgba(16, 185, 129, 0.35)',
+                              borderRadius: 6,
+                              padding: '3px 8px',
+                              color: '#10B981',
+                              fontSize: 10,
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              height: 24,
+                            }}
+                            title="Open Video Date Folder in Explorer"
+                          >
+                            <Video size={10.5} color="#10B981" />
+                            <span>Open Video Folder</span>
+                          </button>
+
+                          <button
                             onClick={() => handleOpenPath(emptyItem.folderPath, `Photo Folder (${emptyItem.folderName})`)}
                             style={{
                               background: 'rgba(56, 189, 248, 0.1)',
@@ -2999,28 +3075,6 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                           >
                             <FolderOpen size={10.5} color="#38BDF8" />
                             <span>Open Photo Folder</span>
-                          </button>
-
-                          <button
-                            onClick={() => setViewingPhotoFolder({ path: emptyItem.folderPath, name: emptyItem.folderName })}
-                            style={{
-                              background: 'rgba(168, 85, 247, 0.14)',
-                              border: '1px solid rgba(168, 85, 247, 0.4)',
-                              borderRadius: 6,
-                              padding: '3px 8px',
-                              color: '#C084FC',
-                              fontSize: 10,
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 4,
-                              height: 24,
-                            }}
-                            title="Inspect photo contents"
-                          >
-                            <Images size={10.5} color="#C084FC" />
-                            <span>See Photos</span>
                           </button>
 
                           <button
@@ -3230,6 +3284,31 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                           <Video size={11} color="#10B981" />
                           <span>Open Video Folder</span>
                         </button>
+
+                        <button
+                          onClick={() => {
+                            const targetPhotoPath = item.suggestedFolder?.path || (photoDir ? `${photoDir}\\${item.dateFolder}` : undefined);
+                            handleOpenPath(targetPhotoPath, `Photo Folder (${item.dateFolder})`);
+                          }}
+                          style={{
+                            background: 'rgba(56, 189, 248, 0.12)',
+                            border: '1px solid rgba(56, 189, 248, 0.35)',
+                            borderRadius: 6,
+                            padding: '3px 8px',
+                            color: '#38BDF8',
+                            fontSize: 10,
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            height: 25,
+                          }}
+                          title="Open Photo Date Folder in Explorer"
+                        >
+                          <FolderOpen size={11} color="#38BDF8" />
+                          <span>Open Photo Folder</span>
+                        </button>
                       </div>
                     </div>
                   );
@@ -3323,6 +3402,31 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                     </div>
 
                     <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={() => {
+                          const targetVideoPath = videoDir ? `${videoDir}\\${item.dateFolder}` : undefined;
+                          handleOpenPath(targetVideoPath, `Video Folder (${item.dateFolder})`);
+                        }}
+                        style={{
+                          background: 'rgba(16, 185, 129, 0.12)',
+                          border: '1px solid rgba(16, 185, 129, 0.35)',
+                          borderRadius: 6,
+                          padding: '3px 8px',
+                          color: '#10B981',
+                          fontSize: 10,
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          height: 25,
+                        }}
+                        title="Open Video Date Folder in Explorer"
+                      >
+                        <Video size={11} color="#10B981" />
+                        <span>Open Video Folder</span>
+                      </button>
+
                       <button
                         onClick={() => handleOpenPath(item.folderPath, `Photo Folder (${item.folderName})`)}
                         style={{
@@ -3486,6 +3590,17 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                     </span>
 
                     <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
+                      <StudioButton
+                        variant="secondary"
+                        icon={<Video size={12} />}
+                        onClick={() => {
+                          const targetVideoPath = videoDir ? `${videoDir}\\${item.dateFolder}` : undefined;
+                          handleOpenPath(targetVideoPath, `Video Folder (${item.dateFolder})`);
+                        }}
+                        style={{ fontSize: 10.5, height: 26, padding: '4px 8px' }}
+                      >
+                        Video
+                      </StudioButton>
                       <StudioButton
                         variant="secondary"
                         icon={<FolderOpen size={12} />}
@@ -4544,46 +4659,108 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
         );
       })()}
 
-      {/* 11. Floating Back to Top Button */}
+      {/* 11. Floating Glass Command Deck when scrolled */}
       {showScrollTop && (
-        <button
-          onClick={() => {
-            pageContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-            setIsActionHighlighted(true);
-            setTimeout(() => setIsActionHighlighted(false), 2400);
-          }}
+        <div
+          className="animate-floating-deck"
           style={{
             position: 'fixed',
-            bottom: 30,
-            right: 36,
+            bottom: 24,
+            right: 32,
             zIndex: 900,
-            padding: '10px 18px',
-            borderRadius: 30,
-            backgroundColor: '#10B981',
-            color: '#FFFFFF',
-            border: '1px solid rgba(255, 255, 255, 0.25)',
-            boxShadow: '0 8px 24px rgba(16, 185, 129, 0.45), 0 2px 8px rgba(0,0,0,0.3)',
             display: 'flex',
             alignItems: 'center',
-            gap: 8,
-            fontSize: 12.5,
-            fontWeight: 800,
-            cursor: 'pointer',
-            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+            gap: 10,
+            padding: '8px 14px',
+            borderRadius: 999,
+            backgroundColor: 'var(--surface-elevated)',
+            backdropFilter: 'blur(24px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+            border: '1.5px solid var(--border-glow)',
+            boxShadow: '0 12px 36px rgba(0, 0, 0, 0.4), 0 0 24px rgba(0, 242, 254, 0.22)',
           }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-2px) scale(1.04)';
-            e.currentTarget.style.boxShadow = '0 12px 30px rgba(16, 185, 129, 0.6)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'none';
-            e.currentTarget.style.boxShadow = '0 8px 24px rgba(16, 185, 129, 0.45), 0 2px 8px rgba(0,0,0,0.3)';
-          }}
-          title="Scroll back to top and highlight Start Synchronization"
         >
-          <ArrowUp size={16} />
-          <span>Back to Top & Start</span>
-        </button>
+          {scanResult && scanResult.matched.length > 0 && (
+            <>
+              {/* Quick Summary Pill */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '4px 10px',
+                  borderRadius: 999,
+                  backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  color: '#10B981',
+                }}
+              >
+                <Sparkles size={13} />
+                <span>
+                  {selectedDateFilter === 'ALL'
+                    ? `${scanResult.matched.length} Matched (${formatBytes(totalVideoBytes)})`
+                    : `${scanResult.matched.filter((m) => m.dateFolder === selectedDateFilter).length} Matched [${selectedDateFilter}]`}
+                </span>
+              </div>
+
+              {/* Start Transfer Action Trigger */}
+              <StudioButton
+                variant="primary"
+                size="sm"
+                loading={isTransferring}
+                icon={<Play size={12} />}
+                onClick={handleTransfer}
+                disabled={!canProceedTransfer}
+                style={{
+                  height: 32,
+                  padding: '0 14px',
+                  fontSize: 11.5,
+                  borderRadius: 999,
+                  background: 'linear-gradient(135deg, #10B981, #059669)',
+                  boxShadow: '0 4px 16px rgba(16, 185, 129, 0.35)',
+                }}
+              >
+                {transferMode === 'move' ? 'Start Move' : 'Start Copy'}
+              </StudioButton>
+            </>
+          )}
+
+          {/* Back to Top & Highlight Action Button */}
+          <button
+            onClick={handleScrollToTop}
+            className="btn-tactile"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              height: 32,
+              padding: '0 12px',
+              borderRadius: 999,
+              border: '1px solid var(--border)',
+              backgroundColor: 'var(--surface-card)',
+              color: 'var(--label)',
+              fontSize: 11.5,
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              transition: 'all 0.18s ease',
+            }}
+            title="Scroll back to top and focus Start button"
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--surface-card-hover)';
+              e.currentTarget.style.borderColor = '#00F2FE';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--surface-card)';
+              e.currentTarget.style.borderColor = 'var(--border)';
+            }}
+          >
+            <ArrowUp size={14} color="#00F2FE" />
+            <span>Back to Top</span>
+          </button>
+        </div>
       )}
 
       {/* 8. Operation Overlay */}

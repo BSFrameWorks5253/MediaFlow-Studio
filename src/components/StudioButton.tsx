@@ -76,7 +76,7 @@ export const StudioButton: React.FC<StudioButtonProps> = ({
   return (
     <button
       disabled={disabled || loading}
-      className="btn-tactile"
+      className={`btn-tactile ${props.className || ''}`.trim()}
       style={{
         display: 'inline-flex',
         alignItems: 'center',

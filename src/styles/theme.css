@@ -78,28 +78,28 @@
    Dark Mode (Refined Studio Slate — Softened & Easy on the Eyes)
    ============================================================ */
 [data-theme="dark"] {
-  --system-bg: #131722;
-  --secondary-system-bg: #1a202e;
-  --tertiary-system-bg: #222a3d;
-  --system-grouped-bg: #0f121a;
+  --system-bg: #181d2a;
+  --secondary-system-bg: #202637;
+  --tertiary-system-bg: #293248;
+  --system-grouped-bg: #141924;
 
-  --sidebar-bg: rgba(22, 28, 41, 0.88);
-  --surface: rgba(26, 33, 49, 0.84);
-  --surface-elevated: rgba(34, 43, 63, 0.92);
-  --surface-glass: rgba(22, 29, 43, 0.82);
-  --surface-glass-elevated: rgba(32, 41, 60, 0.9);
-  --surface-card: rgba(26, 34, 50, 0.82);
-  --surface-card-hover: rgba(36, 46, 68, 0.92);
+  --sidebar-bg: rgba(26, 32, 46, 0.92);
+  --surface: rgba(30, 38, 55, 0.88);
+  --surface-elevated: rgba(38, 48, 70, 0.94);
+  --surface-glass: rgba(26, 33, 48, 0.86);
+  --surface-glass-elevated: rgba(36, 46, 68, 0.92);
+  --surface-card: rgba(30, 39, 57, 0.88);
+  --surface-card-hover: rgba(40, 52, 76, 0.96);
 
-  --label: #f1f5f9;
+  --label: #f8fafc;
   --secondary-label: #cbd5e1;
   --tertiary-label: #94a3b8;
   --quaternary-label: #64748b;
 
   --border: rgba(255, 255, 255, 0.12);
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-hover: rgba(255, 255, 255, 0.25);
-  --border-glass: rgba(255, 255, 255, 0.12);
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-hover: rgba(255, 255, 255, 0.28);
+  --border-glass: rgba(255, 255, 255, 0.13);
   --border-glow: rgba(0, 242, 254, 0.35);
 
   --glass-specular-top: rgba(255, 255, 255, 0.18);
@@ -141,33 +141,33 @@
    Light Mode (Soothing Studio Off-White — Soft on Eyes & Low Glare)
    ============================================================ */
 [data-theme="light"] {
-  --system-bg: #f1f4f9;
-  --secondary-system-bg: #e6ebf3;
-  --tertiary-system-bg: #dbe2ee;
-  --system-grouped-bg: #edf2f8;
+  --system-bg: #edf1f7;
+  --secondary-system-bg: #e2e8f0;
+  --tertiary-system-bg: #cbd5e1;
+  --system-grouped-bg: #e8edf5;
 
-  --sidebar-bg: rgba(255, 255, 255, 0.96);
-  --surface: rgba(255, 255, 255, 0.94);
-  --surface-elevated: #f8fafc;
-  --surface-glass: rgba(255, 255, 255, 0.92);
-  --surface-glass-elevated: #ffffff;
-  --surface-card: #ffffff;
+  --sidebar-bg: rgba(247, 249, 252, 0.96);
+  --surface: rgba(245, 247, 251, 0.94);
+  --surface-elevated: #edf2f7;
+  --surface-glass: rgba(245, 248, 252, 0.92);
+  --surface-glass-elevated: #f8fafc;
+  --surface-card: #f8fafd;
   --surface-card-hover: #ffffff;
 
-  --label: #0f172a;
-  --secondary-label: #334155;
+  --label: #1e293b;
+  --secondary-label: #475569;
   --tertiary-label: #64748b;
   --quaternary-label: #94a3b8;
 
-  --border: rgba(15, 23, 42, 0.11);
-  --border-subtle: rgba(15, 23, 42, 0.06);
+  --border: rgba(15, 23, 42, 0.12);
+  --border-subtle: rgba(15, 23, 42, 0.07);
   --border-hover: rgba(15, 23, 42, 0.28);
-  --border-glass: rgba(15, 23, 42, 0.1);
+  --border-glass: rgba(15, 23, 42, 0.11);
   --border-glow: rgba(0, 122, 255, 0.28);
 
-  --glass-specular-top: rgba(255, 255, 255, 0.95);
+  --glass-specular-top: rgba(255, 255, 255, 0.9);
   --glass-inner-shadow: rgba(0, 0, 0, 0.02);
-  --glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.1) 100%);
+  --glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.08) 100%);
 
   /* Apple Light Tokens */
   --system-blue: #007aff;
