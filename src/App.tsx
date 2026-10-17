@@ -14,7 +14,6 @@ import {
   AppLoadingScreen,
   SetupWizard,
   UpdateModal,
-  TopToolbar,
   PipelineStageNavigator,
 } from './components';
 
@@ -247,16 +246,6 @@ const AppContent: React.FC = () => {
           zIndex: 1,
         }}
       >
-        <TopToolbar
-          activePage={activePage}
-          telemetry={telemetry}
-          onOpenSettings={() => setIsSettingsOpen(true)}
-          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-          onOpenKeyboardShortcuts={() => setIsShortcutsOpen(true)}
-          onNavigate={setActivePage}
-          onPlayBootLoader={() => setIsAppBooting(true)}
-        />
-
         {/* Zoomed Page Viewport Container */}
         <main
           className="glass-panel"
