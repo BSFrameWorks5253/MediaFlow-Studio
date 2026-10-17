@@ -14,7 +14,6 @@ import {
   AppLoadingScreen,
   SetupWizard,
   UpdateModal,
-  PipelineStageNavigator,
 } from './components';
 
 import { PipelineProvider } from './context/PipelineContext';
@@ -260,13 +259,6 @@ const AppContent: React.FC = () => {
             boxShadow: '0 20px 50px rgba(0, 0, 0, 0.35)',
           }}
         >
-          {PIPELINE_NAV_ORDER.includes(activePage) && (
-            <PipelineStageNavigator
-              currentStage={activePage}
-              onNavigate={setActivePage}
-            />
-          )}
-
           <div
             style={{
               flex: 1,
