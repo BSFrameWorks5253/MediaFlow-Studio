@@ -169,7 +169,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
 
   const [pathErrors, setPathErrors] = useState<{ video?: string; photo?: string } | null>(null);
   const [activeTab, setActiveTab] = useState<'matched' | 'missing' | 'unmatched' | 'unmatchedFolders' | 'emptyFolders'>('matched');
-  const [missingSubFilter, setMissingSubFilter] = useState<'all' | 'video' | 'photo' | 'empty'>('all');
+  const [missingSubFilter, setMissingSubFilter] = useState<'all' | 'video' | 'photo' | 'empty' | 'unmatched_video' | 'unmatched_folder' | 'empty_folder'>('all');
   const [searchFilter, setSearchFilter] = useState('');
   const [selectedDateFilter, setSelectedDateFilter] = useState<string>('ALL');
   const [dismissedEmptyBanner, setDismissedEmptyBanner] = useState(false);
@@ -711,6 +711,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
     photoFolderPath?: string;
     videoCandidateFolders?: { name: string; path: string }[];
     originalItem: any;
+    data: any;
   }
 
   const filteredMissingItems = useMemo<MissingUnifiedItem[]>(() => {
@@ -730,6 +731,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
         photoFolderPath: undefined,
         videoCandidateFolders: scanResult?.photoFoldersByDate[v.dateFolder] || [],
         originalItem: v,
+        data: v,
       });
     }
 
@@ -746,6 +748,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
         videoPath: undefined,
         photoFolderPath: p.folderPath,
         originalItem: p,
+        data: p,
       });
     }
 
@@ -762,6 +765,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
         videoPath: undefined,
         photoFolderPath: e.folderPath,
         originalItem: e,
+        data: e,
       });
     }
 
@@ -769,13 +773,13 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
   }, [filteredUnmatched, filteredUnmatchedFolders, filteredEmptyFolders, scanResult]);
 
   const activeMissingList = useMemo(() => {
-    if (missingSubFilter === 'video') {
+    if (missingSubFilter === 'video' || missingSubFilter === 'unmatched_video') {
       return filteredMissingItems.filter((i) => i.type === 'unmatched_video');
     }
-    if (missingSubFilter === 'photo') {
+    if (missingSubFilter === 'photo' || missingSubFilter === 'unmatched_folder') {
       return filteredMissingItems.filter((i) => i.type === 'unmatched_photo_folder');
     }
-    if (missingSubFilter === 'empty') {
+    if (missingSubFilter === 'empty' || missingSubFilter === 'empty_folder') {
       return filteredMissingItems.filter((i) => i.type === 'empty_folder');
     }
     return filteredMissingItems;
@@ -2771,7 +2775,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                     );
                   }
 
-                  if (item.type === 'unmatched_folder') {
+                  if (item.type === 'unmatched_photo_folder') {
                     const folderItem = item.data;
                     return (
                       <div
