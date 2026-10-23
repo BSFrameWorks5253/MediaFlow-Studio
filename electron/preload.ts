@@ -204,6 +204,14 @@ export const electronAPI = {
 
   // 12. Splash Screen & Anything Loader Integration
   getSplashLoaderConfig: () => ipcRenderer.invoke('splash:getLoaderConfig'),
+  saveSplashLoaderConfig: (config: any) => ipcRenderer.invoke('splash:saveLoaderConfig', config),
+  onLoaderConfigUpdated: (callback: (config: any) => void) => {
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('splash:loaderConfigUpdated', handler);
+    return () => {
+      ipcRenderer.removeListener('splash:loaderConfigUpdated', handler);
+    };
+  },
   notifySplashDone: () => ipcRenderer.invoke('splash:done'),
   pickCustomSplashArtwork: (): Promise<string | null> => ipcRenderer.invoke('splash:pickCustomArtwork'),
   isSplashWindow: () =>

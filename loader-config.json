@@ -1,21 +1,23 @@
-{
-  "appId": "mediaflow-studio",
-  "productName": "MediaFlow Studio",
-  "versionText": "v6.0.0 (x64)",
-  "tagline": "Professional Media Ingestion, Synchronization and Report Fusion Desktop Suite",
-  "artworkUrl": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1400&q=85",
-  "artistName": "Anything Creation",
-  "artworkTitle": "Prismatic Flow & Refraction",
-  "durationMs": 2800,
-  "logoText": "Ms",
-  "badgeGradient": "from-blue-600 to-indigo-700",
-  "steps": [
-    "Initializing Direct3D media acceleration engine...",
-    "Loading RAW ingestion pipelines & camera profiles...",
-    "Verifying PV separation & thumbnail caches...",
-    "Syncing with Anything Ecosystem...",
-    "Starting MediaFlow Studio..."
-  ],
-  "author": "Burhanuddin Sounasath",
-  "contactPhone": "8369811201"
+﻿{
+    "logoText":  "Mf",
+    "artworkPosition":  "center",
+    "author":  "Burhanuddin Sounasath",
+    "durationMs":  2800,
+    "artworkUrl":  "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format\u0026fit=crop\u0026w=1400\u0026q=85",
+    "versionText":  "v6.0.0 (x64)",
+    "contactPhone":  "8369811201",
+    "appId":  "mediaflow-studio",
+    "tagline":  "Professional Media Ingestion, Synchronization and Report Fusion Desktop Suite",
+    "artistName":  "Anything Creation",
+    "steps":  [
+                  "Initializing Direct3D media acceleration engine...",
+                  "Loading RAW ingestion pipelines \u0026 camera profiles...",
+                  "Verifying PV separation \u0026 thumbnail caches...",
+                  "Syncing with Anything Ecosystem...",
+                  "Starting MediaFlow Studio..."
+              ],
+    "productName":  "MediaFlow Studio",
+    "artworkFit":  "cover",
+    "artworkTitle":  "-Designed by Burhanuddin",
+    "badgeGradient":  "from-cyan-500 via-blue-600 to-indigo-700"
 }

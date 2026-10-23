@@ -64,8 +64,19 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
       }
     };
     fetchConfig();
+
+    const anyWin = window as any;
+    const unsub = (anyWin.api?.onLoaderConfigUpdated || anyWin.electronAPI?.onLoaderConfigUpdated)?.(
+      (newCfg: any) => {
+        if (isMounted && newCfg) {
+          setLoaderConfig(newCfg);
+        }
+      }
+    );
+
     return () => {
       isMounted = false;
+      if (typeof unsub === 'function') unsub();
     };
   }, []);
 
@@ -160,16 +171,18 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
   }, [totalDurationMs, diagnosticSteps]);
 
   const activeArtworkUrl =
-    settings.customImageUrl ||
     loaderConfig?.artworkUrl ||
+    settings.customImageUrl ||
     preset.imageUrl ||
     'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1400&q=85';
 
-  const artworkArtist = settings.artistName || loaderConfig?.artistName || preset.artist || 'Anything Creation';
-  const artworkTitle = settings.artworkTitle || loaderConfig?.artworkTitle || preset.title || 'Refractive Glass in Motion';
+  const artworkArtist = loaderConfig?.artistName || settings.artistName || preset.artist || 'Anything Creation';
+  const artworkTitle = loaderConfig?.artworkTitle || settings.artworkTitle || preset.title || '-Designed by Burhanuddin';
   const productName = loaderConfig?.productName || settings.productName || 'MediaFlow Studio';
   const versionText = loaderConfig?.versionText || settings.versionText || 'v6.0.0 (x64)';
   const tagline = loaderConfig?.tagline || settings.tagline || 'Professional Media Ingestion, Synchronization and Report Fusion Desktop Suite';
+  const artworkFit = (loaderConfig as any)?.artworkFit || 'cover';
+  const artworkPosition = (loaderConfig as any)?.artworkPosition || 'center';
 
   const cardContent = (
     <div
@@ -221,11 +234,11 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
             inset: 0,
             width: '100%',
             height: '100%',
-            objectFit: 'cover',
-            objectPosition: 'center',
+            objectFit: artworkFit,
+            objectPosition: artworkPosition,
             filter: 'brightness(0.95) contrast(1.05)',
             transform: 'scale(1.01)',
-            transition: 'transform 1.2s ease-out'
+            transition: 'all 0.5s ease-out'
           }}
           onError={(e) => {
             (e.target as HTMLImageElement).src =

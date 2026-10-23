@@ -45,25 +45,23 @@ export interface AnythingLoaderConfig {
   durationMs?: number;
   logoText?: string;
   badgeGradient?: string;
+  artworkFit?: 'cover' | 'contain';
+  artworkPosition?: 'center' | 'top' | 'bottom';
   steps?: string[];
   author?: string;
   contactPhone?: string;
 }
 
-let cachedLoaderConfig: AnythingLoaderConfig | null = null;
-
-function loadAnythingLoaderConfig(): AnythingLoaderConfig {
-  if (cachedLoaderConfig) return cachedLoaderConfig;
-
+function loadAnythingLoaderConfig(forceReload = true): AnythingLoaderConfig {
   // 1. Check CLI argument (--loader-config="<path>")
   const arg = process.argv.find((a) => a.startsWith('--loader-config='));
   if (arg) {
     const rawVal = arg.slice('--loader-config='.length).replace(/^["']|["']$/g, '');
     if (rawVal && fs.existsSync(rawVal)) {
       try {
-        cachedLoaderConfig = JSON.parse(fs.readFileSync(rawVal, 'utf-8'));
+        const parsed = JSON.parse(fs.readFileSync(rawVal, 'utf-8'));
         console.log('[LoaderConfig] Loaded from CLI argument:', rawVal);
-        return cachedLoaderConfig!;
+        return parsed;
       } catch (e) {
         console.warn('[LoaderConfig] Failed parsing CLI JSON:', e);
       }
@@ -73,9 +71,9 @@ function loadAnythingLoaderConfig(): AnythingLoaderConfig {
   // 2. Check environment variable ANYTHING_LOADER_CONFIG
   if (process.env.ANYTHING_LOADER_CONFIG && fs.existsSync(process.env.ANYTHING_LOADER_CONFIG)) {
     try {
-      cachedLoaderConfig = JSON.parse(fs.readFileSync(process.env.ANYTHING_LOADER_CONFIG, 'utf-8'));
+      const parsed = JSON.parse(fs.readFileSync(process.env.ANYTHING_LOADER_CONFIG, 'utf-8'));
       console.log('[LoaderConfig] Loaded from env ANYTHING_LOADER_CONFIG');
-      return cachedLoaderConfig!;
+      return parsed;
     } catch {}
   }
 
@@ -88,9 +86,12 @@ function loadAnythingLoaderConfig(): AnythingLoaderConfig {
     path.join(__dirname, 'loader-config.json'),
     path.join(__dirname, '../loader-config.json'),
     path.join(app.getAppPath(), 'loader-config.json'),
+    path.join(process.resourcesPath || '', 'loader-config.json'),
     path.join(appData, 'Anything', 'loaders', 'mediaflow-studio.json'),
+    path.join(appData, 'anything', 'loaders', 'mediaflow-studio.json'),
     path.join(localAppData, 'anything', 'loaders', 'mediaflow-studio.json'),
     'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\New folder (2)\\Anything\\releases\\mediaflow-studio\\loader-config.json',
+    'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\New folder (2)\\releases\\mediaflow-studio\\loader-config.json',
     'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Anything\\releases\\mediaflow-studio\\loader-config.json',
     path.resolve(app.getAppPath(), '..', 'New folder (2)', 'Anything', 'releases', 'mediaflow-studio', 'loader-config.json'),
     path.resolve(app.getAppPath(), '..', 'Anything', 'releases', 'mediaflow-studio', 'loader-config.json')
@@ -98,26 +99,28 @@ function loadAnythingLoaderConfig(): AnythingLoaderConfig {
 
   for (const candidate of candidates) {
     try {
-      if (fs.existsSync(candidate)) {
-        cachedLoaderConfig = JSON.parse(fs.readFileSync(candidate, 'utf-8'));
+      if (candidate && fs.existsSync(candidate)) {
+        const parsed = JSON.parse(fs.readFileSync(candidate, 'utf-8'));
         console.log('[LoaderConfig] Loaded from candidate path:', candidate);
-        return cachedLoaderConfig!;
+        return parsed;
       }
     } catch {}
   }
 
-  // Default fallback matching TAP_STUDIO_LOADER_INTEGRATION.md
-  cachedLoaderConfig = {
+  // Default fallback matching Anything ecosystem standards
+  return {
     appId: 'mediaflow-studio',
     productName: 'MediaFlow Studio',
     versionText: 'v6.0.0 (x64)',
     tagline: 'Professional Media Ingestion, Synchronization and Report Fusion Desktop Suite',
     artworkUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1400&q=85',
     artistName: 'Anything Creation',
-    artworkTitle: 'Prismatic Flow & Refraction',
+    artworkTitle: '-Designed by Burhanuddin',
     durationMs: 2800,
     logoText: 'Ms',
     badgeGradient: 'from-blue-600 to-indigo-700',
+    artworkFit: 'cover',
+    artworkPosition: 'center',
     steps: [
       'Initializing Direct3D media acceleration engine...',
       'Loading RAW ingestion pipelines & camera profiles...',
@@ -128,8 +131,6 @@ function loadAnythingLoaderConfig(): AnythingLoaderConfig {
     author: 'Burhanuddin Sounasath',
     contactPhone: '8369811201'
   };
-
-  return cachedLoaderConfig!;
 }
 
 // Initialize Backend Engines
@@ -409,7 +410,35 @@ app.on('window-all-closed', () => {
 
 function setupIpcHandlers() {
   // Splash Screen Lifecycle & Anything Ecosystem Customization
-  ipcMain.handle('splash:getLoaderConfig', async () => loadAnythingLoaderConfig());
+  ipcMain.handle('splash:getLoaderConfig', async () => loadAnythingLoaderConfig(true));
+  ipcMain.handle('splash:saveLoaderConfig', async (_, cfg) => {
+    try {
+      const targets = [
+        path.join(process.cwd(), 'loader-config.json'),
+        path.join(app.getAppPath(), 'loader-config.json'),
+        path.join(app.getPath('userData'), 'loader-config.json'),
+        'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\New folder (2)\\Anything\\releases\\mediaflow-studio\\loader-config.json',
+        'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\New folder (2)\\releases\\mediaflow-studio\\loader-config.json',
+      ];
+      for (const t of targets) {
+        try {
+          const parent = path.dirname(t);
+          if (fs.existsSync(parent)) {
+            fs.writeFileSync(t, JSON.stringify(cfg, null, 2), 'utf-8');
+          }
+        } catch {}
+      }
+      if (splashWindow && !splashWindow.isDestroyed()) {
+        splashWindow.webContents.send('splash:loaderConfigUpdated', cfg);
+      }
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('splash:loaderConfigUpdated', cfg);
+      }
+      return { success: true };
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  });
   ipcMain.handle('splash:done', async () => {
     completeSplashHandoff();
     return true;
