@@ -12,10 +12,21 @@ export interface AnythingLoaderConfig {
   durationMs?: number;
   logoText?: string;
   badgeGradient?: string;
+  artworkFit?: 'cover' | 'contain';
+  artworkPosition?: 'center' | 'top' | 'bottom';
   steps?: string[];
   author?: string;
   contactPhone?: string;
 }
+
+export const cleanVersionText = (ver?: string): string => {
+  if (!ver) return 'v6.0.0';
+  const cleaned = ver
+    .replace(/\s*\((?:x64|x86|x86_64|amd64|arm64|win32|ia32|64-bit|32-bit)\)/gi, '')
+    .replace(/\s*[-_.]?\s*(?:x64|x86|x86_64|amd64|arm64|win32|ia32|64-bit|32-bit)\b/gi, '')
+    .trim();
+  return cleaned || 'v6.0.0';
+};
 
 export interface SplashSettings {
   presetId: SplashPresetId;

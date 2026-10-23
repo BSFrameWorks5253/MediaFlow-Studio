@@ -53,28 +53,34 @@ export interface AnythingLoaderConfig {
 }
 
 function loadAnythingLoaderConfig(forceReload = true): AnythingLoaderConfig {
+  const readJson = (p: string): AnythingLoaderConfig | null => {
+    try {
+      if (p && fs.existsSync(p)) {
+        const raw = fs.readFileSync(p, 'utf-8').replace(/^\uFEFF/, '').trim();
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          console.log('[LoaderConfig] Loaded successfully from:', p);
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('[LoaderConfig] Failed parsing JSON at:', p, e);
+    }
+    return null;
+  };
+
   // 1. Check CLI argument (--loader-config="<path>")
   const arg = process.argv.find((a) => a.startsWith('--loader-config='));
   if (arg) {
     const rawVal = arg.slice('--loader-config='.length).replace(/^["']|["']$/g, '');
-    if (rawVal && fs.existsSync(rawVal)) {
-      try {
-        const parsed = JSON.parse(fs.readFileSync(rawVal, 'utf-8'));
-        console.log('[LoaderConfig] Loaded from CLI argument:', rawVal);
-        return parsed;
-      } catch (e) {
-        console.warn('[LoaderConfig] Failed parsing CLI JSON:', e);
-      }
-    }
+    const cfg = readJson(rawVal);
+    if (cfg) return cfg;
   }
 
   // 2. Check environment variable ANYTHING_LOADER_CONFIG
-  if (process.env.ANYTHING_LOADER_CONFIG && fs.existsSync(process.env.ANYTHING_LOADER_CONFIG)) {
-    try {
-      const parsed = JSON.parse(fs.readFileSync(process.env.ANYTHING_LOADER_CONFIG, 'utf-8'));
-      console.log('[LoaderConfig] Loaded from env ANYTHING_LOADER_CONFIG');
-      return parsed;
-    } catch {}
+  if (process.env.ANYTHING_LOADER_CONFIG) {
+    const cfg = readJson(process.env.ANYTHING_LOADER_CONFIG);
+    if (cfg) return cfg;
   }
 
   // 3. Search local directories and Anything ecosystem roots
@@ -87,24 +93,19 @@ function loadAnythingLoaderConfig(forceReload = true): AnythingLoaderConfig {
     path.join(__dirname, '../loader-config.json'),
     path.join(app.getAppPath(), 'loader-config.json'),
     path.join(process.resourcesPath || '', 'loader-config.json'),
-    path.join(appData, 'Anything', 'loaders', 'mediaflow-studio.json'),
-    path.join(appData, 'anything', 'loaders', 'mediaflow-studio.json'),
-    path.join(localAppData, 'anything', 'loaders', 'mediaflow-studio.json'),
     'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\New folder (2)\\Anything\\releases\\mediaflow-studio\\loader-config.json',
     'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\New folder (2)\\releases\\mediaflow-studio\\loader-config.json',
     'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Anything\\releases\\mediaflow-studio\\loader-config.json',
+    path.join(appData, 'Anything', 'loaders', 'mediaflow-studio.json'),
+    path.join(appData, 'anything', 'loaders', 'mediaflow-studio.json'),
+    path.join(localAppData, 'anything', 'loaders', 'mediaflow-studio.json'),
     path.resolve(app.getAppPath(), '..', 'New folder (2)', 'Anything', 'releases', 'mediaflow-studio', 'loader-config.json'),
     path.resolve(app.getAppPath(), '..', 'Anything', 'releases', 'mediaflow-studio', 'loader-config.json')
   ];
 
   for (const candidate of candidates) {
-    try {
-      if (candidate && fs.existsSync(candidate)) {
-        const parsed = JSON.parse(fs.readFileSync(candidate, 'utf-8'));
-        console.log('[LoaderConfig] Loaded from candidate path:', candidate);
-        return parsed;
-      }
-    } catch {}
+    const cfg = readJson(candidate);
+    if (cfg) return cfg;
   }
 
   // Default fallback matching Anything ecosystem standards
@@ -122,9 +123,9 @@ function loadAnythingLoaderConfig(forceReload = true): AnythingLoaderConfig {
     artworkFit: 'cover',
     artworkPosition: 'center',
     steps: [
-      'Initializing Direct3D media acceleration engine...',
-      'Loading RAW ingestion pipelines & camera profiles...',
-      'Verifying PV separation & thumbnail caches...',
+      'Initializing Direct3D 12 media ingestion pipeline...',
+      'Verifying storage volume headroom and I/O threads...',
+      'Loading multi-camera sync & PV separation engine...',
       'Syncing with Anything Ecosystem...',
       'Starting MediaFlow Studio...'
     ],
@@ -174,9 +175,18 @@ function saveAppConfig(newConfig: any) {
 function createSplashWindow() {
   const iconCandidate1 = path.join(__dirname, '../public/assets/app.ico');
   const iconCandidate2 = path.join(__dirname, '../dist/assets/app.ico');
-  const iconPath = fs.existsSync(iconCandidate1) ? iconCandidate1 : (fs.existsSync(iconCandidate2) ? iconCandidate2 : undefined);
+  const iconCandidate3 = 'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\New folder (2)\\Anything\\published-apps\\mediaflow-studio\\app.ico';
+  const iconPath = fs.existsSync(iconCandidate1)
+    ? iconCandidate1
+    : fs.existsSync(iconCandidate2)
+    ? iconCandidate2
+    : fs.existsSync(iconCandidate3)
+    ? iconCandidate3
+    : undefined;
 
+  // Standalone Adobe Splash Window: Centered, frameless, 100% transparent desktop background
   splashWindow = new BrowserWindow({
+    title: 'MediaFlow Studio',
     width: 740,
     height: 480,
     frame: false,
@@ -186,8 +196,9 @@ function createSplashWindow() {
     resizable: false,
     alwaysOnTop: true,
     hasShadow: true,
+    show: true, // Only the loader rectangle appears on screen first
+    skipTaskbar: false,
     icon: iconPath,
-    show: false, // Prevents white flash before CSS takes effect
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -197,11 +208,11 @@ function createSplashWindow() {
     }
   });
 
-  splashWindow.once('ready-to-show', () => {
-    if (splashWindow && !splashWindow.isDestroyed()) {
-      splashWindow.show();
-    }
-  });
+  if (process.platform === 'win32' && iconPath) {
+    try {
+      splashWindow.setIcon(iconPath);
+    } catch {}
+  }
 
   // Navigation Security: Disallow remote top-level navigations
   splashWindow.webContents.on('will-navigate', (event, navigationUrl) => {
@@ -225,19 +236,23 @@ function createSplashWindow() {
   const distHtmlPath = path.join(__dirname, '../dist/index.html');
 
   if (isDev) {
-    splashWindow.loadURL('http://127.0.0.1:5173?window=splash#splash').catch(() => {
+    splashWindow.loadURL('http://127.0.0.1:5173?view=splash&window=splash#splash').catch(() => {
       if (fs.existsSync(distHtmlPath)) {
-        splashWindow?.loadFile(distHtmlPath, { query: { window: 'splash' }, hash: 'splash' });
+        splashWindow?.loadFile(distHtmlPath, { query: { view: 'splash', window: 'splash' }, hash: 'splash' });
       }
     });
   } else {
     if (fs.existsSync(distHtmlPath)) {
-      splashWindow.loadFile(distHtmlPath, { query: { window: 'splash' }, hash: 'splash' });
+      splashWindow.loadFile(distHtmlPath, { query: { view: 'splash', window: 'splash' }, hash: 'splash' });
     }
   }
 
   splashWindow.on('closed', () => {
     splashWindow = null;
+    if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
+      mainWindow.show();
+      mainWindow.focus();
+    }
   });
 }
 
@@ -253,7 +268,6 @@ function completeSplashHandoff() {
   }
 
   if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.maximize();
     mainWindow.show();
     mainWindow.focus();
   }

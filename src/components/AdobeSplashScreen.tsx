@@ -1,67 +1,168 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Loader2 } from 'lucide-react';
-import { getStoredSplashSettings, SplashSettings, AnythingLoaderConfig } from '../types/splash';
+import {
+  getStoredSplashSettings,
+  SplashSettings,
+  AnythingLoaderConfig,
+  cleanVersionText,
+} from '../types/splash';
 import { getPresetById } from './splashPresets';
-import { MediaFlowLogo } from './MediaFlowLogo';
 
-interface AdobeSplashScreenProps {
+export interface AdobeSplashScreenProps {
   isStandaloneWindow?: boolean;
+  isStandaloneSplash?: boolean;
   isModalPreview?: boolean;
+  isPreview?: boolean;
+  isBootScreen?: boolean;
+  isOpen?: boolean;
+  settings?: SplashSettings;
   onFinish?: () => void;
+  onComplete?: () => void;
   onClose?: () => void;
   overrideSettings?: Partial<SplashSettings>;
 }
 
-// Inlined Official Squircle Logo for MediaFlow Studio
-export const MediaFlowBrandEmblem: React.FC<{ size?: number; className?: string }> = ({
+// Inlined Brand Emblem Squircle Logo Badge matching Anything Ecosystem specifications
+export const AnythingBrandEmblem: React.FC<{
+  size?: number;
+  className?: string;
+  letters?: string;
+  gradientFrom?: string;
+  gradientTo?: string;
+  glow?: boolean;
+}> = ({
   size = 56,
-  className = ''
-}) => (
-  <MediaFlowLogo size={size} className={className} />
-);
+  className = '',
+  letters = 'Ms',
+  gradientFrom,
+  gradientTo,
+  glow = true,
+}) => {
+  const lower = letters.toLowerCase();
+  const isTap = lower === 'ts';
+  const isMediaFlow = lower === 'ms' || lower === 'mf' || lower === 'me';
+
+  const defaultFrom = isTap ? '#06B6D4' : isMediaFlow ? '#0066EE' : '#FF2A2A';
+  const defaultTo = isTap ? '#4F46E5' : isMediaFlow ? '#003399' : '#BA0000';
+  const fromColor = gradientFrom || defaultFrom;
+  const toColor = gradientTo || defaultTo;
+  const shadowColor = isTap
+    ? 'rgba(6, 182, 212, 0.45)'
+    : isMediaFlow
+    ? 'rgba(0, 102, 238, 0.45)'
+    : 'rgba(224, 2, 1, 0.45)';
+
+  return (
+    <div
+      className={className}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: Math.round(size * 0.28) + 'px',
+        overflow: 'hidden',
+        userSelect: 'none',
+        flexShrink: 0,
+        boxShadow: glow ? `0 8px 28px ${shadowColor}` : undefined,
+        position: 'relative',
+      }}
+    >
+      <svg
+        viewBox="0 0 100 100"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        style={{ width: '100%', height: '100%', display: 'block' }}
+      >
+        <defs>
+          <linearGradient
+            id={`emblemGrad_${letters}`}
+            x1="0"
+            y1="0"
+            x2="100"
+            y2="100"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop offset="0%" stopColor={fromColor} />
+            <stop offset="100%" stopColor={toColor} />
+          </linearGradient>
+        </defs>
+        <rect width="100" height="100" rx="22" fill={`url(#emblemGrad_${letters})`} />
+        {/* Specular glass highlight rim */}
+        <rect
+          x="1.5"
+          y="1.5"
+          width="97"
+          height="97"
+          rx="20.5"
+          stroke="rgba(255,255,255,0.35)"
+          strokeWidth="1.5"
+        />
+        <text
+          x="50"
+          y="67"
+          textAnchor="middle"
+          fill="#FFFFFF"
+          style={{
+            fontFamily:
+              "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+            fontWeight: 800,
+            fontSize: letters.length > 2 ? '42px' : '52px',
+            letterSpacing: '-1.5px',
+          }}
+        >
+          {letters}
+        </text>
+      </svg>
+    </div>
+  );
+};
+
+export const MediaFlowBrandEmblem = AnythingBrandEmblem;
 
 const DEFAULT_DIAGNOSTIC_STEPS = [
-  'Initializing Direct3D media acceleration engine...',
-  'Loading RAW ingestion pipelines & camera profiles...',
-  'Verifying PV separation & thumbnail caches...',
+  'Initializing Direct3D 12 media ingestion pipeline...',
+  'Verifying storage volume headroom and I/O threads...',
+  'Loading multi-camera sync & PV separation engine...',
   'Syncing with Anything Ecosystem...',
   'Starting MediaFlow Studio...'
 ];
 
 export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
   isStandaloneWindow = false,
+  isStandaloneSplash = false,
   isModalPreview = false,
+  isPreview = false,
+  isBootScreen = false,
+  isOpen = true,
+  settings: propSettings,
   onFinish,
+  onComplete,
   onClose,
-  overrideSettings
+  overrideSettings,
 }) => {
+  const isStandalone = isStandaloneWindow || isStandaloneSplash;
+  const isPreviewMode = isModalPreview || isPreview;
+
   const [loaderConfig, setLoaderConfig] = useState<AnythingLoaderConfig | null>(null);
 
   useEffect(() => {
     let isMounted = true;
     const fetchConfig = async () => {
       try {
-        const anyWindow = window as any;
-        if (anyWindow.api?.getSplashLoaderConfig) {
-          const cfg = await anyWindow.api.getSplashLoaderConfig();
+        const anyWin = window as any;
+        const api = anyWin.api || anyWin.electronAPI;
+        if (api?.getSplashLoaderConfig) {
+          const cfg = await api.getSplashLoaderConfig();
           if (isMounted && cfg) {
             setLoaderConfig(cfg);
-          }
-        } else if (anyWindow.electronAPI?.getSplashLoaderConfig) {
-          const cfg = await anyWindow.electronAPI.getSplashLoaderConfig();
-          if (isMounted && cfg) {
-            setLoaderConfig(cfg);
-          }
-        } else {
-          const res = await fetch('./loader-config.json');
-          if (res.ok) {
-            const data = await res.json();
-            if (isMounted && data) setLoaderConfig(data);
+            return;
           }
         }
-      } catch (err) {
-        // Fallback safely to defaults
-      }
+        const res = await fetch('./loader-config.json');
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && data) setLoaderConfig(data);
+        }
+      } catch {}
     };
     fetchConfig();
 
@@ -80,19 +181,19 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
     };
   }, []);
 
-  const settings: SplashSettings = useMemo(() => {
+  const effectiveSettings: SplashSettings = useMemo(() => {
+    if (propSettings) return { ...propSettings, ...overrideSettings };
     const stored = getStoredSplashSettings();
     return { ...stored, ...overrideSettings };
-  }, [overrideSettings]);
+  }, [propSettings, overrideSettings]);
 
-  const preset = useMemo(() => getPresetById(settings.presetId), [settings.presetId]);
+  const preset = useMemo(() => getPresetById(effectiveSettings.presetId), [effectiveSettings.presetId]);
 
   const [progress, setProgress] = useState<number>(0);
   const [stepIndex, setStepIndex] = useState<number>(0);
   const [isFadingOut, setIsFadingOut] = useState<boolean>(false);
   const [isDone, setIsDone] = useState<boolean>(false);
 
-  // Dynamic steps from Anything loader-config.json or defaults
   const diagnosticSteps = useMemo(() => {
     if (loaderConfig?.steps && Array.isArray(loaderConfig.steps) && loaderConfig.steps.length > 0) {
       return loaderConfig.steps;
@@ -100,12 +201,11 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
     return DEFAULT_DIAGNOSTIC_STEPS;
   }, [loaderConfig]);
 
-  // Determine total duration
   const totalDurationMs = useMemo(() => {
     if (loaderConfig?.durationMs && typeof loaderConfig.durationMs === 'number' && loaderConfig.durationMs > 0) {
       return loaderConfig.durationMs;
     }
-    switch (settings.speed) {
+    switch (effectiveSettings.speed) {
       case 'quick':
         return 1400;
       case 'cinematic':
@@ -114,7 +214,7 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
       default:
         return 2800;
     }
-  }, [loaderConfig, settings.speed]);
+  }, [loaderConfig, effectiveSettings.speed]);
 
   const handleFinish = () => {
     if (isDone) return;
@@ -122,14 +222,17 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
     setIsFadingOut(true);
 
     setTimeout(() => {
-      if (onFinish) {
+      if (onComplete) {
+        onComplete();
+      } else if (onFinish) {
         onFinish();
-      } else if (isStandaloneWindow) {
-        const anyWindow = window as any;
-        if (anyWindow.api?.notifySplashDone) {
-          anyWindow.api.notifySplashDone();
-        } else if (anyWindow.electronAPI?.notifySplashDone) {
-          anyWindow.electronAPI.notifySplashDone();
+      } else if (isStandalone) {
+        const anyWin = window as any;
+        const api = anyWin.electronAPI || anyWin.api;
+        if (api?.splashDone) {
+          api.splashDone();
+        } else if (api?.notifySplashDone) {
+          api.notifySplashDone();
         }
       } else if (onClose) {
         onClose();
@@ -138,8 +241,16 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
   };
 
   useEffect(() => {
+    if (!isOpen) {
+      setProgress(0);
+      setStepIndex(0);
+      setIsFadingOut(false);
+      setIsDone(false);
+      return;
+    }
+
     const intervalTime = 35;
-    const totalSteps = totalDurationMs / intervalTime;
+    const totalSteps = Math.max(20, totalDurationMs / intervalTime);
     const increment = 100 / totalSteps;
 
     let currentProgress = 0;
@@ -153,7 +264,6 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
         setStepIndex(diagnosticSteps.length - 1);
         clearInterval(timer);
 
-        // Smooth micro-pause before handoff
         setTimeout(() => {
           handleFinish();
         }, 180);
@@ -168,21 +278,25 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
     }, intervalTime);
 
     return () => clearInterval(timer);
-  }, [totalDurationMs, diagnosticSteps]);
+  }, [isOpen, totalDurationMs, diagnosticSteps]);
+
+  if (!isOpen) return null;
 
   const activeArtworkUrl =
     loaderConfig?.artworkUrl ||
-    settings.customImageUrl ||
+    effectiveSettings.customImageUrl ||
     preset.imageUrl ||
     'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1400&q=85';
 
-  const artworkArtist = loaderConfig?.artistName || settings.artistName || preset.artist || 'Anything Creation';
-  const artworkTitle = loaderConfig?.artworkTitle || settings.artworkTitle || preset.title || '-Designed by Burhanuddin';
-  const productName = loaderConfig?.productName || settings.productName || 'MediaFlow Studio';
-  const versionText = loaderConfig?.versionText || settings.versionText || 'v6.0.0 (x64)';
-  const tagline = loaderConfig?.tagline || settings.tagline || 'Professional Media Ingestion, Synchronization and Report Fusion Desktop Suite';
-  const artworkFit = (loaderConfig as any)?.artworkFit || 'cover';
-  const artworkPosition = (loaderConfig as any)?.artworkPosition || 'center';
+  const artworkArtist = loaderConfig?.artistName || effectiveSettings.artistName || preset.artist || 'Anything Creation';
+  const artworkTitle = loaderConfig?.artworkTitle || effectiveSettings.artworkTitle || preset.title || '-Designed by Burhanuddin';
+  const productName = loaderConfig?.productName || effectiveSettings.productName || 'MediaFlow Studio';
+  const rawVersion = loaderConfig?.versionText || effectiveSettings.versionText || 'v6.0.0 (x64)';
+  const versionText = cleanVersionText(rawVersion);
+  const tagline = loaderConfig?.tagline || effectiveSettings.tagline || 'Professional Media Ingestion, Synchronization and Report Fusion Desktop Suite';
+  const artworkFit = (loaderConfig?.artworkFit || 'cover') as any;
+  const artworkPosition = (loaderConfig?.artworkPosition || 'center') as any;
+  const emblemLetters = loaderConfig?.logoText || 'Ms';
 
   const cardContent = (
     <div
@@ -195,7 +309,7 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
         backgroundColor: '#18181B',
         border: '1px solid #2B2B30',
         boxShadow:
-          '0 30px 90px -10px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.08), 0 0 40px rgba(0, 102, 238, 0.15)',
+          '0 30px 90px -10px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.09)',
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
@@ -203,26 +317,27 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
         fontFamily:
           "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Outfit', 'Inter', sans-serif",
         color: '#F4F4F5',
-        transition: 'transform 0.25s ease, opacity 0.25s ease',
+        transition: 'transform 0.28s ease, opacity 0.28s ease',
         transform: isFadingOut ? 'scale(0.985)' : 'scale(1)',
-        opacity: isFadingOut ? 0 : 1
+        opacity: isFadingOut ? 0 : 1,
+        margin: 0,
       }}
     >
       {/* =========================================================================
-          TOP CANVAS: HERO ARTWORK SECTION (~350px)
+          TOP CANVAS: HERO ARTWORK SECTION (340px)
           ========================================================================= */}
       <div
         style={{
-          height: '350px',
+          height: '340px',
           width: '100%',
           position: 'relative',
           overflow: 'hidden',
-          backgroundColor: '#090A10',
+          backgroundColor: '#09090B',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          padding: '24px 28px',
-          WebkitAppRegion: isStandaloneWindow ? 'drag' : undefined
+          padding: '26px 28px',
+          WebkitAppRegion: isStandalone ? 'drag' : undefined,
         } as React.CSSProperties}
       >
         {/* Background Artwork Canvas with subtle ambient scale */}
@@ -236,9 +351,9 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
             height: '100%',
             objectFit: artworkFit,
             objectPosition: artworkPosition,
-            filter: 'brightness(0.95) contrast(1.05)',
-            transform: 'scale(1.01)',
-            transition: 'all 0.5s ease-out'
+            filter: 'brightness(0.95) contrast(1.04)',
+            transform: 'scale(1.0)',
+            transition: 'all 0.5s ease-out',
           }}
           onError={(e) => {
             (e.target as HTMLImageElement).src =
@@ -246,14 +361,14 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
           }}
         />
 
-        {/* Cinematic Studio Overlays (Vignette & Readability Gradient) */}
+        {/* Cinematic Studio Overlays (Vignette & Readability Gradients) */}
         <div
           style={{
             position: 'absolute',
             inset: 0,
             background:
-              'linear-gradient(to top, #18181B 0%, rgba(0, 0, 0, 0.25) 50%, rgba(0, 0, 0, 0.65) 100%)',
-            pointerEvents: 'none'
+              'linear-gradient(to top, #18181B 0%, rgba(0, 0, 0, 0.25) 50%, rgba(0, 0, 0, 0.60) 100%)',
+            pointerEvents: 'none',
           }}
         />
         <div
@@ -262,33 +377,33 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
             inset: 0,
             background:
               'linear-gradient(to right, rgba(0, 0, 0, 0.65) 0%, transparent 50%, rgba(0, 0, 0, 0.45) 100%)',
-            pointerEvents: 'none'
+            pointerEvents: 'none',
           }}
         />
 
-        {/* Top Header Bar: Emblem, Title & Action */}
+        {/* Top Header Bar: Emblem, Title & Skip Action */}
         <div
           style={{
             position: 'relative',
             zIndex: 10,
             display: 'flex',
             alignItems: 'flex-start',
-            justifyContent: 'space-between'
+            justifyContent: 'space-between',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <MediaFlowBrandEmblem size={56} />
+            <AnythingBrandEmblem size={56} letters={emblemLetters} />
 
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <h1
                   style={{
                     fontSize: '24px',
-                    fontWeight: 800,
+                    fontWeight: 900,
                     color: '#FFFFFF',
                     margin: 0,
                     letterSpacing: '-0.02em',
-                    textShadow: '0 2px 8px rgba(0,0,0,0.6)'
+                    textShadow: '0 2px 8px rgba(0,0,0,0.6)',
                   }}
                 >
                   {productName}
@@ -299,12 +414,12 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
                     fontFamily: 'monospace',
                     fontWeight: 700,
                     color: '#FFFFFF',
-                    background: 'rgba(255, 255, 255, 0.12)',
-                    border: '1px solid rgba(255, 255, 255, 0.22)',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
                     borderRadius: '6px',
                     padding: '2px 8px',
                     backdropFilter: 'blur(8px)',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.3)'
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
                   }}
                 >
                   {versionText}
@@ -313,10 +428,10 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
               <p
                 style={{
                   fontSize: '12px',
-                  color: 'rgba(244, 244, 245, 0.85)',
-                  margin: '4px 0 0 0',
+                  color: 'rgba(228, 228, 231, 0.9)',
+                  margin: '3px 0 0 0',
                   fontWeight: 500,
-                  textShadow: '0 1px 4px rgba(0,0,0,0.6)'
+                  textShadow: '0 1px 4px rgba(0,0,0,0.6)',
                 }}
               >
                 {tagline}
@@ -326,7 +441,7 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
 
           {/* Skip / Close Button */}
           <div style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-            {isModalPreview ? (
+            {isPreviewMode ? (
               <button
                 onClick={handleFinish}
                 style={{
@@ -340,14 +455,10 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  transition: 'all 0.15s ease'
+                  transition: 'all 0.15s ease',
+                  backdropFilter: 'blur(8px)',
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-                }}
+                title="Close Preview"
               >
                 <X size={16} />
               </button>
@@ -355,28 +466,25 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
               <button
                 onClick={handleFinish}
                 style={{
-                  padding: '4px 10px',
-                  borderRadius: '6px',
-                  background: 'rgba(0, 0, 0, 0.45)',
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  color: 'rgba(255, 255, 255, 0.8)',
-                  fontSize: '10px',
-                  fontWeight: 600,
                   fontFamily: 'monospace',
-                  letterSpacing: '0.04em',
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  color: 'rgba(255, 255, 255, 0.75)',
+                  padding: '4px 12px',
+                  borderRadius: '9999px',
+                  background: 'rgba(0, 0, 0, 0.4)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  backdropFilter: 'blur(8px)',
                   cursor: 'pointer',
-                  transition: 'all 0.15s ease'
+                  transition: 'all 0.15s ease',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.color = '#FFFFFF';
-                  e.currentTarget.style.background = 'rgba(0, 102, 238, 0.85)';
-                  e.currentTarget.style.borderColor = '#0066EE';
+                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.color = 'rgba(255, 255, 255, 0.8)';
-                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.45)';
-                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                  e.currentTarget.style.color = 'rgba(255, 255, 255, 0.75)';
+                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.4)';
                 }}
               >
                 Skip ➔
@@ -385,7 +493,7 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
           </div>
         </div>
 
-        {/* Bottom Right: Artist Credit Capsule */}
+        {/* Bottom Right of Artwork: Artist Credit Capsule */}
         <div
           style={{
             position: 'relative',
@@ -396,11 +504,11 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
             WebkitBackdropFilter: 'blur(16px)',
             border: '1px solid rgba(255, 255, 255, 0.15)',
             borderRadius: '12px',
-            padding: '7px 14px',
+            padding: '6px 14px',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'flex-end',
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.6)'
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.6)',
           }}
         >
           <span
@@ -409,8 +517,8 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
               fontFamily: 'monospace',
               textTransform: 'uppercase',
               letterSpacing: '0.12em',
-              color: '#0066EE',
-              fontWeight: 800
+              color: '#38BDF8',
+              fontWeight: 800,
             }}
           >
             Featured Artwork
@@ -421,7 +529,7 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
               fontWeight: 700,
               color: '#FFFFFF',
               marginTop: '1px',
-              letterSpacing: '-0.01em'
+              letterSpacing: '-0.01em',
             }}
           >
             {artworkArtist}
@@ -429,10 +537,10 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
           {artworkTitle && (
             <span
               style={{
-                fontSize: '10.5px',
-                color: 'rgba(228, 228, 231, 0.75)',
+                fontSize: '10px',
+                color: 'rgba(212, 212, 216, 0.8)',
                 fontStyle: 'italic',
-                fontWeight: 500
+                fontWeight: 500,
               }}
             >
               {artworkTitle}
@@ -442,17 +550,17 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
       </div>
 
       {/* =========================================================================
-          LOWER CANVAS: HIGH-END ADOBE PROGRESS & DIAGNOSTICS (~130px)
+          LOWER CANVAS: HIGH-END ADOBE PROGRESS & DIAGNOSTICS (140px)
           ========================================================================= */}
       <div
         style={{
-          height: '130px',
+          height: '140px',
           backgroundColor: '#18181B',
-          padding: '18px 28px 16px 28px',
+          padding: '24px 28px 20px 28px',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          borderTop: '1px solid rgba(255, 255, 255, 0.08)'
+          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
         }}
       >
         {/* Progress Bar & Diagnostics Row */}
@@ -462,13 +570,13 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              fontSize: '12px'
+              fontSize: '12px',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Loader2
                 size={14}
-                color="#0066EE"
+                color="#38BDF8"
                 style={{ animation: 'spin 0.8s linear infinite', flexShrink: 0 }}
               />
               <span
@@ -477,7 +585,7 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
                   fontSize: '11px',
                   color: '#E4E4E7',
                   fontWeight: 500,
-                  letterSpacing: '0.02em'
+                  letterSpacing: '0.02em',
                 }}
               >
                 {diagnosticSteps[stepIndex] || diagnosticSteps[0]}
@@ -490,11 +598,11 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
                 alignItems: 'center',
                 gap: '6px',
                 fontFamily: 'monospace',
-                fontSize: '12px'
+                fontSize: '12px',
               }}
             >
               <span style={{ color: '#A1A1AA' }}>Loading</span>
-              <span style={{ color: '#0066EE', fontWeight: 800 }}>
+              <span style={{ color: '#38BDF8', fontWeight: 800 }}>
                 {Math.round(progress)}%
               </span>
             </div>
@@ -504,13 +612,13 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
           <div
             style={{
               width: '100%',
-              height: '7px',
+              height: '8px',
               borderRadius: '9999px',
               backgroundColor: '#09090B',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
               overflow: 'hidden',
               position: 'relative',
-              boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.8)'
+              boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.8)',
             }}
           >
             <div
@@ -518,11 +626,11 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
                 height: '100%',
                 width: `${progress}%`,
                 borderRadius: '9999px',
-                background: 'linear-gradient(90deg, #0052CC 0%, #0066EE 50%, #38BDF8 100%)',
-                boxShadow: '0 0 14px rgba(0, 102, 238, 0.65)',
+                background: 'linear-gradient(90deg, #06B6D4 0%, #0066EE 50%, #4F46E5 100%)',
+                boxShadow: '0 0 14px rgba(6, 182, 212, 0.7)',
                 transition: 'width 0.08s linear',
                 position: 'relative',
-                overflow: 'hidden'
+                overflow: 'hidden',
               }}
             >
               {/* Moving Shimmer Sheen */}
@@ -531,8 +639,8 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
                   position: 'absolute',
                   inset: 0,
                   background:
-                    'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.85) 50%, transparent 100%)',
-                  animation: 'shimmerSweep 1.2s infinite linear'
+                    'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.45) 50%, transparent 100%)',
+                  animation: 'shimmerSweep 1.2s infinite linear',
                 }}
               />
             </div>
@@ -549,20 +657,20 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
             borderTop: '1px solid rgba(255, 255, 255, 0.06)',
             fontSize: '10px',
             color: '#71717A',
-            fontFamily: 'monospace'
+            fontFamily: 'monospace',
           }}
         >
           <span>
             {loaderConfig?.author ? (
               <>
-                © 1990–2026 MediaFlow Studio Systems • Architect:{' '}
+                © 1990–2026 MediaFlow Studio Systems · Architect:{' '}
                 <strong style={{ color: '#E4E4E7' }}>{loaderConfig.author}</strong>
                 {loaderConfig.contactPhone && (
                   <span style={{ color: '#A1A1AA' }}> ({loaderConfig.contactPhone})</span>
                 )}
               </>
             ) : (
-              '© 1990–2026 MediaFlow Studio Systems Inc. All rights reserved.'
+              '© 1990–2026 MediaFlow Studio Systems · Architect: Burhanuddin Sounasath (8369811201)'
             )}
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -573,11 +681,11 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
                 borderRadius: '50%',
                 backgroundColor: '#10B981',
                 boxShadow: '0 0 8px #10B981',
-                animation: 'pulse 1.8s infinite'
+                animation: 'pulse 1.8s infinite',
               }}
             />
             <span style={{ color: '#A1A1AA', fontWeight: 600 }}>
-              {loaderConfig ? 'ANYTHING SYNCED' : 'DirectX 12 GPU'} • Build 2026.10
+              {loaderConfig ? 'ANYTHING SYNCED' : 'DirectX 12 GPU'} · Build 2026.10
             </span>
           </div>
         </div>
@@ -586,7 +694,7 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
   );
 
   // Modal Preview Mode in Settings Page
-  if (isModalPreview) {
+  if (isPreviewMode) {
     return (
       <div
         style={{
@@ -599,7 +707,7 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          animation: 'fadeIn 0.2s ease'
+          animation: 'fadeIn 0.2s ease',
         }}
         onClick={(e) => {
           if (e.target === e.currentTarget) handleFinish();
@@ -610,10 +718,12 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
     );
   }
 
-  // Standalone Transparent Window Mode
+  // Standalone Transparent Window Mode (Only the rectangle is visible on the desktop)
   return (
     <div
       style={{
+        position: 'fixed',
+        inset: 0,
         width: '100vw',
         height: '100vh',
         display: 'flex',
@@ -622,7 +732,8 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
         background: 'transparent',
         backgroundColor: 'transparent',
         margin: 0,
-        padding: 0
+        padding: 0,
+        overflow: 'hidden',
       }}
     >
       {cardContent}

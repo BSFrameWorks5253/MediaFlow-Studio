@@ -213,6 +213,7 @@ export const electronAPI = {
     };
   },
   notifySplashDone: () => ipcRenderer.invoke('splash:done'),
+  splashDone: () => ipcRenderer.invoke('splash:done'),
   pickCustomSplashArtwork: (): Promise<string | null> => ipcRenderer.invoke('splash:pickCustomArtwork'),
   isSplashWindow: () =>
     isSplash ||
