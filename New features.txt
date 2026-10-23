@@ -1,0 +1,27 @@
+https://mobbin.com/explore/screens/2847f828-cdc4-4907-bdb6-435960e63189
+https://www.awwwards.com/inspiration/loading-animation-spasoje-perovic
+https://www.awwwards.com/inspiration/preloader-animation-astral-frontier
+https://www.awwwards.com/inspiration/intro-loading-animation-walbi
+https://www.awwwards.com/inspiration/preloader-cosmos-studio
+https://www.awwwards.com/inspiration/onto-loading-onto
+https://www.awwwards.com/inspiration/animation-aircord-2
+https://mobbin.com/explore/screens/3573c390-df9c-4ca5-a6b1-2c02e9ae6e46
+make the loading screen proper it should be best uniqe and attractive.
+or make all  this in a template form in a seperatrte folder make it accurate to my apps light mode i will select one and u make it 
+also some moblie loading screens make it for my deskttop app 
+Also the ui is too bright descrese the whitness add litte off white in the ui make it soft to the eyes but Dont make it too dark also 
+make the ui more premium and modern looking add some animations and transitions in the ui make it look premium and minimilstic 
+also i want a dark mode for the app is a bit too dark make it little light mode
+
+in the app make the each step work flow proper 
+if there is a scrooling in a page after scaning and analiysing is done and when the user scrolls down and the button to start the transfer and all is hidden there shoudl be a button on the bottom should come so when it is clicked the app should send me back to the top and the button is to be visible properly 
+also the folder structure should be like this "C:\Users\Burhanuddin\Downloads\1448-09-Morbi Atraf"(1448-09-Morbi Atraf this name will be given by the user )
+also in the sync video and photo ther is the open folder of only one make it like in one filter missing there will be all the mismatch videos not found photo folder not found like that and in that there should be open video and open photo folder in the photo we can keep see photo if we click see photo i can se all the photos in that folder and this option should be given to the photo only 
+also in this D:\ON_GOING PROJECT\One Tap_V20.6.5\FOLDER_STRUCTURE.md see the structure the pla cards should be added in the folder inside 01-Mumbai-Bethak\ 
+02-Mumbai-Waaz\   
+03-Mumbai-Namaz\  
+04-Mumbai-Ziyarat\
+this should have the pla card accoring to the assignment given in the xlx also the folder name will be in this formate   1448-03-13 _01M-01-TNQ-50458093  in this TNQ can be anything from the event sheet list also numbers can be any number and _ - characters will be at the place ther are rn 
+also also in the clients apps the ONTO wala animation option i cant see 
+
+

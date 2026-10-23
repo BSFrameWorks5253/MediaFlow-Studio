@@ -1,0 +1,82 @@
+<svg width="256" height="256" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Liquid Glass Gradient Background: Deep Sapphire to Neon Electric Cyan -->
+    <linearGradient id="mfLogoBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#090D1A" />
+      <stop offset="35%" stop-color="#0D2149" />
+      <stop offset="70%" stop-color="#0066EE" />
+      <stop offset="100%" stop-color="#00F2FE" />
+    </linearGradient>
+
+    <!-- Refractive Iris Ring Gradient -->
+    <linearGradient id="mfIrisRing" x1="15%" y1="10%" x2="85%" y2="90%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95" />
+      <stop offset="45%" stop-color="#BAE6FD" stop-opacity="0.85" />
+      <stop offset="100%" stop-color="#00F2FE" stop-opacity="0.95" />
+    </linearGradient>
+
+    <!-- Center Monogram "Mf" Typography Gradient -->
+    <linearGradient id="mfLetterGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="50%" stop-color="#F0F9FF" />
+      <stop offset="100%" stop-color="#E0F2FE" />
+    </linearGradient>
+
+    <!-- Dynamic Flow Waves Gradient -->
+    <linearGradient id="mfFlowWave" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00F2FE" stop-opacity="0.9" />
+      <stop offset="50%" stop-color="#38BDF8" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#818CF8" stop-opacity="0.8" />
+    </linearGradient>
+
+    <!-- Specular Light Rim Gradient -->
+    <linearGradient id="mfSpecularGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.65" />
+      <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.12" />
+      <stop offset="100%" stop-color="#00F2FE" stop-opacity="0.3" />
+    </linearGradient>
+
+    <!-- Ambient Glow Filter -->
+    <filter id="mfSoftGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2.8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <filter id="mfCoreGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3.6" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Squircle Base Canvas matching Tap Studio & Anything Aesthetic (rx=24) -->
+  <rect x="3" y="3" width="94" height="94" rx="24" fill="url(#mfLogoBg)" />
+
+  <!-- Inner Specular High-Precision Rim -->
+  <rect x="4" y="4" width="92" height="92" rx="23" stroke="url(#mfSpecularGlow)" stroke-width="1.8" fill="none" />
+
+  <!-- Top Glass Sheen / Specular Visor Curve -->
+  <path d="M3 27C15 25 32 32 50 24C68 16 85 22 97 19V3C97 3 94 3 90 3H10C6 3 3 6 3 10V27Z" fill="url(#mfSpecularGlow)" opacity="0.32" />
+
+  <!-- Outer Telemetry Orbit Circle with Dotted Stride -->
+  <circle cx="50" cy="50" r="31" stroke="rgba(255, 255, 255, 0.22)" stroke-width="2.2" stroke-dasharray="4 3" />
+
+  <!-- Inner Refractive Iris Glass Ring -->
+  <circle cx="50" cy="50" r="24" stroke="url(#mfIrisRing)" stroke-width="3" fill="rgba(8, 14, 28, 0.35)" />
+
+  <!-- Dynamic Media Wave Accent Line (MediaFlow Energy) -->
+  <path d="M32 61C37 57 41 62 47 57C53 52 57 56 63 51C66 48.5 68 50 69 49" stroke="url(#mfFlowWave)" stroke-width="2.6" stroke-linecap="round" filter="url(#mfSoftGlow)" />
+
+  <!-- Adobe Mnemonic "Mf" Typography in Center with Soft Ambient Core Glow -->
+  <text x="50" y="58" text-anchor="middle" fill="url(#mfLetterGrad)" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="34" letter-spacing="-1.8" filter="url(#mfCoreGlow)">Mf</text>
+
+  <!-- Top-Right Glowing Cyan Satellite Node -->
+  <circle cx="72" cy="28" r="4.5" fill="#00F2FE" filter="url(#mfSoftGlow)" />
+  <circle cx="72" cy="28" r="2.2" fill="#FFFFFF" />
+
+  <!-- Bottom-Left Glowing Violet/Indigo Satellite Node -->
+  <circle cx="28" cy="72" r="3.4" fill="#818CF8" filter="url(#mfSoftGlow)" />
+  <circle cx="28" cy="72" r="1.6" fill="#FFFFFF" />
+</svg>

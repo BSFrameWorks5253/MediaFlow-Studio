@@ -1,0 +1,73 @@
+name: Build & Publish Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Semantic version tag to publish (e.g., v6.0.0)'
+        required: false
+        default: 'v6.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build & Publish Windows Release
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pillow openpyxl pandas
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Build Application Binary (Vite + Electron + electron-builder)
+        run: npm run build:win
+
+      - name: Verify Staged Windows Release Binaries
+        shell: pwsh
+        run: |
+          Write-Host "Checking generated distribution packages in dist-release/..."
+          if (!(Test-Path "dist-release")) {
+            Write-Error "dist-release directory was not generated!"
+            exit 1
+          }
+          Get-ChildItem -Path "dist-release" | Format-Table Name, Length, LastWriteTime
+
+      - name: Create GitHub Release with Windows Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: "MediaFlow Studio ${{ github.event.inputs.tag || github.ref_name }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            dist-release/*.exe
+            dist-release/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

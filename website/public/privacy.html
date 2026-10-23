@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — DataFlow Studio</title>
+  <link rel="icon" type="image/png" href="assets/icon.png">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .legal-content {
+      max-width: 840px;
+      margin: 40px auto;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 48px;
+      backdrop-filter: blur(16px);
+    }
+    .legal-content h1 { font-size: 2.2rem; margin-bottom: 8px; color: #fff; }
+    .legal-content h2 { font-size: 1.35rem; color: #fff; margin-top: 36px; margin-bottom: 12px; border-left: 3px solid var(--accent-cyan); padding-left: 12px; }
+    .legal-content p, .legal-content li { color: var(--text-secondary); margin-bottom: 12px; font-size: 0.98rem; }
+    .legal-content ul { padding-left: 20px; }
+    .highlight-box {
+      background: rgba(0, 229, 255, 0.05);
+      border: 1px solid rgba(0, 229, 255, 0.2);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 24px 0;
+      color: var(--text-primary);
+    }
+  </style>
+</head>
+<body>
+  <div class="aurora-bg">
+    <div class="aurora-circle-1"></div>
+  </div>
+
+  <nav class="navbar">
+    <div class="container nav-container">
+      <a href="index.html" class="brand">
+        <img src="assets/icon.png" alt="DataFlow Studio" class="brand-icon">
+        <span class="brand-title">DATAFLOW STUDIO</span>
+        <span class="brand-badge">v4.0 PRO</span>
+      </a>
+      <div class="nav-links">
+        <a href="index.html">&larr; Back to Home</a>
+        <a href="index.html#download" class="btn-nav-download">Download MSI</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="legal-content">
+      <div class="pill-version">Privacy Policy</div>
+      <h1>DataFlow Studio Privacy Policy</h1>
+      <p style="color:var(--text-muted); font-family:var(--font-mono); font-size:0.85rem; margin-bottom:24px;">
+        Product: DataFlow Studio v4.0 &bull; Publisher: BSFrameWorks &bull; Effective Date: October 11, 2026
+      </p>
+
+      <div class="highlight-box">
+        <strong>Core Principle:</strong> DataFlow Studio operates on a strict <strong>100% offline, local-first architecture</strong>. Your media files, photographs, videos, and production reports remain completely on your physical computer hardware. We do not collect, transmit, profile, or sell your personal data.
+      </div>
+
+      <h2>1. Information We Do NOT Collect</h2>
+      <ul>
+        <li><strong>No Media Collection:</strong> All file operations (renaming, sorting, categorization, Excel fusion) occur locally across your machine's physical storage drives. No files are ever sent to external servers.</li>
+        <li><strong>No Telemetry or Tracking:</strong> The application does not contain analytics beacons, usage tracking libraries, or advertising SDKs.</li>
+        <li><strong>No Identity Harvesting:</strong> You are not required to create an account, log in, or provide personal credentials to use the application.</li>
+      </ul>
+
+      <h2>2. Local Preferences &amp; Storage</h2>
+      <p>DataFlow Studio retains minimal, non-identifiable technical settings stored locally within your device's standard local application directory (<code>%APPDATA%\DataFlow Studio\</code>):</p>
+      <ul>
+        <li>Visual preferences (UI dark theme selection, zoom factor).</li>
+        <li>Recent local folder paths chosen for workflow operations.</li>
+        <li>Local manifest generation settings.</li>
+      </ul>
+
+      <h2>3. Optional Cloud Integration</h2>
+      <p>If you optionally choose to link Google Drive, authentication is established securely via official OAuth 2.0 endpoints. Tokens are stored locally on your device, and access is restricted solely to the directories you deliberately manage.</p>
+
+      <h2>4. Data Security &amp; Integrity</h2>
+      <p>The application employs transactional atomic operations to prevent file corruption during large batch moves and features pre-flight storage probes to protect against drive overflow crashes.</p>
+
+      <h2>5. Contact Information</h2>
+      <p>For questions or verification regarding this Privacy Policy, please reach out to:</p>
+      <p>
+        <strong>BSFrameWorks</strong><br>
+        Email: <code>support@bsframeworks.com</code><br>
+        Website: <code>https://www.bsframeworks.com</code>
+      </p>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <p>&copy; 2026 BSFrameWorks. All rights reserved.</p>
+      <div class="footer-links">
+        <a href="index.html">Home</a>
+        <a href="terms.html">Terms of Service</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,41 @@
+name: 🐛 Bug Report
+description: Report an issue or unexpected behavior in MediaFlow Studio
+title: "[BUG]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: "Thanks for reporting an issue in MediaFlow Studio! Please provide reproduction details below."
+  - type: input
+    id: version
+    attributes:
+      label: Application Version
+      placeholder: v4.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      options:
+        - Windows 11 (64-bit)
+        - Windows 10 (64-bit)
+        - Windows Server 2022 / 2025
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      value: |
+        1. Open MediaFlow Studio
+        2. Select stage / tool...
+        3. Click execute...
+        4. See error behavior...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Stack Traces / Terminal Logs
+      placeholder: Paste console output or attach screenshot

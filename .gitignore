@@ -1,0 +1,61 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Production and distribution builds
+dist/
+dist-electron/
+dist-release/
+release/
+releases/
+out/
+build/win-unpacked/
+*.exe
+*.zip
+*.msix
+*.appx
+*.7z
+
+# Python cache & virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+*.pfx
+*.cer
+
+# Logs and scratch files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+exe_stderr.log
+exe_stdout.log
+scratch/
+scratch_frames/
+scratch_mobbin.mp4
+
+# Editor & OS files
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Tooling caches
+.eslintcache
+.gemini/
+.impeccable/

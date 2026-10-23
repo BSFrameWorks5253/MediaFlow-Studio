@@ -1,0 +1,65 @@
+================================================================================
+MICROSOFT STORE LISTING - QUICK COPY/PASTE FIELDS (DATAFLOW STUDIO v4.0)
+================================================================================
+
+[APP TITLE]
+DataFlow Studio
+
+[SHORT DESCRIPTION / SUBTITLE] (Max 100 chars)
+Professional Media Ingestion, Synchronization & Report Fusion Desktop Suite.
+
+[FULL DESCRIPTION]
+DataFlow Studio v4.0 is a high-performance desktop production suite engineered for media producers, studio editors, event photographers, and enterprise videography teams. Designed to eliminate bottlenecks in high-volume post-production workflows, DataFlow Studio unites lightning-fast media ingestion, intelligent file segregation, multi-camera synchronization, and automated Excel report fusion into an elegant, unified pipeline.
+
+Built from the ground up for Windows 10 and Windows 11, DataFlow Studio combines a 32-thread parallel worker engine with strict atomic filesystem operations to handle terabytes of 4K/8K footage and high-resolution RAW photo captures with zero data corruption risk.
+
+KEY CAPABILITIES:
+- STAGE 00 • PV SEPARATOR: Instantly ingest mixed media dumps and atomically bifurcate photos (JPG, CR2, CR3, ARW, NEF, DNG) from video files (MP4, MOV, MXF) in milliseconds.
+- STAGE 01 • UPLOAD STRUCTURE: Automatically construct standardized, clean production directory trees tailored for studio archive standards.
+- STAGE 02 • PHOTO STATUS TAGGER: Synchronize camera photo rosters with master event manifests, detecting missing frames and matching capture sequences.
+- STAGE 03 • REMAINING SHIFTER: Filter out unselected, auxiliary, and overflow media files into dedicated staging pools with atomic speed.
+- STAGE 04 • EVENT IMAGE DISTRIBUTOR: Intelligently categorize and distribute master reference photographs across sub-events using smart abbreviation indexes.
+- STAGE 05 • MULTI-CAMERA VIDEO TRANSFER: High-throughput 8 MB chunk streaming engineered for high-bandwidth cross-drive NVMe/SSD data transfers.
+- STAGE 06 • THUMBNAIL SHIFTER: Isolate lightweight thumbnail proxies and preview files from master raw captures to accelerate cloud upload pipelines.
+- STAGE 07 • DEEP-STYLE EXCEL FUSION: Integrated Python openpyxl engine that merges disparate camera manifests, preserving font styling, cell borders, fills, and formulas with 1:1 fidelity.
+- STANDALONE TOOLS: Compound extension cleanup (.CR3.jpg to .jpg), video thumbnail suffix taggers (_V), and pre-flight storage headroom safety probes.
+
+[PRODUCT FEATURES] (Paste into Feature list)
+1. Instant Atomic Media Separation for RAW photos and videos
+2. Multi-Camera Clip Synchronization with custom prefix rules
+3. High-Throughput 8 MB Cross-Drive Transfer Engine
+4. Python-Powered Deep-Style Excel Report Fusion
+5. 32-Thread Parallel Concurrency Architecture
+6. Pre-Flight Disk Safety and Headroom Probe
+7. Automated Excel Audit Trails and Deletion Manifests
+8. Compound Camera Extension Normalizer
+9. Smart Event Reference Photo Distributor
+10. Native High-DPI Windows 10 and Windows 11 Support
+11. Customizable Dark Obsidian Aurora Glass Themes
+12. 100% Local & Air-Gapped Operation with Total Privacy
+
+[SEARCH KEYWORDS] (Up to 7 tags)
+media ingestion
+photo organizer
+video sync
+excel merger
+file batch rename
+production workflow
+camera transfer
+
+[WHAT'S NEW IN VERSION 4.0]
+- Professional Setup Installer: Polished Windows installation wizard with desktop and Start Menu integration.
+- Enhanced Excel Fusion Engine: Improved cell formatting preservation and multi-sheet camera summary reporting.
+- Real-time drive headroom calculation before multi-gigabyte ingestion.
+- UI Polish: Updated v4.0 PRO navigation badges, high-DPI font rendering, and updated Aurora theme presets.
+- Certified for Windows 11 23H2/24H2.
+
+[NOTES FOR CERTIFICATION REVIEWERS]
+DataFlow Studio is a desktop utility application for professional media file management, photo/video organization, and local Excel report generation.
+
+Testing Instructions:
+1. The application does NOT require any user login, account creation, or online subscription to test.
+2. Launch the application. The main Workspace Overview dashboard will load immediately.
+3. Test Stage 00 (PV Separator) or Stage 01 (Upload Structure) by selecting any local test directory containing sample JPG or MP4 files.
+4. All file operations and processing occur locally on the machine.
+================================================================================
