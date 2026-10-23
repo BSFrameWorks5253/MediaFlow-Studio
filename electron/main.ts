@@ -14,9 +14,9 @@ import { ActivityReportsManager } from './engines/../managers/activityReportsMan
 import { EventImageDistributorEngine } from './engines/eventImageDistributor';
 import { WorkstationAutoUpdater, UpdateInfo } from './managers/autoUpdater';
 
-// Windows Taskbar & Action Center Model ID matching Anything Child App ecosystem
+// Windows Taskbar & Action Center Model ID for dedicated window grouping
 if (process.platform === 'win32') {
-  app.setAppUserModelId('com.burhanuddin.anything');
+  app.setAppUserModelId('com.burhanuddin.mediaflowstudio');
 }
 
 // Windows High-DPI Support for crisp text rendering
