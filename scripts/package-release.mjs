@@ -40,7 +40,12 @@ if (pkg.version !== targetVersion) {
   console.log(`✓ Synchronized package.json version to v${targetVersion}`);
 }
 
-// 3. Prepare child app manifests for Anything ecosystem
+const logoPngPath = path.join(ROOT_DIR, 'public', 'assets', 'logo.png');
+let logoPngBase64 = 'assets/logo.png';
+if (fs.existsSync(logoPngPath)) {
+  logoPngBase64 = 'data:image/png;base64,' + fs.readFileSync(logoPngPath).toString('base64');
+}
+
 const appManifest = {
   id: "mediaflow-studio",
   name: "MediaFlow Studio",
@@ -48,10 +53,12 @@ const appManifest = {
   version: targetVersion,
   category: "Media & Video",
   description: "Professional Media Ingestion, Synchronization and Report Fusion Desktop Suite.",
-  executableName: "MediaFlow Studio.exe",
+  executableName: "Mediaflow_studio_6.0.0.exe",
   setupExecutableName: `Mediaflow_studio_${targetVersion}_Setup.exe`,
-  iconType: "svg",
-  iconValue: "assets/logo.svg",
+  iconType: "image",
+  iconValue: logoPngBase64,
+  logoSvg: "logo.svg",
+  logoPng: "logo.png",
   gradient: "from-blue-600 to-indigo-700",
   textColor: "#0066ee",
   glowColor: "rgba(0, 102, 238, 0.45)",
@@ -129,10 +136,17 @@ if (!fs.existsSync(versionOutputDir)) {
 fs.writeFileSync(path.join(versionOutputDir, 'app.json'), JSON.stringify(appManifest, null, 2), 'utf8');
 fs.writeFileSync(path.join(versionOutputDir, 'release.json'), JSON.stringify(releaseManifest, null, 2), 'utf8');
 
-// Copy logo.svg into release folder
-const logoSvgPath = path.join(ROOT_DIR, 'public', 'assets', 'logo.svg');
-if (fs.existsSync(logoSvgPath)) {
-  fs.copyFileSync(logoSvgPath, path.join(versionOutputDir, 'logo.svg'));
+// Copy logo and icon assets into release folder
+const assetFiles = ['logo.svg', 'logo.png', 'app.ico', 'icon.ico', 'icon.png'];
+for (const assetName of assetFiles) {
+  const assetPath = path.join(ROOT_DIR, 'public', 'assets', assetName);
+  if (fs.existsSync(assetPath)) {
+    fs.copyFileSync(assetPath, path.join(versionOutputDir, assetName));
+  }
+}
+const appIcoPath = path.join(ROOT_DIR, 'public', 'assets', 'app.ico');
+if (fs.existsSync(appIcoPath)) {
+  fs.copyFileSync(appIcoPath, path.join(versionOutputDir, 'AppIcon.ico'));
 }
 
 // Copy loader-config.json into release folder
@@ -141,7 +155,7 @@ if (fs.existsSync(loaderConfigPath)) {
   fs.copyFileSync(loaderConfigPath, path.join(versionOutputDir, 'loader-config.json'));
 }
 
-console.log(`✓ Created app.json, release.json & loader-config.json in releases/v${targetVersion}/`);
+console.log(`✓ Created app.json, release.json, logo assets & loader-config.json in releases/v${targetVersion}/`);
 
 const distReleaseDir = path.join(ROOT_DIR, 'dist-release');
 console.log(`\n--- Step 3: Organizing artifacts into ${versionOutputDir} ---`);
@@ -186,8 +200,10 @@ console.log('\n--- Step 4: Synchronizing Release Artifacts to Anything Ecosystem
 const desktopDir = path.dirname(ROOT_DIR);
 const candidateAnythingDirs = [
   'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\New folder (2)\\Anything',
+  'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\New folder (2)',
   'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Anything',
   path.join(desktopDir, 'New folder (2)', 'Anything'),
+  path.join(desktopDir, 'New folder (2)'),
   path.join(desktopDir, 'Anything')
 ];
 
@@ -195,9 +211,8 @@ const uniqueAnythingDirs = Array.from(new Set(candidateAnythingDirs.filter(d => 
 
 if (uniqueAnythingDirs.length > 0) {
   for (const anythingDir of uniqueAnythingDirs) {
-    console.log(`✓ Detected Anything app directory at: ${anythingDir}`);
+    console.log(`✓ Detected Anything release directory target at: ${anythingDir}`);
 
-    // Target directory per Master Prompts: Anything/releases/mediaflow-studio/
     const anythingReleaseDir = path.join(anythingDir, 'releases', 'mediaflow-studio');
     const anythingVersionDir = path.join(anythingReleaseDir, `v${targetVersion}`);
 
@@ -209,7 +224,7 @@ if (uniqueAnythingDirs.length > 0) {
         fs.mkdirSync(anythingVersionDir, { recursive: true });
       }
 
-      // Copy release files to Anything/releases/mediaflow-studio/
+      // Copy release files to Anything releases/mediaflow-studio/
       const filesToSync = fs.readdirSync(versionOutputDir);
       for (const f of filesToSync) {
         const src = path.join(versionOutputDir, f);
@@ -219,6 +234,17 @@ if (uniqueAnythingDirs.length > 0) {
       console.log(`✓ Successfully synced ${filesToSync.length} files to Anything:`);
       console.log(`   ➜ ${anythingReleaseDir}`);
       console.log(`   ➜ ${anythingVersionDir} (Archive / Rollback ready)`);
+
+      // If published-apps exists in target, sync app files there too
+      const publishedDir = path.join(anythingDir, 'published-apps', 'mediaflow-studio');
+      if (fs.existsSync(path.join(anythingDir, 'published-apps'))) {
+        if (!fs.existsSync(publishedDir)) fs.mkdirSync(publishedDir, { recursive: true });
+        for (const f of filesToSync) {
+          if (!f.endsWith('.zip')) {
+            fs.copyFileSync(path.join(versionOutputDir, f), path.join(publishedDir, f));
+          }
+        }
+      }
 
       // Trigger Anything's release collector
       const collectorScript = path.join(anythingDir, 'scripts', 'collect-releases.cjs');
