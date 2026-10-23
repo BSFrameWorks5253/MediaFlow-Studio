@@ -2,11 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Moon, Sun, Palette, Shield, Sliders, Check, Folder, FileSpreadsheet, Image as ImageIcon, Sparkles } from 'lucide-react';
 import { useTheme, AuroraPreset } from '../context/ThemeContext';
 import { StudioButton } from './StudioButton';
-import {
-  LoadingTemplateId,
-  LOADING_TEMPLATES_CATALOG,
-  LoadingScreenPreviewModal,
-} from './loading-templates';
+import { SplashScreenSection } from './SplashScreenSection';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -24,14 +20,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const { theme, setTheme, auroraPreset, setAuroraPreset } = useTheme();
   const [eventExcelPath, setEventExcelPath] = useState('');
   const [eventImagesDirPath, setEventImagesDirPath] = useState('');
-  const [loadingTemplate, setLoadingTemplate] = useState<LoadingTemplateId>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('dataflow_loading_screen_template') as LoadingTemplateId;
-      if (saved) return saved;
-    }
-    return 'onto';
-  });
-  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<{ status: 'idle' | 'checking' | 'latest' | 'available' | 'error'; message: string; url?: string }>({
     status: 'idle',
     message: '',
@@ -243,209 +231,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
 
-          {/* Loading Screen & Preloader Selector */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Sparkles size={15} color="var(--system-cyan)" />
-                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--secondary-label)', textTransform: 'uppercase' }}>
-                  Loading Screen & Preloader Design
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {onReplayBootLoader && (
-                  <button
-                    onClick={() => {
-                      onClose();
-                      onReplayBootLoader();
-                    }}
-                    style={{
-                      background: 'var(--surface-elevated)',
-                      border: '1px solid var(--border)',
-                      borderRadius: 8,
-                      padding: '4px 10px',
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: 'var(--label)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Play Fullscreen
-                  </button>
-                )}
-                <button
-                  onClick={() => setIsPreviewModalOpen(true)}
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(0, 242, 254, 0.15), rgba(139, 92, 246, 0.15))',
-                    border: '1px solid var(--border-glow)',
-                    borderRadius: 8,
-                    padding: '4px 10px',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: 'var(--accent)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 5,
-                  }}
-                >
-                  <Sparkles size={12} />
-                  Live Preview Studio
-                </button>
-              </div>
-            </div>
-
-            <div
-              className="glass-card"
-              style={{
-                padding: '14px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 10,
-                backgroundColor: 'var(--surface)',
-                border: '1px solid var(--border)',
-                borderRadius: 14,
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--label)' }}>
-                  Active Boot Preloader:
-                </span>
-                <span
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: 'var(--accent)',
-                    fontFamily: 'var(--font-mono)',
-                    backgroundColor: 'var(--surface-elevated)',
-                    padding: '2px 8px',
-                    borderRadius: 6,
-                    border: '1px solid var(--border)',
-                  }}
-                >
-                  {LOADING_TEMPLATES_CATALOG.find((t) => t.id === loadingTemplate)?.name || 'Onto Kinetic Studio'}
-                </span>
-              </div>
-
-              {/* Onto Spotlight Banner */}
-              <div
-                style={{
-                  padding: '10px 12px',
-                  borderRadius: 10,
-                  backgroundColor: loadingTemplate === 'onto' ? 'rgba(0, 122, 255, 0.12)' : 'var(--surface-elevated)',
-                  border: loadingTemplate === 'onto' ? '1.5px solid #007AFF' : '1px solid var(--border)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 10,
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 8,
-                      background: 'linear-gradient(135deg, #007AFF 0%, #00F2FE 100%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#FFF',
-                      fontSize: 13,
-                      fontWeight: 800,
-                    }}
-                  >
-                    O
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--label)' }}>
-                      Onto Kinetic Studio (onto.mp4)
-                    </div>
-                    <div style={{ fontSize: 10, color: 'var(--secondary-label)' }}>
-                      Cinematic 3D Monolithic Typography & Pipeline Morph
-                    </div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLoadingTemplate('onto');
-                    if (typeof window !== 'undefined') {
-                      localStorage.setItem('dataflow_loading_screen_template', 'onto');
-                    }
-                  }}
-                  style={{
-                    padding: '4px 10px',
-                    borderRadius: 6,
-                    border: loadingTemplate === 'onto' ? '1px solid #007AFF' : '1px solid var(--border)',
-                    backgroundColor: loadingTemplate === 'onto' ? '#007AFF' : 'var(--surface)',
-                    color: loadingTemplate === 'onto' ? '#FFF' : 'var(--label)',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {loadingTemplate === 'onto' ? '✓ Selected' : 'Select Onto'}
-                </button>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8 }}>
-                {LOADING_TEMPLATES_CATALOG.map((tpl) => {
-                  const isSelected = tpl.id === loadingTemplate;
-                  return (
-                    <button
-                      key={tpl.id}
-                      onClick={() => {
-                        setLoadingTemplate(tpl.id);
-                        if (typeof window !== 'undefined') {
-                          localStorage.setItem('dataflow_loading_screen_template', tpl.id);
-                        }
-                      }}
-                      style={{
-                        padding: '10px 12px',
-                        borderRadius: 10,
-                        border: isSelected ? `2px solid ${tpl.accentColor}` : '1px solid var(--border)',
-                        backgroundColor: isSelected ? 'var(--surface-elevated)' : 'transparent',
-                        color: 'var(--label)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-start',
-                        gap: 4,
-                        textAlign: 'left',
-                        transition: 'all 0.15s ease',
-                        boxShadow: isSelected ? `0 0 12px ${tpl.accentColor}30` : 'none',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: isSelected ? tpl.accentColor : 'var(--label)' }}>
-                          {tpl.name}
-                        </span>
-                        {isSelected && <Check size={14} color={tpl.accentColor} />}
-                      </div>
-                      <span style={{ fontSize: 10, color: 'var(--secondary-label)' }}>
-                        {tpl.subtitle}
-                      </span>
-                      <span
-                        style={{
-                          fontSize: 8.5,
-                          padding: '1.5px 6px',
-                          borderRadius: 4,
-                          backgroundColor: `${tpl.accentColor}18`,
-                          color: tpl.accentColor,
-                          fontWeight: 800,
-                          fontFamily: 'var(--font-mono)',
-                          marginTop: 2,
-                        }}
-                      >
-                        {tpl.badge}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+          {/* Adobe Splash Screen & Cold-Boot Engine */}
+          <SplashScreenSection />
 
           {/* Event Reference Configuration Section */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -746,20 +533,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </StudioButton>
         </div>
       </div>
-
-      {/* Interactive Loading Screen Showcase & Preview Modal */}
-      <LoadingScreenPreviewModal
-        isOpen={isPreviewModalOpen}
-        onClose={() => setIsPreviewModalOpen(false)}
-        currentSelectedId={loadingTemplate}
-        onSelectTemplate={(id: LoadingTemplateId) => {
-          setLoadingTemplate(id);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('dataflow_loading_screen_template', id);
-          }
-        }}
-        appTheme={theme}
-      />
     </div>
   );
 };

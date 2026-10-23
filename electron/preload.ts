@@ -1,5 +1,19 @@
 import { contextBridge, ipcRenderer, webFrame } from 'electron';
 
+const isSplash = process.argv.includes('--window-type=splash');
+if (isSplash) {
+  try {
+    document.documentElement.classList.add('splash-mode');
+    document.documentElement.style.background = 'transparent';
+    document.documentElement.style.backgroundColor = 'transparent';
+    window.addEventListener('DOMContentLoaded', () => {
+      document.body.classList.add('splash-mode');
+      document.body.style.background = 'transparent';
+      document.body.style.backgroundColor = 'transparent';
+    });
+  } catch {}
+}
+
 export const electronAPI = {
   // Config & Zoom
   getConfig: () => ipcRenderer.invoke('app:get-config'),
@@ -191,7 +205,11 @@ export const electronAPI = {
   // 12. Splash Screen & Anything Loader Integration
   getSplashLoaderConfig: () => ipcRenderer.invoke('splash:getLoaderConfig'),
   notifySplashDone: () => ipcRenderer.invoke('splash:done'),
-  isSplashWindow: () => process.argv.includes('--window-type=splash'),
+  pickCustomSplashArtwork: (): Promise<string | null> => ipcRenderer.invoke('splash:pickCustomArtwork'),
+  isSplashWindow: () =>
+    isSplash ||
+    (typeof window !== 'undefined' &&
+      (window.location.search.includes('splash') || window.location.hash.includes('splash'))),
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);

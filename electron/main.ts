@@ -414,6 +414,16 @@ function setupIpcHandlers() {
     completeSplashHandoff();
     return true;
   });
+  ipcMain.handle('splash:pickCustomArtwork', async () => {
+    const parentWin = mainWindow || splashWindow;
+    if (!parentWin) return null;
+    const res = await dialog.showOpenDialog(parentWin, {
+      title: 'Select Custom Splash Artwork',
+      filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp', 'svg', 'gif'] }],
+      properties: ['openFile']
+    });
+    return res.canceled ? null : res.filePaths[0];
+  });
 
   // Config
   ipcMain.handle('app:get-config', () => appConfig);

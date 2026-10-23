@@ -1,30 +1,26 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Loader2 } from 'lucide-react';
+import { getStoredSplashSettings, SplashSettings, AnythingLoaderConfig } from '../types/splash';
+import { getPresetById } from './splashPresets';
 import { MediaFlowLogo } from './MediaFlowLogo';
-
-export interface AnythingLoaderConfig {
-  appId?: string;
-  productName?: string;
-  versionText?: string;
-  tagline?: string;
-  artworkUrl?: string;
-  artistName?: string;
-  artworkTitle?: string;
-  durationMs?: number;
-  logoText?: string;
-  badgeGradient?: string;
-  steps?: string[];
-  author?: string;
-  contactPhone?: string;
-}
 
 interface AdobeSplashScreenProps {
   isStandaloneWindow?: boolean;
+  isModalPreview?: boolean;
   onFinish?: () => void;
   onClose?: () => void;
+  overrideSettings?: Partial<SplashSettings>;
 }
 
-const DEFAULT_STEPS = [
+// Inlined Official Squircle Logo for MediaFlow Studio
+export const MediaFlowBrandEmblem: React.FC<{ size?: number; className?: string }> = ({
+  size = 56,
+  className = ''
+}) => (
+  <MediaFlowLogo size={size} className={className} />
+);
+
+const DEFAULT_DIAGNOSTIC_STEPS = [
   'Initializing Direct3D media acceleration engine...',
   'Loading RAW ingestion pipelines & camera profiles...',
   'Verifying PV separation & thumbnail caches...',
@@ -34,22 +30,28 @@ const DEFAULT_STEPS = [
 
 export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
   isStandaloneWindow = false,
+  isModalPreview = false,
   onFinish,
-  onClose
+  onClose,
+  overrideSettings
 }) => {
   const [loaderConfig, setLoaderConfig] = useState<AnythingLoaderConfig | null>(null);
-  const [progress, setProgress] = useState<number>(0);
-  const [stepIndex, setStepIndex] = useState<number>(0);
-  const [isFadingOut, setIsFadingOut] = useState<boolean>(false);
-  const [isDone, setIsDone] = useState<boolean>(false);
 
   useEffect(() => {
     let isMounted = true;
     const fetchConfig = async () => {
       try {
-        if ((window as any).api?.getSplashLoaderConfig) {
-          const cfg = await (window as any).api.getSplashLoaderConfig();
-          if (isMounted && cfg) setLoaderConfig(cfg);
+        const anyWindow = window as any;
+        if (anyWindow.api?.getSplashLoaderConfig) {
+          const cfg = await anyWindow.api.getSplashLoaderConfig();
+          if (isMounted && cfg) {
+            setLoaderConfig(cfg);
+          }
+        } else if (anyWindow.electronAPI?.getSplashLoaderConfig) {
+          const cfg = await anyWindow.electronAPI.getSplashLoaderConfig();
+          if (isMounted && cfg) {
+            setLoaderConfig(cfg);
+          }
         } else {
           const res = await fetch('./loader-config.json');
           if (res.ok) {
@@ -67,19 +69,41 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
     };
   }, []);
 
+  const settings: SplashSettings = useMemo(() => {
+    const stored = getStoredSplashSettings();
+    return { ...stored, ...overrideSettings };
+  }, [overrideSettings]);
+
+  const preset = useMemo(() => getPresetById(settings.presetId), [settings.presetId]);
+
+  const [progress, setProgress] = useState<number>(0);
+  const [stepIndex, setStepIndex] = useState<number>(0);
+  const [isFadingOut, setIsFadingOut] = useState<boolean>(false);
+  const [isDone, setIsDone] = useState<boolean>(false);
+
+  // Dynamic steps from Anything loader-config.json or defaults
   const diagnosticSteps = useMemo(() => {
     if (loaderConfig?.steps && Array.isArray(loaderConfig.steps) && loaderConfig.steps.length > 0) {
       return loaderConfig.steps;
     }
-    return DEFAULT_STEPS;
+    return DEFAULT_DIAGNOSTIC_STEPS;
   }, [loaderConfig]);
 
+  // Determine total duration
   const totalDurationMs = useMemo(() => {
     if (loaderConfig?.durationMs && typeof loaderConfig.durationMs === 'number' && loaderConfig.durationMs > 0) {
       return loaderConfig.durationMs;
     }
-    return 2800;
-  }, [loaderConfig]);
+    switch (settings.speed) {
+      case 'quick':
+        return 1400;
+      case 'cinematic':
+        return 4200;
+      case 'standard':
+      default:
+        return 2800;
+    }
+  }, [loaderConfig, settings.speed]);
 
   const handleFinish = () => {
     if (isDone) return;
@@ -90,8 +114,11 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
       if (onFinish) {
         onFinish();
       } else if (isStandaloneWindow) {
-        if ((window as any).api?.notifySplashDone) {
-          (window as any).api.notifySplashDone();
+        const anyWindow = window as any;
+        if (anyWindow.api?.notifySplashDone) {
+          anyWindow.api.notifySplashDone();
+        } else if (anyWindow.electronAPI?.notifySplashDone) {
+          anyWindow.electronAPI.notifySplashDone();
         }
       } else if (onClose) {
         onClose();
@@ -99,285 +126,493 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
     }, 250);
   };
 
-  // Progress Bar & Step progression
   useEffect(() => {
-    const startTime = performance.now();
-    const interval = setInterval(() => {
-      const elapsed = performance.now() - startTime;
-      const currentProgress = Math.min(100, (elapsed / totalDurationMs) * 100);
-      setProgress(currentProgress);
+    const intervalTime = 35;
+    const totalSteps = totalDurationMs / intervalTime;
+    const increment = 100 / totalSteps;
 
-      const targetStep = Math.min(
-        diagnosticSteps.length - 1,
-        Math.floor((currentProgress / 100) * diagnosticSteps.length)
-      );
-      setStepIndex(targetStep);
+    let currentProgress = 0;
 
-      if (elapsed >= totalDurationMs) {
-        clearInterval(interval);
-        handleFinish();
+    const timer = setInterval(() => {
+      currentProgress += increment;
+
+      if (currentProgress >= 100) {
+        currentProgress = 100;
+        setProgress(100);
+        setStepIndex(diagnosticSteps.length - 1);
+        clearInterval(timer);
+
+        // Smooth micro-pause before handoff
+        setTimeout(() => {
+          handleFinish();
+        }, 180);
+      } else {
+        setProgress(currentProgress);
+        const step = Math.min(
+          diagnosticSteps.length - 2,
+          Math.floor((currentProgress / 100) * (diagnosticSteps.length - 1))
+        );
+        setStepIndex(step);
       }
-    }, 16);
+    }, intervalTime);
 
-    return () => clearInterval(interval);
+    return () => clearInterval(timer);
   }, [totalDurationMs, diagnosticSteps]);
 
-  const artworkUrl =
+  const activeArtworkUrl =
+    settings.customImageUrl ||
     loaderConfig?.artworkUrl ||
+    preset.imageUrl ||
     'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1400&q=85';
 
-  return (
+  const artworkArtist = settings.artistName || loaderConfig?.artistName || preset.artist || 'Anything Creation';
+  const artworkTitle = settings.artworkTitle || loaderConfig?.artworkTitle || preset.title || 'Refractive Glass in Motion';
+  const productName = loaderConfig?.productName || settings.productName || 'MediaFlow Studio';
+  const versionText = loaderConfig?.versionText || settings.versionText || 'v6.0.0 (x64)';
+  const tagline = loaderConfig?.tagline || settings.tagline || 'Professional Media Ingestion, Synchronization and Report Fusion Desktop Suite';
+
+  const cardContent = (
     <div
-      style={
-        {
-          position: 'fixed',
-          inset: 0,
-          width: '100vw',
-          height: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: isStandaloneWindow ? '#07090E' : 'rgba(0, 0, 0, 0.75)',
-          backdropFilter: isStandaloneWindow ? 'none' : 'blur(20px)',
-          zIndex: 99999,
-          opacity: isFadingOut ? 0 : 1,
-          transition: 'opacity 250ms ease-out',
-          userSelect: 'none',
-          WebkitAppRegion: 'drag'
-        } as React.CSSProperties
-      }
+      style={{
+        width: '740px',
+        maxWidth: '740px',
+        height: '480px',
+        borderRadius: '16px',
+        overflow: 'hidden',
+        backgroundColor: '#18181B',
+        border: '1px solid #2B2B30',
+        boxShadow:
+          '0 30px 90px -10px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.08), 0 0 40px rgba(0, 102, 238, 0.15)',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
+        userSelect: 'none',
+        fontFamily:
+          "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Outfit', 'Inter', sans-serif",
+        color: '#F4F4F5',
+        transition: 'transform 0.25s ease, opacity 0.25s ease',
+        transform: isFadingOut ? 'scale(0.985)' : 'scale(1)',
+        opacity: isFadingOut ? 0 : 1
+      }}
     >
-      {/* 740x480 Glass Window Shell */}
+      {/* =========================================================================
+          TOP CANVAS: HERO ARTWORK SECTION (~350px)
+          ========================================================================= */}
       <div
-        style={
-          {
-            width: '740px',
-            height: '480px',
-            position: 'relative',
-            borderRadius: '24px',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#090D1A',
-            boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(0, 242, 254, 0.3)',
-            WebkitAppRegion: 'no-drag'
-          } as React.CSSProperties
-        }
+        style={{
+          height: '350px',
+          width: '100%',
+          position: 'relative',
+          overflow: 'hidden',
+          backgroundColor: '#090A10',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          padding: '24px 28px',
+          WebkitAppRegion: isStandaloneWindow ? 'drag' : undefined
+        } as React.CSSProperties}
       >
-        {/* Background Artwork Image with Subtle Zoom Animation */}
-        <div
+        {/* Background Artwork Canvas with subtle ambient scale */}
+        <img
+          src={activeArtworkUrl}
+          alt="Splash Artwork"
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: `url(${artworkUrl})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            filter: 'brightness(0.65) saturate(1.2)',
-            transform: 'scale(1.04)',
-            transition: 'transform 4s ease-out'
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center',
+            filter: 'brightness(0.95) contrast(1.05)',
+            transform: 'scale(1.01)',
+            transition: 'transform 1.2s ease-out'
+          }}
+          onError={(e) => {
+            (e.target as HTMLImageElement).src =
+              'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1400&q=85';
           }}
         />
 
-        {/* Ambient Gradient Glass Overlays */}
+        {/* Cinematic Studio Overlays (Vignette & Readability Gradient) */}
         <div
           style={{
             position: 'absolute',
             inset: 0,
             background:
-              'linear-gradient(135deg, rgba(9, 13, 26, 0.92) 0%, rgba(13, 33, 73, 0.75) 50%, rgba(0, 242, 254, 0.25) 100%)'
+              'linear-gradient(to top, #18181B 0%, rgba(0, 0, 0, 0.25) 50%, rgba(0, 0, 0, 0.65) 100%)',
+            pointerEvents: 'none'
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background:
+              'linear-gradient(to right, rgba(0, 0, 0, 0.65) 0%, transparent 50%, rgba(0, 0, 0, 0.45) 100%)',
+            pointerEvents: 'none'
           }}
         />
 
-        {/* Top Header Bar */}
-        <div
-          style={
-            {
-              position: 'relative',
-              zIndex: 10,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '24px 28px 12px 28px',
-              WebkitAppRegion: 'drag'
-            } as React.CSSProperties
-          }
-        >
-          {/* Brand Insignia & Titles */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <MediaFlowLogo size={52} />
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span
-                  style={{
-                    color: '#F8FAFC',
-                    fontSize: '20px',
-                    fontWeight: 800,
-                    letterSpacing: '-0.5px',
-                    fontFamily: 'Inter, system-ui, sans-serif'
-                  }}
-                >
-                  {loaderConfig?.productName || 'MediaFlow Studio'}
-                </span>
-                <span
-                  style={{
-                    backgroundColor: 'rgba(0, 242, 254, 0.15)',
-                    color: '#00F2FE',
-                    border: '1px solid rgba(0, 242, 254, 0.3)',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    padding: '2px 8px',
-                    borderRadius: '999px',
-                    fontFamily: 'JetBrains Mono, monospace'
-                  }}
-                >
-                  {loaderConfig?.versionText || 'v6.0.0 (x64)'}
-                </span>
-              </div>
-              <p
-                style={{
-                  color: '#94A3B8',
-                  fontSize: '12px',
-                  marginTop: '2px',
-                  fontWeight: 500,
-                  maxWidth: '460px'
-                }}
-              >
-                {loaderConfig?.tagline ||
-                  'Professional Media Ingestion, Synchronization and Report Fusion Desktop Suite'}
-              </p>
-            </div>
-          </div>
-
-          {/* Close / Skip Button */}
-          {!isStandaloneWindow && (
-            <button
-              onClick={handleFinish}
-              style={
-                {
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '8px',
-                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  color: '#CBD5E1',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  WebkitAppRegion: 'no-drag'
-                } as React.CSSProperties
-              }
-            >
-              <X size={16} />
-            </button>
-          )}
-        </div>
-
-        {/* Center Space */}
-        <div style={{ flex: 1 }} />
-
-        {/* Bottom Section: Progress Bar & Diagnostics */}
+        {/* Top Header Bar: Emblem, Title & Action */}
         <div
           style={{
             position: 'relative',
             zIndex: 10,
-            padding: '24px 28px 28px 28px',
-            background:
-              'linear-gradient(to top, rgba(7, 9, 14, 0.95) 0%, rgba(7, 9, 14, 0.6) 80%, transparent 100%)'
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between'
           }}
         >
-          {/* Diagnostics Step Indicator */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <MediaFlowBrandEmblem size={56} />
+
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <h1
+                  style={{
+                    fontSize: '24px',
+                    fontWeight: 800,
+                    color: '#FFFFFF',
+                    margin: 0,
+                    letterSpacing: '-0.02em',
+                    textShadow: '0 2px 8px rgba(0,0,0,0.6)'
+                  }}
+                >
+                  {productName}
+                </h1>
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontFamily: 'monospace',
+                    fontWeight: 700,
+                    color: '#FFFFFF',
+                    background: 'rgba(255, 255, 255, 0.12)',
+                    border: '1px solid rgba(255, 255, 255, 0.22)',
+                    borderRadius: '6px',
+                    padding: '2px 8px',
+                    backdropFilter: 'blur(8px)',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.3)'
+                  }}
+                >
+                  {versionText}
+                </span>
+              </div>
+              <p
+                style={{
+                  fontSize: '12px',
+                  color: 'rgba(244, 244, 245, 0.85)',
+                  margin: '4px 0 0 0',
+                  fontWeight: 500,
+                  textShadow: '0 1px 4px rgba(0,0,0,0.6)'
+                }}
+              >
+                {tagline}
+              </p>
+            </div>
+          </div>
+
+          {/* Skip / Close Button */}
+          <div style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+            {isModalPreview ? (
+              <button
+                onClick={handleFinish}
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  background: 'rgba(0, 0, 0, 0.5)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  color: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+                }}
+              >
+                <X size={16} />
+              </button>
+            ) : (
+              <button
+                onClick={handleFinish}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  background: 'rgba(0, 0, 0, 0.45)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  fontSize: '10px',
+                  fontWeight: 600,
+                  fontFamily: 'monospace',
+                  letterSpacing: '0.04em',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#FFFFFF';
+                  e.currentTarget.style.background = 'rgba(0, 102, 238, 0.85)';
+                  e.currentTarget.style.borderColor = '#0066EE';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = 'rgba(255, 255, 255, 0.8)';
+                  e.currentTarget.style.background = 'rgba(0, 0, 0, 0.45)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                }}
+              >
+                Skip ➔
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Bottom Right: Artist Credit Capsule */}
+        <div
+          style={{
+            position: 'relative',
+            zIndex: 10,
+            alignSelf: 'flex-end',
+            background: 'rgba(0, 0, 0, 0.65)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            borderRadius: '12px',
+            padding: '7px 14px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-end',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.6)'
+          }}
+        >
+          <span
+            style={{
+              fontSize: '9px',
+              fontFamily: 'monospace',
+              textTransform: 'uppercase',
+              letterSpacing: '0.12em',
+              color: '#0066EE',
+              fontWeight: 800
+            }}
+          >
+            Featured Artwork
+          </span>
+          <span
+            style={{
+              fontSize: '12px',
+              fontWeight: 700,
+              color: '#FFFFFF',
+              marginTop: '1px',
+              letterSpacing: '-0.01em'
+            }}
+          >
+            {artworkArtist}
+          </span>
+          {artworkTitle && (
+            <span
+              style={{
+                fontSize: '10.5px',
+                color: 'rgba(228, 228, 231, 0.75)',
+                fontStyle: 'italic',
+                fontWeight: 500
+              }}
+            >
+              {artworkTitle}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* =========================================================================
+          LOWER CANVAS: HIGH-END ADOBE PROGRESS & DIAGNOSTICS (~130px)
+          ========================================================================= */}
+      <div
+        style={{
+          height: '130px',
+          backgroundColor: '#18181B',
+          padding: '18px 28px 16px 28px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          borderTop: '1px solid rgba(255, 255, 255, 0.08)'
+        }}
+      >
+        {/* Progress Bar & Diagnostics Row */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              marginBottom: '10px'
+              fontSize: '12px'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Loader2 size={14} className="animate-spin" style={{ color: '#00F2FE' }} />
+              <Loader2
+                size={14}
+                color="#0066EE"
+                style={{ animation: 'spin 0.8s linear infinite', flexShrink: 0 }}
+              />
               <span
                 style={{
-                  color: '#E2E8F0',
-                  fontSize: '12.5px',
-                  fontWeight: 600,
-                  fontFamily: 'Inter, system-ui, sans-serif'
+                  fontFamily: 'monospace',
+                  fontSize: '11px',
+                  color: '#E4E4E7',
+                  fontWeight: 500,
+                  letterSpacing: '0.02em'
                 }}
               >
-                {diagnosticSteps[stepIndex] || 'Initializing system...'}
+                {diagnosticSteps[stepIndex] || diagnosticSteps[0]}
               </span>
             </div>
-            <span
+
+            <div
               style={{
-                color: '#00F2FE',
-                fontSize: '12px',
-                fontWeight: 700,
-                fontFamily: 'JetBrains Mono, monospace'
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontFamily: 'monospace',
+                fontSize: '12px'
               }}
             >
-              {Math.round(progress)}%
-            </span>
+              <span style={{ color: '#A1A1AA' }}>Loading</span>
+              <span style={{ color: '#0066EE', fontWeight: 800 }}>
+                {Math.round(progress)}%
+              </span>
+            </div>
           </div>
 
-          {/* Progress Track */}
+          {/* Glowing Segmented Loader Bar with Shimmer Beam */}
           <div
             style={{
               width: '100%',
-              height: '5px',
-              backgroundColor: 'rgba(255, 255, 255, 0.12)',
-              borderRadius: '999px',
+              height: '7px',
+              borderRadius: '9999px',
+              backgroundColor: '#09090B',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
               overflow: 'hidden',
-              marginBottom: '16px'
+              position: 'relative',
+              boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.8)'
             }}
           >
             <div
               style={{
                 height: '100%',
                 width: `${progress}%`,
-                background: 'linear-gradient(90deg, #007AFF 0%, #00F2FE 100%)',
-                boxShadow: '0 0 12px rgba(0, 242, 254, 0.8)',
-                transition: 'width 100ms linear'
+                borderRadius: '9999px',
+                background: 'linear-gradient(90deg, #0052CC 0%, #0066EE 50%, #38BDF8 100%)',
+                boxShadow: '0 0 14px rgba(0, 102, 238, 0.65)',
+                transition: 'width 0.08s linear',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+            >
+              {/* Moving Shimmer Sheen */}
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background:
+                    'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.85) 50%, transparent 100%)',
+                  animation: 'shimmerSweep 1.2s infinite linear'
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Footer Metadata & Legal Status */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingTop: '8px',
+            borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+            fontSize: '10px',
+            color: '#71717A',
+            fontFamily: 'monospace'
+          }}
+        >
+          <span>
+            {loaderConfig?.author ? (
+              <>
+                © 1990–2026 MediaFlow Studio Systems • Architect:{' '}
+                <strong style={{ color: '#E4E4E7' }}>{loaderConfig.author}</strong>
+                {loaderConfig.contactPhone && (
+                  <span style={{ color: '#A1A1AA' }}> ({loaderConfig.contactPhone})</span>
+                )}
+              </>
+            ) : (
+              '© 1990–2026 MediaFlow Studio Systems Inc. All rights reserved.'
+            )}
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span
+              style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: '#10B981',
+                boxShadow: '0 0 8px #10B981',
+                animation: 'pulse 1.8s infinite'
               }}
             />
-          </div>
-
-          {/* Bottom Credits & Ecosystem Info */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              fontSize: '11px',
-              color: '#64748B'
-            }}
-          >
-            <div>
-              <span>Artwork: </span>
-              <strong style={{ color: '#94A3B8' }}>
-                {loaderConfig?.artworkTitle || 'Prismatic Flow & Refraction'}
-              </strong>
-              <span> by </span>
-              <span style={{ color: '#00F2FE' }}>
-                {loaderConfig?.artistName || 'Anything Creation'}
-              </span>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span>
-                Architect:{' '}
-                <strong style={{ color: '#E2E8F0' }}>
-                  {loaderConfig?.author || 'Burhanuddin Sounasath'}
-                </strong>
-              </span>
-              <span>•</span>
-              <span style={{ color: '#38BDF8' }}>Anything Creative Suite</span>
-            </div>
+            <span style={{ color: '#A1A1AA', fontWeight: 600 }}>
+              {loaderConfig ? 'ANYTHING SYNCED' : 'DirectX 12 GPU'} • Build 2026.10
+            </span>
           </div>
         </div>
       </div>
     </div>
   );
-};
 
-export default AdobeSplashScreen;
+  // Modal Preview Mode in Settings Page
+  if (isModalPreview) {
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          zIndex: 99999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          animation: 'fadeIn 0.2s ease'
+        }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) handleFinish();
+        }}
+      >
+        {cardContent}
+      </div>
+    );
+  }
+
+  // Standalone Transparent Window Mode
+  return (
+    <div
+      style={{
+        width: '100vw',
+        height: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'transparent',
+        backgroundColor: 'transparent',
+        margin: 0,
+        padding: 0
+      }}
+    >
+      {cardContent}
+    </div>
+  );
+};

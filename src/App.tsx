@@ -11,7 +11,6 @@ import {
   CommandPalette,
   KeyboardShortcutsModal,
   StudioErrorBoundary,
-  AppLoadingScreen,
   SetupWizard,
   UpdateModal,
 } from './components';
@@ -44,6 +43,7 @@ const AppContent: React.FC = () => {
     }
     return 'overview';
   });
+
   const [isSettingsOpen, setIsSettingsOpen] = useState(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -53,13 +53,6 @@ const AppContent: React.FC = () => {
   });
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
-  const [isAppBooting, setIsAppBooting] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      return params.get('noboot') !== 'true';
-    }
-    return true;
-  });
   const [isSetupWizardOpen, setIsSetupWizardOpen] = useState(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -298,7 +291,6 @@ const AppContent: React.FC = () => {
             window.history.replaceState({}, '', url.toString());
           }
         }}
-        onReplayBootLoader={() => setIsAppBooting(true)}
         onOpenSetupWizard={() => setIsSetupWizardOpen(true)}
       />
       <CommandPalette
@@ -320,7 +312,7 @@ const AppContent: React.FC = () => {
       <UpdateModal />
 
       {/* In-App First-Run Setup Wizard (Blueprint 05) */}
-      {isSetupWizardOpen && !isAppBooting && (
+      {isSetupWizardOpen && (
         <SetupWizard
           onDone={() => {
             setIsSetupWizardOpen(false);
@@ -329,15 +321,6 @@ const AppContent: React.FC = () => {
               url.searchParams.delete('setup');
               window.history.replaceState({}, '', url.toString());
             }
-          }}
-        />
-      )}
-
-      {/* Studio Initial Boot Loading Screen */}
-      {isAppBooting && (
-        <AppLoadingScreen
-          onComplete={() => {
-            setIsAppBooting(false);
           }}
         />
       )}

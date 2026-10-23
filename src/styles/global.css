@@ -413,3 +413,38 @@ button {
   animation: actionTargetGlow 0.8s ease-in-out infinite !important;
 }
 
+/* =========================================================================
+   Adobe Standalone Splash Window Transparent Base & Specular Shimmer
+   ========================================================================= */
+html.splash-mode,
+body.splash-mode,
+.splash-mode,
+.splash-mode #root {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+body.splash-mode::before,
+body.splash-mode::after,
+.splash-mode::before,
+.splash-mode::after {
+  display: none !important;
+  content: none !important;
+}
+
+@keyframes shimmerSweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}
+
