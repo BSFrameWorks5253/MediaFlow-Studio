@@ -359,7 +359,7 @@ except Exception as e:
         if (fileLower === pFileLower || fileNorm === pFileNorm) {
           matchedAbbrs.add(m.abbreviation);
           matchedNames.add(m.eventName);
-          break; // Strict match found
+          continue; // Allow aliases (e.g. TNQ and TQN) sharing the same placard
         }
 
         // Exact placard number prefix match (e.g. file starts with __01 and placard is __01)
@@ -368,7 +368,7 @@ except Exception as e:
         if (pNumMatch && fNumMatch && pNumMatch[1] === fNumMatch[1]) {
           matchedAbbrs.add(m.abbreviation);
           matchedNames.add(m.eventName);
-          break; // Strict match found
+          continue;
         }
       }
 
@@ -506,17 +506,51 @@ except Exception as e:
       // Find matching images for this abbreviation
       const candidateImages = imgByAbbr.get(targetAbbr) || [];
 
+      // Select STRICTLY ONE best matching placard image for this folder (prevent duplicate images)
+      let bestImage: (typeof availableImages)[0] | undefined;
+
+      if (candidateImages.length === 1) {
+        bestImage = candidateImages[0];
+      } else if (candidateImages.length > 1) {
+        if (expectedPlacardFile) {
+          const expLower = expectedPlacardFile.toLowerCase();
+          const expNorm = normalizePlacardName(expectedPlacardFile);
+
+          // 1. Exact filename match
+          bestImage = candidateImages.find((img) => img.fileName.toLowerCase() === expLower);
+          // 2. Normalized filename match
+          if (!bestImage) {
+            bestImage = candidateImages.find((img) => normalizePlacardName(img.fileName) === expNorm);
+          }
+          // 3. Exact placard number prefix match (__01, __09, etc.)
+          if (!bestImage) {
+            const expNum = expectedPlacardFile.match(/^__?(\d+)/);
+            if (expNum) {
+              bestImage = candidateImages.find((img) => {
+                const imgNum = img.fileName.match(/^__?(\d+)/);
+                return imgNum && imgNum[1] === expNum[1];
+              });
+            }
+          }
+        }
+
+        // Fallback: pick the first candidate
+        if (!bestImage) {
+          bestImage = candidateImages[0];
+        }
+      }
+
       const folderMatchedImages: FolderEventMatch['matchedImages'] = [];
 
-      for (const img of candidateImages) {
-        const targetDestFile = path.join(folderPath, img.fileName);
+      if (bestImage) {
+        const targetDestFile = path.join(folderPath, bestImage.fileName);
         const alreadyExists = fs.existsSync(targetDestFile);
         if (!alreadyExists) {
           totalPlannedCopies++;
         }
         folderMatchedImages.push({
-          fileName: img.fileName,
-          filePath: img.filePath,
+          fileName: bestImage.fileName,
+          filePath: bestImage.filePath,
           alreadyExists,
         });
       }
@@ -569,6 +603,37 @@ except Exception as e:
         opIndex++;
         const destFile = path.join(folder.folderPath, img.fileName);
 
+        // Clean up duplicate inner subfolder copies created by legacy versions
+        try {
+          const subEntries = await fs.promises.readdir(folder.folderPath, { withFileTypes: true });
+          for (const sub of subEntries) {
+            if (sub.isDirectory() && !sub.name.startsWith('.')) {
+              const innerDest = path.join(folder.folderPath, sub.name, img.fileName);
+              if (fs.existsSync(innerDest)) {
+                await fs.promises.unlink(innerDest).catch(() => {});
+              }
+            }
+          }
+        } catch {}
+
+        // Clean up any conflicting duplicate placard variant in the same folder (e.g. '__09 Aqiqa' vs '__09 Aqeeqa')
+        try {
+          const imgNumMatch = img.fileName.match(/^__?(\d+)/);
+          if (imgNumMatch) {
+            const prefix = imgNumMatch[1];
+            const existingFiles = await fs.promises.readdir(folder.folderPath);
+            for (const ef of existingFiles) {
+              if (ef.toLowerCase() !== img.fileName.toLowerCase()) {
+                const efNumMatch = ef.match(/^__?(\d+)/);
+                if (efNumMatch && efNumMatch[1] === prefix && ef.toLowerCase().includes('tasaweer')) {
+                  const dupPath = path.join(folder.folderPath, ef);
+                  await fs.promises.unlink(dupPath).catch(() => {});
+                }
+              }
+            }
+          }
+        } catch {}
+
         if (fs.existsSync(destFile)) {
           skippedExisting++;
           continue;
@@ -577,19 +642,6 @@ except Exception as e:
         try {
           await fs.promises.copyFile(img.filePath, destFile);
           totalImagesCopied++;
-
-          // Also copy into inner person name subfolder if present (e.g. 1448-03-13 _01M-01-TNQ-50458093/Person Name/)
-          try {
-            const subEntries = await fs.promises.readdir(folder.folderPath, { withFileTypes: true });
-            for (const sub of subEntries) {
-              if (sub.isDirectory() && !sub.name.startsWith('.')) {
-                const innerDest = path.join(folder.folderPath, sub.name, img.fileName);
-                if (!fs.existsSync(innerDest)) {
-                  await fs.promises.copyFile(img.filePath, innerDest);
-                }
-              }
-            }
-          } catch {}
 
           if (onProgress) {
             onProgress(opIndex, totalOps, `Copied ${img.fileName} -> ${folder.folderName}`);
