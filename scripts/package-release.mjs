@@ -265,30 +265,17 @@ if (uniqueAnythingDirs.length > 0) {
   console.log(`ℹ️ Anything directory not found in candidate paths (skipping auto-sync).`);
 }
 
-// 8. Automated Git Tagging & Push for GitHub Releases
-if (args.includes('--publish-github') || args.includes('--push-tag')) {
-  console.log('\n--- Step 5: Publishing Release Tag to GitHub ---');
-  const tagName = `v${targetVersion}`;
+// 8. Automated GitHub Release Publishing & Git Tagging
+const shouldPublishGitHub = !args.includes('--no-github');
+if (shouldPublishGitHub) {
+  console.log('\n--- Step 5: Publishing Release & Setup EXE to GitHub ---');
   try {
-    console.log(`Staging release changes...`);
-    execSync('git add -A', { stdio: 'inherit', cwd: ROOT_DIR });
-    const status = execSync('git status --porcelain', { encoding: 'utf8', cwd: ROOT_DIR }).trim();
-    if (status) {
-      execSync(`git commit -m "chore(release): ${tagName}"`, { stdio: 'inherit', cwd: ROOT_DIR });
-      console.log(`✓ Committed release changes.`);
-    }
-
-    execSync(`git tag -a ${tagName} -m "Release ${tagName}" -f`, { stdio: 'inherit', cwd: ROOT_DIR });
-    console.log(`✓ Created git release tag ${tagName}`);
-
-    console.log(`Pushing commit & tag to GitHub origin...`);
-    execSync('git push origin main', { stdio: 'inherit', cwd: ROOT_DIR });
-    execSync(`git push origin ${tagName} --force`, { stdio: 'inherit', cwd: ROOT_DIR });
-    console.log(`🚀 Successfully pushed ${tagName} to GitHub!`);
-    console.log(`   GitHub Actions is now building and publishing the release at:`);
-    console.log(`   ➜ https://github.com/BSFrameWorks5253/MediaFlow-Studio/releases`);
+    execSync(`node "${path.join(__dirname, 'publish-to-github.mjs')}" ${targetVersion}`, {
+      stdio: 'inherit',
+      cwd: ROOT_DIR,
+    });
   } catch (err) {
-    console.error('✗ Failed pushing git release tag to GitHub:', err.message);
+    console.warn('⚠️ GitHub release publish notice:', err.message);
   }
 }
 

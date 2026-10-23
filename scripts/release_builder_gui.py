@@ -499,7 +499,10 @@ class MediaFlowBuilderApp(ctk.CTk):
             self.log(f"  ✓ Tag {tag} created locally.\n")
 
             self.log("[4/4] Pushing commits & release tag to GitHub origin...\n")
-            subprocess.run(["git", "push", "origin", "main"], cwd=str(BASE_DIR), check=True)
+            try:
+                subprocess.run(["git", "push", "origin", "HEAD:main"], cwd=str(BASE_DIR), check=True)
+            except Exception:
+                subprocess.run(["git", "push", "origin", "HEAD:master"], cwd=str(BASE_DIR), check=True)
             subprocess.run(["git", "push", "origin", tag, "--force"], cwd=str(BASE_DIR), check=True)
 
             self.log(f"\n🎉 SUCCESS! Pushed {tag} to GitHub!\n")
@@ -519,8 +522,8 @@ class MediaFlowBuilderApp(ctk.CTk):
 
             script_path = BASE_DIR / "scripts" / "package-release.mjs"
             cmd = ["node", str(script_path), version]
-            if self.cb_github.get():
-                cmd.append("--publish-github")
+            if not self.cb_github.get():
+                cmd.append("--no-github")
 
             proc = subprocess.Popen(
                 cmd,

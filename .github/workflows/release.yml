@@ -69,5 +69,7 @@ jobs:
           files: |
             dist-release/*.exe
             dist-release/*.zip
+            dist-release/*.yml
+            dist-release/*.blockmap
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
