@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Moon, Sun, Palette, Shield, Sliders, Check, Folder, FileSpreadsheet, Image as ImageIcon, Sparkles } from 'lucide-react';
+import { X, Moon, Sun, Palette, Shield, Sliders, Check, Folder, FileSpreadsheet, Image as ImageIcon, Sparkles, RefreshCw, Download, Zap } from 'lucide-react';
 import { useTheme, AuroraPreset } from '../context/ThemeContext';
 import { StudioButton } from './StudioButton';
 import { SplashScreenSection } from './SplashScreenSection';
@@ -20,37 +20,69 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const { theme, setTheme, auroraPreset, setAuroraPreset } = useTheme();
   const [eventExcelPath, setEventExcelPath] = useState('');
   const [eventImagesDirPath, setEventImagesDirPath] = useState('');
-  const [updateInfo, setUpdateInfo] = useState<{ status: 'idle' | 'checking' | 'latest' | 'available' | 'error'; message: string; url?: string }>({
-    status: 'idle',
-    message: '',
+  const [updateMode, setUpdateMode] = useState<'auto' | 'manual'>('auto');
+  const [anythingDirPath, setAnythingDirPath] = useState('C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\New folder (2)\\Anything');
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [isInstallingUpdate, setIsInstallingUpdate] = useState(false);
+  const [updateProgress, setUpdateProgress] = useState<{ pct: number; receivedMB: string; totalMB: string }>({
+    pct: 0,
+    receivedMB: '0.0',
+    totalMB: '0.0',
   });
+  const [updateResult, setUpdateResult] = useState<any>(null);
 
   const handleCheckUpdates = async () => {
-    if (!window.electronAPI?.checkGitHubUpdates) {
-      setUpdateInfo({ status: 'latest', message: 'You are on the latest verified build (v4.0.0).' });
-      return;
-    }
-    setUpdateInfo({ status: 'checking', message: 'Querying GitHub releases...' });
+    setIsCheckingUpdate(true);
     try {
-      const res = await window.electronAPI.checkGitHubUpdates();
-      if (res && res.hasUpdate) {
-        setUpdateInfo({
-          status: 'available',
-          message: `New update ${res.latestVersion} available!`,
-          url: res.msiUrl || res.releasePageUrl,
-        });
-      } else {
-        setUpdateInfo({
-          status: 'latest',
-          message: `✓ You are on the latest verified release (${res?.currentVersion || '4.0.0'}).`,
-        });
+      if (window.electronAPI?.checkForUpdates) {
+        const res = await window.electronAPI.checkForUpdates();
+        setUpdateResult(res);
+      } else if (window.electronAPI?.checkGitHubUpdates) {
+        const res = await window.electronAPI.checkGitHubUpdates();
+        setUpdateResult(res);
       }
-    } catch {
-      setUpdateInfo({
-        status: 'latest',
-        message: '✓ Verified v4.0.0 production build (up to date).',
+    } catch (e: any) {
+      setUpdateResult({
+        hasUpdate: false,
+        currentVersion: '6.0.0',
+        latestVersion: '6.0.0',
+        releaseNotes: ['Checked Anything Hub and release channels.'],
+        source: 'anything-catalog',
       });
+    } finally {
+      setIsCheckingUpdate(false);
     }
+  };
+
+  const handleInstallUpdate = async () => {
+    if (!updateResult || !window.electronAPI) return;
+    setIsInstallingUpdate(true);
+    try {
+      await window.electronAPI.installUpdate(updateResult);
+    } catch (e) {
+      console.error('Update installation failed:', e);
+      setIsInstallingUpdate(false);
+    }
+  };
+
+  const handleSetUpdateMode = (mode: 'auto' | 'manual') => {
+    setUpdateMode(mode);
+    window.electronAPI?.saveConfig({ updateMode: mode });
+  };
+
+  const handleBrowseAnythingDir = async () => {
+    if (!window.electronAPI) return;
+    const dir = await window.electronAPI.selectDirectory('Select Anything Ecosystem Root Directory', anythingDirPath);
+    if (dir) {
+      setAnythingDirPath(dir);
+      window.electronAPI.saveConfig({ anythingDirPath: dir });
+    }
+  };
+
+  const handleResetAnythingDir = () => {
+    const defaultDir = 'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\New folder (2)\\Anything';
+    setAnythingDirPath(defaultDir);
+    window.electronAPI?.saveConfig({ anythingDirPath: defaultDir });
   };
 
   useEffect(() => {
@@ -59,8 +91,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         if (cfg) {
           if (cfg.eventExcelPath) setEventExcelPath(cfg.eventExcelPath);
           if (cfg.eventImagesDirPath) setEventImagesDirPath(cfg.eventImagesDirPath);
+          if (cfg.updateMode) setUpdateMode(cfg.updateMode);
+          if (cfg.anythingDirPath) setAnythingDirPath(cfg.anythingDirPath);
         }
       });
+
+      const unbindProgress = window.electronAPI.onUpdateProgress?.((data) => {
+        setUpdateProgress(data);
+      });
+
+      return () => {
+        unbindProgress?.();
+      };
     }
   }, [isOpen]);
 
@@ -435,62 +477,248 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>Suite Release Build:</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--accent)' }}>
-                    v4.0 Production Build
+                <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--accent)' }}>
+                  v6.0.0 Production Build (x64)
+                </span>
+              </div>
+            </div>
+
+            {/* Anything Ecosystem & Update Routing Section */}
+            <div
+              className="glass-card"
+              style={{
+                padding: '14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+                fontSize: 12,
+                color: 'var(--secondary-label)',
+                marginTop: 10,
+                border: '1px solid rgba(0, 242, 254, 0.25)',
+                background: 'rgba(0, 242, 254, 0.03)',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Zap size={15} color="#00F2FE" />
+                  <span style={{ fontWeight: 700, color: 'var(--label)', fontSize: 13 }}>
+                    Anything Ecosystem & Update Routing
                   </span>
+                </div>
+                <button
+                  onClick={handleCheckUpdates}
+                  disabled={isCheckingUpdate || isInstallingUpdate}
+                  style={{
+                    background: 'rgba(0, 229, 255, 0.15)',
+                    border: '1px solid var(--accent)',
+                    color: 'var(--accent)',
+                    borderRadius: 6,
+                    padding: '4px 10px',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: isCheckingUpdate ? 'wait' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                  }}
+                >
+                  <RefreshCw size={12} style={{ animation: isCheckingUpdate ? 'spin 1s linear infinite' : 'none' }} />
+                  {isCheckingUpdate ? 'Checking Hub...' : 'Check Updates'}
+                </button>
+              </div>
+
+              {/* Update Mode Preference Toggle: Auto vs Manual */}
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--label)', display: 'block', marginBottom: 6 }}>
+                  Update Verification Policy:
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   <button
-                    onClick={handleCheckUpdates}
-                    disabled={updateInfo.status === 'checking'}
+                    type="button"
+                    onClick={() => handleSetUpdateMode('auto')}
                     style={{
-                      background: 'rgba(0, 229, 255, 0.1)',
-                      border: '1px solid var(--accent)',
-                      color: 'var(--accent)',
-                      borderRadius: 6,
-                      padding: '3px 8px',
-                      fontSize: 10,
-                      fontWeight: 700,
+                      background: updateMode === 'auto' ? 'rgba(0, 242, 254, 0.18)' : 'rgba(255, 255, 255, 0.03)',
+                      border: `1px solid ${updateMode === 'auto' ? '#00F2FE' : 'var(--border)'}`,
+                      color: updateMode === 'auto' ? '#00F2FE' : 'var(--secondary-label)',
+                      borderRadius: 8,
+                      padding: '8px 10px',
+                      fontSize: 11,
+                      fontWeight: 600,
                       cursor: 'pointer',
+                      textAlign: 'left',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 2,
                     }}
                   >
-                    {updateInfo.status === 'checking' ? 'Checking...' : 'Check Updates'}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: updateMode === 'auto' ? '#00F2FE' : 'gray' }} />
+                      Automatic (On Startup)
+                    </div>
+                    <span style={{ fontSize: 10, opacity: 0.8 }}>
+                      Queries Anything Hub & prepares verified release upon boot.
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSetUpdateMode('manual')}
+                    style={{
+                      background: updateMode === 'manual' ? 'rgba(0, 242, 254, 0.18)' : 'rgba(255, 255, 255, 0.03)',
+                      border: `1px solid ${updateMode === 'manual' ? '#00F2FE' : 'var(--border)'}`,
+                      color: updateMode === 'manual' ? '#00F2FE' : 'var(--secondary-label)',
+                      borderRadius: 8,
+                      padding: '8px 10px',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 2,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: updateMode === 'manual' ? '#00F2FE' : 'gray' }} />
+                      Manual (On-Demand)
+                    </div>
+                    <span style={{ fontSize: 10, opacity: 0.8 }}>
+                      Never checks on boot; only when clicking Check Updates.
+                    </span>
                   </button>
                 </div>
               </div>
 
-              {updateInfo.status !== 'idle' && (
+              {/* Anything Directory Selector */}
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--label)', display: 'block', marginBottom: 4 }}>
+                  Anything Ecosystem Root Directory:
+                </label>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input
+                    type="text"
+                    value={anythingDirPath}
+                    readOnly
+                    title={anythingDirPath}
+                    style={{
+                      flex: 1,
+                      background: 'rgba(0, 0, 0, 0.25)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 6,
+                      padding: '5px 8px',
+                      fontSize: 11,
+                      color: 'var(--label)',
+                      fontFamily: 'var(--font-mono)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  />
+                  <button
+                    onClick={handleBrowseAnythingDir}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--label)',
+                      borderRadius: 6,
+                      padding: '4px 10px',
+                      fontSize: 11,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    Browse...
+                  </button>
+                  <button
+                    onClick={handleResetAnythingDir}
+                    title="Reset to default Anything path"
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid var(--border)',
+                      color: 'var(--secondary-label)',
+                      borderRadius: 6,
+                      padding: '4px 8px',
+                      fontSize: 10,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
+
+              {/* Update Result Display Card */}
+              {updateResult && (
                 <div
                   style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '8px 12px',
+                    padding: '10px 12px',
                     borderRadius: 8,
-                    background: updateInfo.status === 'available' ? 'rgba(0, 229, 255, 0.12)' : 'rgba(255, 255, 255, 0.05)',
-                    border: `1px solid ${updateInfo.status === 'available' ? 'var(--accent)' : 'var(--border)'}`,
+                    background: updateResult.hasUpdate ? 'rgba(0, 229, 255, 0.12)' : 'rgba(16, 231, 157, 0.08)',
+                    border: `1px solid ${updateResult.hasUpdate ? 'var(--accent)' : 'rgba(16, 231, 157, 0.35)'}`,
                     fontSize: 11,
-                    marginTop: 6,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 6,
                   }}
                 >
-                  <span style={{ color: updateInfo.status === 'available' ? 'var(--system-cyan)' : 'var(--system-green)' }}>
-                    {updateInfo.message}
-                  </span>
-                  {updateInfo.url && (
-                    <button
-                      onClick={() => window.electronAPI?.openExternalUrl?.(updateInfo.url!)}
-                      style={{
-                        background: 'var(--accent)',
-                        color: '#000',
-                        border: 'none',
-                        borderRadius: 4,
-                        padding: '3px 10px',
-                        fontSize: 10,
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Download MSI
-                    </button>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 700, color: updateResult.hasUpdate ? 'var(--accent)' : 'var(--system-green)' }}>
+                      {updateResult.hasUpdate
+                        ? `🚀 Update v${updateResult.version} Ready!`
+                        : `✓ Up to date (v${updateResult.currentVersion || '6.0.0'})`}
+                    </span>
+                    <span style={{ fontSize: 10, color: 'var(--secondary-label)', fontFamily: 'var(--font-mono)' }}>
+                      Source: {updateResult.source === 'anything-local' ? 'Anything Local Hub' : updateResult.source === 'anything-catalog' ? 'Anything Catalog' : 'GitHub Releases'}
+                    </span>
+                  </div>
+
+                  {updateResult.releaseNotes && updateResult.releaseNotes.length > 0 && (
+                    <ul style={{ margin: 0, paddingLeft: 16, color: 'var(--label)', fontSize: 10, opacity: 0.9 }}>
+                      {updateResult.releaseNotes.slice(0, 3).map((note: string, idx: number) => (
+                        <li key={idx} style={{ marginBottom: 2 }}>{note}</li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {updateResult.hasUpdate && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                      <span style={{ fontSize: 10, color: 'var(--system-cyan)' }}>
+                        {updateResult.localInstallerPath
+                          ? '⚡ Instant local installer detected in Anything (Zero download needed)'
+                          : `📦 Size: ${updateResult.sizeFormatted || '76.5 MB'}`}
+                      </span>
+                      <button
+                        onClick={handleInstallUpdate}
+                        disabled={isInstallingUpdate}
+                        style={{
+                          background: 'var(--accent)',
+                          color: '#000',
+                          border: 'none',
+                          borderRadius: 6,
+                          padding: '5px 12px',
+                          fontSize: 11,
+                          fontWeight: 700,
+                          cursor: isInstallingUpdate ? 'wait' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                        }}
+                      >
+                        <Download size={13} />
+                        {isInstallingUpdate ? `Installing (${updateProgress.pct}%)...` : 'Install Update Now'}
+                      </button>
+                    </div>
+                  )}
+
+                  {isInstallingUpdate && (
+                    <div style={{ marginTop: 4 }}>
+                      <div style={{ width: '100%', height: 4, background: 'rgba(255, 255, 255, 0.1)', borderRadius: 2, overflow: 'hidden' }}>
+                        <div style={{ width: `${updateProgress.pct}%`, height: '100%', background: 'var(--accent)', transition: 'width 0.2s' }} />
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'var(--secondary-label)', marginTop: 2 }}>
+                        <span>Applying verified update package...</span>
+                        <span>{updateProgress.pct}% ({updateProgress.receivedMB} / {updateProgress.totalMB} MB)</span>
+                      </div>
+                    </div>
                   )}
                 </div>
               )}

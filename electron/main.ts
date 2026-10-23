@@ -157,6 +157,8 @@ let appConfig = {
   autoExportReport: true,
   eventExcelPath: '',
   eventImagesDirPath: '',
+  updateMode: 'auto' as 'auto' | 'manual',
+  anythingDirPath: 'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\New folder (2)\\Anything',
 };
 
 try {
@@ -164,6 +166,11 @@ try {
     appConfig = { ...appConfig, ...JSON.parse(fs.readFileSync(configPath, 'utf-8')) };
   }
 } catch {}
+
+if (!appConfig.updateMode) appConfig.updateMode = 'auto';
+if (!appConfig.anythingDirPath) {
+  appConfig.anythingDirPath = 'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\New folder (2)\\Anything';
+}
 
 function saveAppConfig(newConfig: any) {
   try {
@@ -356,11 +363,15 @@ function createWindow() {
       console.log("[INSPECT] document title:", document.title);
     `).catch(err => console.error('[INSPECT_ERR]', err));
 
-    // Non-blocking auto-update check 6 seconds after boot (Blueprint 01)
+    // Non-blocking auto-update check 6 seconds after boot (controlled by updateMode)
     setTimeout(() => {
       if (mainWindow && !mainWindow.isDestroyed()) {
-        console.log('[AUTO_UPDATER] Running silent background release check...');
-        WorkstationAutoUpdater.checkForUpdates(mainWindow).catch((e) =>
+        if (appConfig.updateMode === 'manual') {
+          console.log('[AUTO_UPDATER] Update mode is configured as MANUAL. Skipping background startup check.');
+          return;
+        }
+        console.log('[AUTO_UPDATER] Auto update mode active. Querying Anything Hub and release endpoints...');
+        WorkstationAutoUpdater.checkForUpdates(mainWindow, appConfig.anythingDirPath).catch((e) =>
           console.warn('[AUTO_UPDATER] Background check error:', e)
         );
       }
@@ -853,63 +864,21 @@ function setupIpcHandlers() {
     });
   });
 
-  // 11. GitHub Release & MSI Update Checker
+  // 11. Ecosystem Update Checker (Anything Hub & GitHub)
   ipcMain.handle('updater:check-github', async () => {
     try {
-      const https = await import('https');
-      return await new Promise((resolve) => {
-        const options = {
-          hostname: 'api.github.com',
-          path: '/repos/BSFrameWorks5253/MediaFlow-Studio/releases/latest',
-          method: 'GET',
-          headers: {
-            'User-Agent': 'MediaFlow-Studio-Desktop-v4.1',
-            'Accept': 'application/vnd.github.v3+json',
-          },
-        };
-        const req = https.request(options, (res) => {
-          let body = '';
-          res.on('data', (chunk) => (body += chunk));
-          res.on('end', () => {
-            if (res.statusCode === 200) {
-              try {
-                const data = JSON.parse(body);
-                const tag = data.tag_name || 'v4.0.0';
-                const msiAsset = data.assets?.find((a: any) => a.name.toLowerCase().endsWith('.msi'));
-                const exeAsset = data.assets?.find((a: any) => a.name.toLowerCase().endsWith('.exe'));
-                resolve({
-                  success: true,
-                  latestVersion: tag,
-                  currentVersion: '4.0.0',
-                  hasUpdate: tag.replace('v', '') > '4.0.0',
-                  msiUrl: msiAsset ? msiAsset.browser_download_url : data.html_url,
-                  exeUrl: exeAsset ? exeAsset.browser_download_url : data.html_url,
-                  releasePageUrl: data.html_url,
-                  notes: data.body || '',
-                  publishedAt: data.published_at,
-                });
-              } catch (e: any) {
-                resolve({ success: false, error: e.message, currentVersion: '4.0.0' });
-              }
-            } else {
-              resolve({
-                success: false,
-                status: res.statusCode,
-                currentVersion: '4.0.0',
-                message: 'You are on the latest verified build (v4.0.0).',
-              });
-            }
-          });
-        });
-        req.on('error', (err) => {
-          console.error('[GitHub Update Check Error]:', err);
-          resolve({ success: false, error: 'Unable to check for updates. Please check your network connection.', currentVersion: '4.0.0' });
-        });
-        req.end();
-      });
+      const res = await WorkstationAutoUpdater.checkForUpdates(mainWindow, appConfig.anythingDirPath);
+      return res || {
+        success: true,
+        currentVersion: app.getVersion() || '6.0.0',
+        latestVersion: app.getVersion() || '6.0.0',
+        hasUpdate: false,
+        source: 'anything-catalog',
+        notes: 'Up to date.',
+      };
     } catch (e: any) {
-      console.error('[GitHub Update Check Exception]:', e);
-      return { success: false, error: 'Unable to check for updates at this time.', currentVersion: '4.0.0' };
+      console.error('[Update Check Exception]:', e);
+      return { success: false, error: 'Unable to check for updates at this time.', currentVersion: app.getVersion() || '6.0.0' };
     }
   });
 
@@ -920,9 +889,9 @@ function setupIpcHandlers() {
     return true;
   });
 
-  // Universal Auto-Update Handlers (Blueprint 01)
+  // Universal Auto-Update Handlers (Anything Ecosystem & GitHub)
   ipcMain.handle('updater:check-update', async () => {
-    return await WorkstationAutoUpdater.checkForUpdates(mainWindow);
+    return await WorkstationAutoUpdater.checkForUpdates(mainWindow, appConfig.anythingDirPath);
   });
 
   ipcMain.handle('updater:install-update', async (_, updateInfo: UpdateInfo) => {

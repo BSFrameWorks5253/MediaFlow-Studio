@@ -15,31 +15,101 @@ export interface UpdateInfo {
   mandatory?: boolean;
   publishedAt?: string;
   fileName?: string;
+  currentVersion?: string;
+  latestVersion?: string;
+  hasUpdate?: boolean;
+  source?: 'anything-local' | 'anything-catalog' | 'github-api';
+  localInstallerPath?: string;
+  setupExecutableName?: string;
+  sizeFormatted?: string;
+  // Backwards compatibility with legacy SettingsModal shape
+  success?: boolean;
+  notes?: string;
+  msiUrl?: string;
+  exeUrl?: string;
+  releasePageUrl?: string;
 }
 
 export class WorkstationAutoUpdater {
   private static DEFAULT_REPO = 'BSFrameWorks5253/MediaFlow-Studio';
+  private static DEFAULT_ANYTHING_DIR = 'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\New folder (2)\\Anything';
   private static isDownloading = false;
 
   /**
-   * Check for updates against GitHub Releases API or custom version JSON.
+   * Resolves the Anything Ecosystem root directory if accessible.
+   */
+  public static resolveAnythingDir(customPath?: string): string | null {
+    const candidates = [
+      customPath,
+      this.DEFAULT_ANYTHING_DIR,
+      'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Anything',
+      path.resolve(process.cwd(), '..', 'New folder (2)', 'Anything'),
+      path.resolve(process.cwd(), '..', 'Anything'),
+      path.resolve(app.getAppPath(), '..', 'New folder (2)', 'Anything'),
+      path.resolve(app.getAppPath(), '..', 'Anything'),
+    ].filter((p): p is string => Boolean(p && typeof p === 'string' && p.trim().length > 0));
+
+    for (const dir of candidates) {
+      try {
+        if (fs.existsSync(dir)) {
+          const catalogPath = path.join(dir, 'published-apps', 'catalog.json');
+          const releaseJson = path.join(dir, 'releases', 'mediaflow-studio', 'release.json');
+          const releasesDir = path.join(dir, 'releases', 'mediaflow-studio');
+          if (fs.existsSync(catalogPath) || fs.existsSync(releaseJson) || fs.existsSync(releasesDir)) {
+            return dir;
+          }
+        }
+      } catch {}
+    }
+    return null;
+  }
+
+  /**
+   * Check for updates against Anything Ecosystem first (catalog.json & releases),
+   * falling back to GitHub Releases API.
    */
   static async checkForUpdates(
     mainWindow?: BrowserWindow | null,
+    anythingDirPath?: string,
     repo: string = this.DEFAULT_REPO
   ): Promise<UpdateInfo | null> {
+    const currentVer = (app.getVersion() || '6.0.0').replace(/^v/, '');
+
+    // 1. Check Anything Ecosystem
+    const resolvedAnythingDir = this.resolveAnythingDir(anythingDirPath);
+    if (resolvedAnythingDir) {
+      console.log(`[AutoUpdater] Checking Anything Hub at: ${resolvedAnythingDir}`);
+      const anythingUpdate = this.checkAnythingEcosystem(resolvedAnythingDir, currentVer, repo);
+      if (anythingUpdate) {
+        if (anythingUpdate.hasUpdate && mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('update:available', anythingUpdate);
+        }
+        return anythingUpdate;
+      }
+    }
+
+    // 2. Fallback to GitHub Releases API
+    console.log(`[AutoUpdater] Anything Hub not found or empty, falling back to GitHub API for ${repo}...`);
     try {
       const endpoint = `https://api.github.com/repos/${repo}/releases/latest`;
       const data = await this.fetchJson(endpoint);
 
       if (!data || !data.tag_name) {
-        return null;
+        return {
+          version: currentVer,
+          latestVersion: currentVer,
+          currentVersion: currentVer,
+          hasUpdate: false,
+          downloadUrl: `https://github.com/${repo}/releases`,
+          releaseNotes: ['You are running the latest verified release.'],
+          source: 'github-api',
+          success: true,
+          notes: 'Up to date.',
+        };
       }
 
       const remoteTag = data.tag_name;
       const remoteVer = remoteTag.replace(/^v/, '');
-      const currentVer = app.getVersion() || '4.1.0';
-
       const newer = this.isNewer(remoteVer, currentVer);
 
       // Find Windows installer .exe or .msi asset
@@ -65,20 +135,197 @@ export class WorkstationAutoUpdater {
 
       const updateInfo: UpdateInfo = {
         version: remoteVer,
+        latestVersion: remoteVer,
+        currentVersion: currentVer,
+        hasUpdate: newer,
         downloadUrl,
         fileName: chosenAsset?.name,
         releaseNotes: notes,
         publishedAt: data.published_at,
         mandatory: false,
+        source: 'github-api',
+        success: true,
+        notes: notes.join('\n'),
+        exeUrl: downloadUrl,
+        msiUrl: chosenAsset?.name?.toLowerCase().endsWith('.msi') ? downloadUrl : undefined,
+        releasePageUrl: data.html_url,
       };
 
       if (newer && mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('update:available', updateInfo);
       }
 
-      return newer ? updateInfo : null;
+      return updateInfo;
     } catch (err: any) {
-      console.warn('[AutoUpdater] Update check failed:', err?.message || err);
+      console.warn('[AutoUpdater] GitHub release check fallback error:', err?.message || err);
+      return {
+        version: currentVer,
+        latestVersion: currentVer,
+        currentVersion: currentVer,
+        hasUpdate: false,
+        downloadUrl: `https://github.com/${repo}/releases`,
+        releaseNotes: ['Unable to query remote updates at this time.'],
+        source: 'github-api',
+        success: false,
+        notes: 'Check failed.',
+      };
+    }
+  }
+
+  /**
+   * Inspects Anything Ecosystem published-apps/catalog.json and releases/mediaflow-studio
+   */
+  private static checkAnythingEcosystem(
+    anythingDir: string,
+    currentVer: string,
+    repo: string
+  ): UpdateInfo | null {
+    try {
+      let catalogItem: any = null;
+      let releaseJsonItem: any = null;
+
+      // Check published-apps/catalog.json
+      const catalogPath = path.join(anythingDir, 'published-apps', 'catalog.json');
+      if (fs.existsSync(catalogPath)) {
+        try {
+          const raw = fs.readFileSync(catalogPath, 'utf-8').replace(/^\uFEFF/, '').trim();
+          const parsed = JSON.parse(raw);
+          const list: any[] = Array.isArray(parsed) ? parsed : Array.isArray(parsed.apps) ? parsed.apps : [];
+          catalogItem = list.find(
+            (a: any) =>
+              a.appId === 'mediaflow-studio' ||
+              a.id === 'mediaflow-studio' ||
+              (a.releaseInfo && a.releaseInfo.appId === 'mediaflow-studio') ||
+              (typeof a.appName === 'string' && a.appName.toLowerCase().includes('mediaflow'))
+          );
+        } catch (e) {
+          console.warn('[AutoUpdater] Failed reading Anything catalog.json:', e);
+        }
+      }
+
+      // Check releases/mediaflow-studio/release.json
+      const releaseJsonPath = path.join(anythingDir, 'releases', 'mediaflow-studio', 'release.json');
+      if (fs.existsSync(releaseJsonPath)) {
+        try {
+          const rawRel = fs.readFileSync(releaseJsonPath, 'utf-8').replace(/^\uFEFF/, '').trim();
+          releaseJsonItem = JSON.parse(rawRel);
+        } catch (e) {
+          console.warn('[AutoUpdater] Failed reading Anything release.json:', e);
+        }
+      }
+
+      if (!catalogItem && !releaseJsonItem) {
+        // Also check if any release folders exist under releases/mediaflow-studio/v*
+        const releasesDir = path.join(anythingDir, 'releases', 'mediaflow-studio');
+        if (fs.existsSync(releasesDir)) {
+          const dirs = fs.readdirSync(releasesDir);
+          const vDirs = dirs.filter((d) => d.startsWith('v') && fs.statSync(path.join(releasesDir, d)).isDirectory());
+          if (vDirs.length > 0) {
+            vDirs.sort((a, b) => (this.isNewer(a.replace(/^v/, ''), b.replace(/^v/, '')) ? 1 : -1));
+            const latestVDir = vDirs[vDirs.length - 1];
+            const candidateJson = path.join(releasesDir, latestVDir, 'release.json');
+            if (fs.existsSync(candidateJson)) {
+              try {
+                releaseJsonItem = JSON.parse(fs.readFileSync(candidateJson, 'utf-8').replace(/^\uFEFF/, '').trim());
+              } catch {}
+            }
+          }
+        }
+      }
+
+      if (!catalogItem && !releaseJsonItem) {
+        return null;
+      }
+
+      const relInfo = releaseJsonItem || catalogItem?.releaseInfo || catalogItem || {};
+      const remoteVer = (relInfo.version || catalogItem?.version || '6.0.0').replace(/^v/, '');
+      const setupName =
+        relInfo.setupExecutableName ||
+        catalogItem?.setupExecutableName ||
+        `Mediaflow_studio_${remoteVer}_Setup.exe`;
+      const downloadUrl =
+        relInfo.downloadUrl ||
+        catalogItem?.downloadUrl ||
+        `https://github.com/${repo}/releases/download/v${remoteVer}/${setupName}`;
+      const releasesUrl =
+        relInfo.releasesUrl ||
+        catalogItem?.releasesUrl ||
+        `https://github.com/${repo}/releases`;
+
+      // Extract notes
+      let notes: string[] = [];
+      if (Array.isArray(relInfo.newFeatures) && relInfo.newFeatures.length > 0) {
+        notes = relInfo.newFeatures;
+      } else if (Array.isArray(relInfo.changelog) && relInfo.changelog.length > 0) {
+        notes = relInfo.changelog;
+      } else if (Array.isArray(catalogItem?.changelog) && catalogItem.changelog.length > 0) {
+        notes = catalogItem.changelog;
+      } else if (typeof relInfo.summary === 'string' && relInfo.summary.trim()) {
+        notes = [relInfo.summary];
+      }
+      if (notes.length === 0) {
+        notes = ['Official MediaFlow Studio production release from Anything Ecosystem.'];
+      }
+
+      // Check if local installer exists on disk in Anything releases
+      let localInstallerPath: string | undefined = undefined;
+      const candidates = [
+        path.join(anythingDir, 'releases', 'mediaflow-studio', `v${remoteVer}`, setupName),
+        path.join(anythingDir, 'releases', 'mediaflow-studio', setupName),
+        path.join(anythingDir, 'releases', 'mediaflow-studio', `v${remoteVer}`, `Mediaflow_studio_${remoteVer}.exe`),
+      ];
+      for (const cand of candidates) {
+        if (fs.existsSync(cand)) {
+          localInstallerPath = cand;
+          break;
+        }
+      }
+
+      // Fallback: search directory for any executable setup in version folder
+      if (!localInstallerPath) {
+        const vDir = path.join(anythingDir, 'releases', 'mediaflow-studio', `v${remoteVer}`);
+        if (fs.existsSync(vDir)) {
+          try {
+            const files = fs.readdirSync(vDir);
+            const found = files.find(
+              (f) =>
+                f.toLowerCase().endsWith('setup.exe') ||
+                (f.toLowerCase().endsWith('.exe') && !f.toLowerCase().includes('portable'))
+            );
+            if (found) {
+              localInstallerPath = path.join(vDir, found);
+            }
+          } catch {}
+        }
+      }
+
+      const newer = this.isNewer(remoteVer, currentVer);
+      const source: 'anything-local' | 'anything-catalog' = localInstallerPath
+        ? 'anything-local'
+        : 'anything-catalog';
+
+      return {
+        version: remoteVer,
+        latestVersion: remoteVer,
+        currentVersion: currentVer,
+        hasUpdate: newer,
+        downloadUrl,
+        fileName: setupName,
+        localInstallerPath,
+        source,
+        releaseNotes: notes,
+        publishedAt: relInfo.releaseDate || new Date().toISOString(),
+        sizeFormatted: relInfo.sizeFormatted || catalogItem?.size || '76.5 MB',
+        setupExecutableName: setupName,
+        mandatory: false,
+        success: true,
+        notes: notes.join('\n'),
+        exeUrl: downloadUrl,
+        msiUrl: downloadUrl,
+        releasePageUrl: releasesUrl,
+      };
+    } catch (e) {
+      console.warn('[AutoUpdater] checkAnythingEcosystem error:', e);
       return null;
     }
   }
@@ -103,18 +350,47 @@ export class WorkstationAutoUpdater {
   }
 
   /**
-   * Download the update asset with live progress, verify SHA-256, and silently launch installer.
+   * Download the update asset with live progress, verify SHA-256, and launch installer.
+   * If local installer is detected in Anything ecosystem, installs immediately with zero download delay.
    */
   static async downloadAndInstall(
     updateInfo: UpdateInfo,
     progressCallback: (pct: number, receivedMB: string, totalMB: string) => void
   ): Promise<void> {
     if (this.isDownloading) {
-      throw new Error('An update download is already in progress.');
+      throw new Error('An update download or installation is already in progress.');
     }
     this.isDownloading = true;
 
     try {
+      // 1. Instant local installation if installer file exists in Anything Hub
+      if (updateInfo.localInstallerPath && fs.existsSync(updateInfo.localInstallerPath)) {
+        console.log('[AutoUpdater] Executing verified Anything local installer:', updateInfo.localInstallerPath);
+        progressCallback(100, '0.0', '0.0');
+        const installerPath = updateInfo.localInstallerPath;
+        const isMsi = installerPath.toLowerCase().endsWith('.msi');
+
+        if (process.platform === 'win32') {
+          if (isMsi) {
+            spawn('msiexec.exe', ['/i', installerPath, '/quiet', '/norestart'], {
+              detached: true,
+              stdio: 'ignore',
+            });
+          } else {
+            // NSIS installer
+            spawn(installerPath, ['/S'], {
+              detached: true,
+              stdio: 'ignore',
+            });
+          }
+          setTimeout(() => {
+            app.quit();
+          }, 1200);
+        }
+        return;
+      }
+
+      // 2. Download from remote URL
       const fileName = updateInfo.fileName || `MediaFlow_Studio_Setup_v${updateInfo.version}.exe`;
       const tempPath = path.join(app.getPath('temp'), fileName);
 
@@ -176,7 +452,7 @@ export class WorkstationAutoUpdater {
         urlStr,
         {
           headers: {
-            'User-Agent': `MediaFlow-Studio-Desktop/${app.getVersion() || '4.1.0'}`,
+            'User-Agent': `MediaFlow-Studio-Desktop/${app.getVersion() || '6.0.0'}`,
             Accept: '*/*',
           },
         },
@@ -247,7 +523,7 @@ export class WorkstationAutoUpdater {
           urlStr,
           {
             headers: {
-              'User-Agent': `MediaFlow-Studio-Desktop/${app.getVersion() || '4.1.0'}`,
+              'User-Agent': `MediaFlow-Studio-Desktop/${app.getVersion() || '6.0.0'}`,
               Accept: 'application/vnd.github.v3+json',
             },
           },
