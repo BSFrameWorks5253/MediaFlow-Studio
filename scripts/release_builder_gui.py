@@ -128,10 +128,10 @@ class MediaFlowBuilderApp(ctk.CTk):
             except Exception:
                 icon_badge = ctk.CTkLabel(
                     header,
-                    text="Mf",
+                    text="Ms",
                     font=ctk.CTkFont(family="Inter", size=18, weight="bold"),
-                    fg_color="#00F2FE",
-                    text_color="#07090E",
+                    fg_color="#0066EE",
+                    text_color="#FFFFFF",
                     width=48,
                     height=48,
                     corner_radius=12,
@@ -140,10 +140,10 @@ class MediaFlowBuilderApp(ctk.CTk):
         else:
             icon_badge = ctk.CTkLabel(
                 header,
-                text="Mf",
+                text="Ms",
                 font=ctk.CTkFont(family="Inter", size=18, weight="bold"),
-                fg_color="#00F2FE",
-                text_color="#07090E",
+                fg_color="#0066EE",
+                text_color="#FFFFFF",
                 width=48,
                 height=48,
                 corner_radius=12,

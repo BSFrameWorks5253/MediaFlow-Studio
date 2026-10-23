@@ -13,6 +13,7 @@ import {
   getStageMeta,
 } from '../types/pipelineStages';
 import { useTheme } from '../context/ThemeContext';
+import { MediaFlowLogo } from './MediaFlowLogo';
 
 export type { PageKey };
 export { PIPELINE_NAV_ORDER, SYSTEM_NAV_ORDER };
@@ -72,21 +73,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
               width: '100%',
               height: '100%',
               borderRadius: 8.5,
-              backgroundColor: 'var(--system-bg)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               overflow: 'hidden',
             }}
           >
-            <img
-              src="./assets/icon.png"
-              alt="MediaFlow"
-              style={{ width: 28, height: 28, borderRadius: 8, objectFit: 'cover' }}
-              onError={(e) => {
-                (e.target as HTMLElement).style.display = 'none';
-              }}
-            />
+            <MediaFlowLogo size={28} />
           </div>
         </div>
 

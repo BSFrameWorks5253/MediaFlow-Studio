@@ -7,8 +7,8 @@
   "artistName": "Anything Creation",
   "artworkTitle": "Prismatic Flow & Refraction",
   "durationMs": 2800,
-  "logoText": "Mf",
-  "badgeGradient": "from-cyan-500 via-blue-600 to-indigo-700",
+  "logoText": "Ms",
+  "badgeGradient": "from-blue-600 to-indigo-700",
   "steps": [
     "Initializing Direct3D media acceleration engine...",
     "Loading RAW ingestion pipelines & camera profiles...",
