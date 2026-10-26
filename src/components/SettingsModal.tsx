@@ -478,7 +478,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>Suite Release Build:</span>
                 <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--accent)' }}>
-                  v26.10.26 Production Build (x64)
+                  v26.10.27 Production Build (x64)
                 </span>
               </div>
             </div>

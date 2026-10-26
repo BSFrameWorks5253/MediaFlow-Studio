@@ -1,6 +1,6 @@
 {
   "name": "mediaflow-studio",
-  "version": "26.10.26",
+  "version": "26.10.27",
   "description": "DataFlow Studio — Professional Media Ingestion, Synchronization and Report Fusion Desktop Suite",
   "main": "dist-electron/main.js",
   "author": "BSFrameWorks",
