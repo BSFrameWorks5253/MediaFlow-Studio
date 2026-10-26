@@ -20,12 +20,12 @@ export interface AnythingLoaderConfig {
 }
 
 export const cleanVersionText = (ver?: string): string => {
-  if (!ver) return 'v6.0.0';
+  if (!ver) return 'v26.10.26';
   const cleaned = ver
     .replace(/\s*\((?:x64|x86|x86_64|amd64|arm64|win32|ia32|64-bit|32-bit)\)/gi, '')
     .replace(/\s*[-_.]?\s*(?:x64|x86|x86_64|amd64|arm64|win32|ia32|64-bit|32-bit)\b/gi, '')
     .trim();
-  return cleaned || 'v6.0.0';
+  return cleaned || 'v26.10.26';
 };
 
 export interface SplashSettings {
@@ -46,7 +46,7 @@ export const DEFAULT_SPLASH_SETTINGS: SplashSettings = {
   artistName: 'Adobe Creative Collective',
   artworkTitle: 'Refractive Glass in Motion',
   productName: 'MediaFlow Studio',
-  versionText: '2026.1 Release • v6.0.0 (x64)',
+  versionText: '2026.1 Release • v26.10.26 (x64)',
   tagline: 'Professional Media Ingestion, Synchronization and Report Fusion Desktop Suite',
   speed: 'standard'
 };

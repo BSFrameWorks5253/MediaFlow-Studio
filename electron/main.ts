@@ -112,7 +112,7 @@ function loadAnythingLoaderConfig(forceReload = true): AnythingLoaderConfig {
   return {
     appId: 'mediaflow-studio',
     productName: 'MediaFlow Studio',
-    versionText: 'v6.0.0 (x64)',
+    versionText: 'v26.10.26 (x64)',
     tagline: 'Professional Media Ingestion, Synchronization and Report Fusion Desktop Suite',
     artworkUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1400&q=85',
     artistName: 'Anything Creation',
