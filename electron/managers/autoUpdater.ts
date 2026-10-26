@@ -32,7 +32,7 @@ export interface UpdateInfo {
 
 export class WorkstationAutoUpdater {
   private static DEFAULT_REPO = 'BSFrameWorks5253/MediaFlow-Studio';
-  private static DEFAULT_ANYTHING_DIR = 'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\New folder (2)\\Anything';
+  private static DEFAULT_ANYTHING_DIR = 'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Anything\\Anything';
   private static isDownloading = false;
 
   /**
@@ -41,11 +41,13 @@ export class WorkstationAutoUpdater {
   public static resolveAnythingDir(customPath?: string): string | null {
     const candidates = [
       customPath,
+      'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Anything\\Anything',
       this.DEFAULT_ANYTHING_DIR,
       'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Anything',
-      path.resolve(process.cwd(), '..', 'New folder (2)', 'Anything'),
+      path.resolve(process.cwd(), '..', '..', 'Anything', 'Anything'),
+      path.resolve(process.cwd(), '..', 'Anything', 'Anything'),
       path.resolve(process.cwd(), '..', 'Anything'),
-      path.resolve(app.getAppPath(), '..', 'New folder (2)', 'Anything'),
+      path.resolve(app.getAppPath(), '..', '..', 'Anything', 'Anything'),
       path.resolve(app.getAppPath(), '..', 'Anything'),
     ].filter((p): p is string => Boolean(p && typeof p === 'string' && p.trim().length > 0));
 
