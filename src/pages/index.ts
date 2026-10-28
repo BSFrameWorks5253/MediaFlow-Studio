@@ -13,5 +13,4 @@ export { VideoTransferPage } from './VideoTransferPage';           // Stage 04
 export { ThumbnailSeparatorPage } from './ThumbnailSeparatorPage'; // Stage 05
 export { DoNotUploadPage } from './DoNotUploadPage';               // Stage 06
 export { EventDistributorPage } from './EventDistributorPage';     // Stage 07
-export { EventDistributorStatsPage } from './EventDistributorStatsPage'; // Stage 07.5 (Event & Safar Stats)
 export { ExcelMergerPage } from './ExcelMergerPage';               // Stage 08

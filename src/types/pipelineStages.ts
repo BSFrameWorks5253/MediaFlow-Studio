@@ -29,9 +29,7 @@ export type PageKey =
   | 'excelMerger'
   | 'googleDrive'
   | 'activity'
-  | 'tools'
-  | 'eventStats'
-  | 'safarStats';
+  | 'tools';
 
 /**
  * Canonical Linear Pipeline Order
@@ -156,20 +154,6 @@ export const STAGE_METADATA_MAP: Record<PageKey, Omit<StageMeta, 'key'>> = {
     color: '#00F2FE',
     icon: Cloud,
   },
-  eventStats: {
-    label: 'Event & Safar Stats',
-    shortTitle: 'Event Stats',
-    desc: 'Master Ingestion & Companion Storage Ledger',
-    color: '#00F2FE',
-    icon: BarChart3,
-  },
-  safarStats: {
-    label: 'Event & Safar Stats',
-    shortTitle: 'Event Stats',
-    desc: 'Master Ingestion & Companion Storage Ledger',
-    color: '#00F2FE',
-    icon: BarChart3,
-  },
 };
 
 /**
@@ -190,9 +174,6 @@ export function getStageNumber(key: PageKey): string {
       return 'UTIL';
     case 'googleDrive':
       return 'CLOUD';
-    case 'eventStats':
-    case 'safarStats':
-      return '07.5';
     default:
       return 'SYS';
   }

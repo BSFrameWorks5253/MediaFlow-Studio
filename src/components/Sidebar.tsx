@@ -30,16 +30,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
   const { isStatsPageUnlocked } = usePipeline();
 
   const pipelineNavItems = useMemo(() => {
-    if (!isStatsPageUnlocked) return PIPELINE_NAV_ORDER;
-    const items: PageKey[] = [];
-    for (const key of PIPELINE_NAV_ORDER) {
-      items.push(key);
-      if (key === 'eventDistributor') {
-        items.push('eventStats');
-      }
-    }
-    return items;
-  }, [isStatsPageUnlocked]);
+    return PIPELINE_NAV_ORDER;
+  }, []);
 
   return (
     <aside
@@ -178,9 +170,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
           const meta = getStageMeta(key);
           const stageNum = getStageNumber(key);
           const isActive =
-            activePage === key ||
-            (key === 'eventStats' && activePage === 'safarStats') ||
-            (key === 'safarStats' && activePage === 'eventStats');
+            activePage === key;
           const Icon = meta.icon;
           const shortcutKey = index < 9 ? `Alt+${index + 1}` : null;
 
@@ -291,9 +281,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
         {SYSTEM_NAV_ORDER.map((key) => {
           const meta = getStageMeta(key);
           const isActive =
-            activePage === key ||
-            (key === 'eventStats' && activePage === 'safarStats') ||
-            (key === 'safarStats' && activePage === 'eventStats');
+            activePage === key;
           const Icon = meta.icon;
           return (
             <button

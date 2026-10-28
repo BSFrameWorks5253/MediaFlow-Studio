@@ -1345,13 +1345,6 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
         onOpenStatsManager={() => setIsStatsLedgerOpen(true)}
       />
 
-      <SafarStatsModal
-        isOpen={isStatsLedgerOpen}
-        onClose={() => setIsStatsLedgerOpen(false)}
-        onShowToast={onShowToast}
-        onOpenAddModal={() => setIsAddToStatsOpen(true)}
-      />
-
       {/* Live Operation Loading Overlay */}
       <OperationLoadingOverlay
         isOpen={isScanning || isExecuting}

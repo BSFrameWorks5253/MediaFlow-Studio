@@ -1,3 +1,4 @@
+import os from 'os';
 import fs from 'fs';
 import path from 'path';
 import { app } from 'electron';
@@ -82,36 +83,57 @@ export class StatsManager {
   private statsFile: string;
   private records: SafarStatRecord[] = [];
 
-  constructor() {
-    let userData = process.cwd();
+  private getTargetFiles(): string[] {
+    const appData = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming');
+    const files = [
+      path.join(appData, 'anything', 'safar_stats.json'),
+      path.join(appData, 'Anything', 'safar_stats.json'),
+    ];
     try {
       if (app && typeof app.getPath === 'function') {
-        userData = app.getPath('userData');
+        files.push(path.join(app.getPath('userData'), 'safar_stats.json'));
       }
     } catch {}
-    this.statsFile = path.join(userData, 'safar_stats.json');
+    return files;
+  }
+
+  constructor() {
+    const appData = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming');
+    this.statsFile = path.join(appData, 'anything', 'safar_stats.json');
     this.load();
   }
 
   private load() {
-    try {
-      if (fs.existsSync(this.statsFile)) {
-        const raw = fs.readFileSync(this.statsFile, 'utf-8');
-        this.records = JSON.parse(raw);
-        if (!Array.isArray(this.records)) {
-          this.records = [];
+    const targets = this.getTargetFiles();
+    for (const file of targets) {
+      try {
+        if (fs.existsSync(file)) {
+          const raw = fs.readFileSync(file, 'utf-8').trim();
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              this.records = parsed;
+              return;
+            }
+          }
         }
-      }
-    } catch {
-      this.records = [];
+      } catch {}
     }
+    this.records = [];
   }
 
   private save() {
-    try {
-      fs.writeFileSync(this.statsFile, JSON.stringify(this.records, null, 2), 'utf-8');
-    } catch (err) {
-      console.error('[StatsManager] Failed to write stats:', err);
+    const targets = this.getTargetFiles();
+    for (const file of targets) {
+      try {
+        const dir = path.dirname(file);
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir, { recursive: true });
+        }
+        fs.writeFileSync(file, JSON.stringify(this.records, null, 2), 'utf-8');
+      } catch (err) {
+        console.warn('[StatsManager] Could not write to stats file:', file, err);
+      }
     }
   }
 
