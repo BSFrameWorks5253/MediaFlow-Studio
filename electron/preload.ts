@@ -249,6 +249,23 @@ export const electronAPI = {
     ipcRenderer.invoke('stats:delete-safar', safarId),
   statsExport: (format: 'json' | 'csv') =>
     ipcRenderer.invoke('stats:export', format),
+
+  // 13. Anything Ecosystem Integration & Cross-App Linking
+  ecosystemGetLinkedEventFolder: () =>
+    ipcRenderer.invoke('ecosystem:get-linked-event-folder'),
+  ecosystemSetLinkedEventFolder: (folderPath: string) =>
+    ipcRenderer.invoke('ecosystem:set-linked-event-folder', folderPath),
+  ecosystemInspectFolder: (folderPath: string) =>
+    ipcRenderer.invoke('ecosystem:inspect-folder', folderPath),
+  ecosystemSyncWithAnything: () =>
+    ipcRenderer.invoke('ecosystem:sync-with-anything'),
+  onEcosystemRemoteLink: (callback: (data: { page: string; imagesDir?: string }) => void) => {
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('ecosystem:remote-link', handler);
+    return () => {
+      ipcRenderer.removeListener('ecosystem:remote-link', handler);
+    };
+  },
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);

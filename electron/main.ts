@@ -13,6 +13,7 @@ import { GoogleDriveManager } from './engines/../managers/googleDriveManager';
 import { ActivityReportsManager } from './engines/../managers/activityReportsManager';
 import { EventImageDistributorEngine } from './engines/eventImageDistributor';
 import { StatsManager } from './managers/statsManager';
+import { EcosystemManager } from './managers/ecosystemManager';
 import { WorkstationAutoUpdater, UpdateInfo } from './managers/autoUpdater';
 
 // Windows Taskbar & Action Center Model ID for dedicated window grouping
@@ -147,6 +148,12 @@ const driveManager = new GoogleDriveManager();
 const activityManager = new ActivityReportsManager();
 const eventDistributorEngine = new EventImageDistributorEngine();
 const statsManager = new StatsManager();
+const ecosystemManager = EcosystemManager.getInstance();
+try {
+  if (!app.isDefaultProtocolClient('mediaflow')) {
+    app.setAsDefaultProtocolClient('mediaflow');
+  }
+} catch {}
 
 // App Config Store
 const configPath = path.join(app.getPath('userData'), 'app_config.json');
@@ -399,7 +406,20 @@ function createWindow() {
   });
 }
 
-app.on('second-instance', () => {
+app.on('second-instance', (_event, argv) => {
+  if (Array.isArray(argv)) {
+    ecosystemManager.parseInitialArgv(argv);
+    const intent = ecosystemManager.getCliLaunchIntent();
+    if (intent.imagesDir) {
+      saveAppConfig({ eventImagesDirPath: intent.imagesDir });
+    }
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('ecosystem:remote-link', {
+        page: intent.page || 'eventDistributor',
+        imagesDir: intent.imagesDir,
+      });
+    }
+  }
   if (mainWindow) {
     if (mainWindow.isMinimized()) mainWindow.restore();
     mainWindow.show();
@@ -948,5 +968,27 @@ function setupIpcHandlers() {
   });
   ipcMain.handle('stats:export', (_, format: 'json' | 'csv') => {
     return statsManager.exportStats(format);
+  });
+
+  // 13. Anything Ecosystem Integration & Cross-App Linking
+  ipcMain.handle('ecosystem:get-linked-event-folder', async () => {
+    return ecosystemManager.getLinkedEventFolder(appConfig.eventImagesDirPath);
+  });
+  ipcMain.handle('ecosystem:set-linked-event-folder', async (_, folderPath: string) => {
+    const status = ecosystemManager.saveLinkedEventFolder(folderPath);
+    if (status.path) {
+      saveAppConfig({ eventImagesDirPath: status.path });
+    }
+    return status;
+  });
+  ipcMain.handle('ecosystem:inspect-folder', async (_, folderPath: string) => {
+    return ecosystemManager.inspectFolder(folderPath);
+  });
+  ipcMain.handle('ecosystem:sync-with-anything', async () => {
+    const status = ecosystemManager.getLinkedEventFolder();
+    if (status.path && status.exists) {
+      saveAppConfig({ eventImagesDirPath: status.path });
+    }
+    return status;
   });
 }

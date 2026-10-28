@@ -49,6 +49,9 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
   const [setupImagesPath, setSetupImagesPath] = useState('');
   const [isAddToStatsOpen, setIsAddToStatsOpen] = useState(false);
   const [isStatsLedgerOpen, setIsStatsLedgerOpen] = useState(false);
+  const [ecosystemStatus, setEcosystemStatus] = useState<any>(null);
+  const [isSyncingWithAnything, setIsSyncingWithAnything] = useState(false);
+  const [isCopiedPath, setIsCopiedPath] = useState(false);
 
   // Auto-load persistent config on mount and prompt if not set
   useEffect(() => {
@@ -111,26 +114,71 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
       }
     }
 
-    if (window.electronAPI) {
-      window.electronAPI.getConfig().then((cfg: any) => {
-        if (cfg) {
-          if (cfg.eventExcelPath && !excelPath) {
-            setExcelPath(cfg.eventExcelPath);
-          } else if (!excelPath) {
+    const initEcosystemAndConfig = async () => {
+      if (window.electronAPI) {
+        // 1. Check ecosystem linked folder from Anything / shared config
+        if (typeof (window.electronAPI as any).ecosystemGetLinkedEventFolder === 'function') {
+          try {
+            const eco = await (window.electronAPI as any).ecosystemGetLinkedEventFolder();
+            if (eco) {
+              setEcosystemStatus(eco);
+              if (eco.path && eco.exists) {
+                setImagesDir(eco.path);
+                setSetupImagesPath(eco.path);
+              }
+            }
+          } catch (err) {
+            console.warn('[Ecosystem Link] Error getting linked folder:', err);
+          }
+        }
+
+        // 2. Check general app config
+        window.electronAPI.getConfig().then((cfg: any) => {
+          if (cfg) {
+            if (cfg.eventExcelPath && !excelPath) {
+              setExcelPath(cfg.eventExcelPath);
+            } else if (!excelPath) {
+              setExcelPath('C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Pla Cards.xlsx');
+            }
+
+            if (cfg.eventImagesDirPath && !imagesDir) {
+              setImagesDir(cfg.eventImagesDirPath);
+              setSetupImagesPath(cfg.eventImagesDirPath);
+            }
+          } else {
             setExcelPath('C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Pla Cards.xlsx');
           }
+        });
 
-          if (cfg.eventImagesDirPath && !imagesDir) {
-            setImagesDir(cfg.eventImagesDirPath);
-            setSetupImagesPath(cfg.eventImagesDirPath);
-          }
-        } else {
-          setExcelPath('C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Pla Cards.xlsx');
+        // 3. Listen to cross-app remote link calls from Anything
+        if (typeof (window.electronAPI as any).onEcosystemRemoteLink === 'function') {
+          const unsub = (window.electronAPI as any).onEcosystemRemoteLink((data: any) => {
+            if (data?.imagesDir) {
+              setImagesDir(data.imagesDir);
+              setSetupImagesPath(data.imagesDir);
+              onShowToast('🔗 Event Reference Images folder updated from Anything Hub!', 'info');
+              if (typeof (window.electronAPI as any).ecosystemInspectFolder === 'function') {
+                (window.electronAPI as any).ecosystemInspectFolder(data.imagesDir).then((insp: any) => {
+                  setEcosystemStatus((prev: any) => ({
+                    ...(prev || {}),
+                    path: data.imagesDir,
+                    exists: insp.exists,
+                    totalImages: insp.totalImages,
+                    sampleBadges: insp.sampleBadges,
+                    source: 'anything',
+                  }));
+                });
+              }
+            }
+          });
+          return unsub;
         }
-      });
-    } else {
-      setExcelPath('C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Pla Cards.xlsx');
-    }
+      } else {
+        setExcelPath('C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Pla Cards.xlsx');
+      }
+    };
+
+    initEcosystemAndConfig();
   }, []);
 
   // Update target dir if uploadStructure becomes available
@@ -154,14 +202,55 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
       onShowToast('Please select a valid Event Reference Images directory.', 'warning');
       return;
     }
+    const cleanPath = setupImagesPath.trim();
     if (window.electronAPI) {
+      if (typeof (window.electronAPI as any).ecosystemSetLinkedEventFolder === 'function') {
+        const res = await (window.electronAPI as any).ecosystemSetLinkedEventFolder(cleanPath);
+        if (res) setEcosystemStatus(res);
+      }
       await window.electronAPI.saveConfig({
-        eventImagesDirPath: setupImagesPath.trim(),
+        eventImagesDirPath: cleanPath,
       });
     }
-    setImagesDir(setupImagesPath.trim());
+    setImagesDir(cleanPath);
     setIsPathSetupOpen(false);
-    onShowToast('✓ Master Event Images path saved permanently until changed in Settings.', 'success');
+    onShowToast('✓ Master Event Images linked & broadcasted to Anything Ecosystem.', 'success');
+  };
+
+  const handleSyncFromAnything = async () => {
+    if (!window.electronAPI || typeof (window.electronAPI as any).ecosystemSyncWithAnything !== 'function') {
+      onShowToast('Ecosystem bridge is only available in Desktop mode.', 'warning');
+      return;
+    }
+    setIsSyncingWithAnything(true);
+    try {
+      const res = await (window.electronAPI as any).ecosystemSyncWithAnything();
+      if (res && res.path && res.exists) {
+        setImagesDir(res.path);
+        setSetupImagesPath(res.path);
+        setEcosystemStatus(res);
+        onShowToast(`✓ Successfully fetched from Anything: ${res.totalImages} badges ready!`, 'success');
+      } else if (res && res.path) {
+        setImagesDir(res.path);
+        setSetupImagesPath(res.path);
+        setEcosystemStatus(res);
+        onShowToast(`Linked path found (${res.path}) but directory is not currently accessible.`, 'warning');
+      } else {
+        onShowToast('No active Event Images folder link found in Anything ecosystem.', 'info');
+      }
+    } catch (err: any) {
+      onShowToast('Failed to sync with Anything ecosystem.', 'danger');
+    } finally {
+      setIsSyncingWithAnything(false);
+    }
+  };
+
+  const handleCopyImagesPath = () => {
+    if (!imagesDir) return;
+    navigator.clipboard.writeText(imagesDir);
+    setIsCopiedPath(true);
+    setTimeout(() => setIsCopiedPath(false), 2000);
+    onShowToast('✓ Path copied to clipboard', 'info');
   };
 
   const handleBrowseTarget = async () => {
@@ -419,76 +508,257 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
           gap: 14,
         }}
       >
-        {/* Master Reference Images Fixed Path Status */}
+        {/* Master Reference Images & Anything Ecosystem Link Bar */}
         <div
           style={{
+            padding: '14px 18px',
+            borderRadius: 12,
+            background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.85) 100%)',
+            border: imagesDir ? '1px solid rgba(99, 102, 241, 0.35)' : '1px solid rgba(245, 158, 11, 0.4)',
+            boxShadow: '0 8px 24px -6px rgba(0, 0, 0, 0.35)',
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '12px 16px',
-            borderRadius: 10,
-            background: imagesDir ? 'rgba(99, 102, 241, 0.08)' : 'rgba(255, 159, 10, 0.1)',
-            border: `1px solid ${imagesDir ? 'rgba(99, 102, 241, 0.3)' : 'rgba(255, 159, 10, 0.35)'}`,
+            flexDirection: 'column',
+            gap: 12,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
-            <div
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                backgroundColor: imagesDir ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 159, 10, 0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <ImageIcon size={17} color={imagesDir ? '#6366F1' : '#FF9F0A'} />
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--secondary-label)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                Master Event Reference Images Path (Fixed)
-              </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
               <div
                 style={{
-                  fontSize: 12.5,
-                  fontFamily: 'var(--font-mono)',
-                  color: imagesDir ? 'var(--label)' : 'var(--system-orange)',
-                  fontWeight: 600,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  marginTop: 2,
+                  width: 38,
+                  height: 38,
+                  borderRadius: 10,
+                  background: imagesDir ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.3) 0%, rgba(168, 85, 247, 0.3) 100%)' : 'rgba(245, 158, 11, 0.15)',
+                  border: `1px solid ${imagesDir ? 'rgba(99, 102, 241, 0.4)' : 'rgba(245, 158, 11, 0.3)'}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  boxShadow: imagesDir ? '0 0 16px rgba(99, 102, 241, 0.25)' : 'none',
                 }}
-                title={imagesDir || 'Not configured'}
               >
-                {imagesDir || '⚠️ No path set — Click "Set Fixed Path" to lock reference images location.'}
+                <ImageIcon size={20} color={imagesDir ? '#A5B4FC' : '#FBBF24'} />
               </div>
+
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--secondary-label)', textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                    Master Event Badges Directory
+                  </span>
+
+                  {/* Ecosystem Link Pill */}
+                  {ecosystemStatus?.source === 'anything' && (
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        padding: '2px 8px',
+                        borderRadius: 12,
+                        fontSize: 10,
+                        fontWeight: 700,
+                        background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(99, 102, 241, 0.25) 100%)',
+                        border: '1px solid rgba(14, 165, 233, 0.4)',
+                        color: '#38BDF8',
+                      }}
+                      title="Directly connected with Anything Master Hub Files Page"
+                    >
+                      <Link size={10} />
+                      Linked via Anything
+                    </span>
+                  )}
+
+                  {ecosystemStatus?.source === 'cli' && (
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        padding: '2px 8px',
+                        borderRadius: 12,
+                        fontSize: 10,
+                        fontWeight: 700,
+                        background: 'rgba(168, 85, 247, 0.2)',
+                        border: '1px solid rgba(168, 85, 247, 0.4)',
+                        color: '#C084FC',
+                      }}
+                    >
+                      <Sparkles size={10} />
+                      CLI / Protocol Launch
+                    </span>
+                  )}
+
+                  {imagesDir && (
+                    <span
+                      style={{
+                        padding: '2px 8px',
+                        borderRadius: 12,
+                        fontSize: 10,
+                        fontWeight: 700,
+                        background: 'rgba(16, 185, 129, 0.15)',
+                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                        color: '#34D399',
+                      }}
+                    >
+                      ✓ {ecosystemStatus?.totalImages || 'Live'} Images Ready
+                    </span>
+                  )}
+                </div>
+
+                <div
+                  style={{
+                    fontSize: 12.5,
+                    fontFamily: 'var(--font-mono)',
+                    color: imagesDir ? 'var(--label)' : 'var(--system-orange)',
+                    fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    marginTop: 3,
+                  }}
+                  title={imagesDir || 'Not configured'}
+                >
+                  {imagesDir || '⚠️ No path linked — Click "Link Folder" or fetch from Anything.'}
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Action Buttons */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {imagesDir && (
+                <>
+                  <button
+                    onClick={handleCopyImagesPath}
+                    title="Copy path to clipboard"
+                    style={{
+                      padding: '6px 10px',
+                      borderRadius: 7,
+                      background: 'rgba(255, 255, 255, 0.06)',
+                      border: '1px solid rgba(255, 255, 255, 0.14)',
+                      color: isCopiedPath ? '#34D399' : 'var(--label)',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {isCopiedPath ? <Check size={12} /> : <Copy size={12} />}
+                    {isCopiedPath ? 'Copied' : 'Copy'}
+                  </button>
+
+                  <button
+                    onClick={() => window.electronAPI?.openPath(imagesDir)}
+                    title="Open folder in File Explorer"
+                    style={{
+                      padding: '6px 10px',
+                      borderRadius: 7,
+                      background: 'rgba(255, 255, 255, 0.06)',
+                      border: '1px solid rgba(255, 255, 255, 0.14)',
+                      color: 'var(--label)',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <ExternalLink size={12} />
+                    Open
+                  </button>
+                </>
+              )}
+
+              {/* Sync from Anything */}
+              <button
+                onClick={handleSyncFromAnything}
+                disabled={isSyncingWithAnything}
+                title="Fetch updated event images link from Anything Hub Files page"
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: 7,
+                  background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.15) 0%, rgba(99, 102, 241, 0.2) 100%)',
+                  border: '1px solid rgba(14, 165, 233, 0.4)',
+                  color: '#38BDF8',
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  cursor: isSyncingWithAnything ? 'wait' : 'pointer',
+                }}
+              >
+                <RefreshCw size={12} className={isSyncingWithAnything ? 'spin-anim' : ''} />
+                {isSyncingWithAnything ? 'Syncing...' : 'Fetch from Anything'}
+              </button>
+
+              {/* Set / Change Link */}
+              <button
+                onClick={() => {
+                  setSetupImagesPath(imagesDir);
+                  setIsPathSetupOpen(true);
+                }}
+                style={{
+                  background: imagesDir ? 'rgba(255, 255, 255, 0.08)' : 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
+                  border: '1px solid rgba(255, 255, 255, 0.18)',
+                  color: imagesDir ? 'var(--label)' : '#fff',
+                  borderRadius: 7,
+                  padding: '6px 14px',
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  boxShadow: imagesDir ? 'none' : '0 2px 10px rgba(99, 102, 241, 0.3)',
+                }}
+              >
+                {imagesDir ? '⚙ Change Link' : 'Link Folder →'}
+              </button>
             </div>
           </div>
 
-          <button
-            onClick={() => {
-              setSetupImagesPath(imagesDir);
-              setIsPathSetupOpen(true);
-            }}
-            style={{
-              background: imagesDir ? 'rgba(255, 255, 255, 0.08)' : 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
-              border: '1px solid rgba(255, 255, 255, 0.18)',
-              color: imagesDir ? 'var(--label)' : '#fff',
-              borderRadius: 7,
-              padding: '6px 14px',
-              fontSize: 11.5,
-              fontWeight: 700,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              marginLeft: 14,
-              boxShadow: imagesDir ? 'none' : '0 2px 10px rgba(99, 102, 241, 0.3)',
-            }}
-          >
-            {imagesDir ? '⚙ Change in Settings' : 'Set Fixed Path →'}
-          </button>
+          {/* Sample Badge Chips Strip if badges detected */}
+          {ecosystemStatus?.sampleBadges && ecosystemStatus.sampleBadges.length > 0 && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                overflowX: 'auto',
+                paddingTop: 4,
+                paddingBottom: 2,
+              }}
+            >
+              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--secondary-label)', whiteSpace: 'nowrap' }}>
+                Detected Badges:
+              </span>
+              {ecosystemStatus.sampleBadges.slice(0, 15).map((badge: any, idx: number) => (
+                <span
+                  key={idx}
+                  title={`${badge.name} (${badge.token || 'Badge'})`}
+                  style={{
+                    padding: '2px 8px',
+                    borderRadius: 6,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    fontFamily: 'var(--font-mono)',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    color: '#A5B4FC',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {badge.token || badge.name.replace(/\.[^.]+$/, '')}
+                </span>
+              ))}
+              {ecosystemStatus.sampleBadges.length > 15 && (
+                <span style={{ fontSize: 10, color: 'var(--secondary-label)', whiteSpace: 'nowrap' }}>
+                  +{ecosystemStatus.sampleBadges.length - 15} more
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Target Workspace Directory */}
@@ -964,6 +1234,62 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
                 placeholder="e.g. C:\Users\Burhanuddin\Downloads\Warning and iltemas"
                 description="Directory containing instruction placards (__01 Ziyafat..., __03 Qadam..., etc.)"
               />
+
+              {/* Bidirectional Sync Banner */}
+              <div
+                style={{
+                  padding: '10px 12px',
+                  borderRadius: 8,
+                  backgroundColor: 'rgba(14, 165, 233, 0.08)',
+                  border: '1px solid rgba(14, 165, 233, 0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                }}
+              >
+                <Link size={16} color="#38BDF8" style={{ flexShrink: 0 }} />
+                <span style={{ fontSize: 11.5, color: 'var(--label-secondary)', lineHeight: 1.4 }}>
+                  <strong style={{ color: '#38BDF8' }}>Both-Way Ecosystem Sync:</strong> Saving here updates MediaFlow Studio and broadcasts directly to Anything Hub (Files Page). Anything can also link or launch this folder remotely.
+                </span>
+              </div>
+
+              {/* Quick Preset Buttons */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => setSetupImagesPath('D:\\APP_DATA\\EVENT_BADGES')}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: 6,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    background: 'rgba(255, 255, 255, 0.06)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    color: 'var(--label)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  ⚡ Preset: D:\APP_DATA\EVENT_BADGES
+                </button>
+                {ecosystemStatus?.path && ecosystemStatus.path !== setupImagesPath && (
+                  <button
+                    type="button"
+                    onClick={() => setSetupImagesPath(ecosystemStatus.path)}
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: 6,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      background: 'rgba(99, 102, 241, 0.15)',
+                      border: '1px solid rgba(99, 102, 241, 0.3)',
+                      color: '#A5B4FC',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    🔗 Use Anything Linked Path
+                  </button>
+                )}
+              </div>
 
               <div
                 style={{
