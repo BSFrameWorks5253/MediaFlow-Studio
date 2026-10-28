@@ -1,10 +1,10 @@
 {
   "name": "mediaflow-studio",
-  "version": "26.10.27",
-  "description": "DataFlow Studio — Professional Media Ingestion, Synchronization and Report Fusion Desktop Suite",
+  "version": "26.10.30",
+  "description": "DataFlow Studio \u2014 Professional Media Ingestion, Synchronization and Report Fusion Desktop Suite",
   "main": "dist-electron/main.js",
   "author": "BSFrameWorks",
-  "copyright": "Copyright © 2026 BSFrameWorks",
+  "copyright": "Copyright \u00a9 2026 BSFrameWorks",
   "license": "Commercial",
   "scripts": {
     "dev": "concurrently -k -r \"npm run dev:vite\" \"npm run dev:electron\"",
@@ -55,7 +55,7 @@
   "build": {
     "appId": "com.burhanuddin.mediaflowstudio",
     "productName": "MediaFlow Studio",
-    "copyright": "Copyright © 2026 BSFrameWorks",
+    "copyright": "Copyright \u00a9 2026 BSFrameWorks",
     "directories": {
       "output": "dist-release",
       "buildResources": "build"

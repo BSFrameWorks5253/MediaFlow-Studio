@@ -12,12 +12,15 @@ import {
   ArrowRight,
   ExternalLink,
   X,
+  BarChart3,
+  Database,
 } from 'lucide-react';
 import { StudioButton } from '../components/StudioButton';
 import { StudioFolderInput } from '../components/StudioFolderInput';
 import { PageKey } from '../types/pipelineStages';
 import { usePipeline } from '../context/PipelineContext';
 import { OperationLoadingOverlay } from '../components/OperationLoadingOverlay';
+import { AddToStatsModal, SafarStatsModal } from '../components';
 import {
   EventDistributorScanResult,
   FolderEventMatch,
@@ -44,6 +47,8 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
   const [filterAbbr, setFilterAbbr] = useState<string>('ALL');
   const [isPathSetupOpen, setIsPathSetupOpen] = useState(false);
   const [setupImagesPath, setSetupImagesPath] = useState('');
+  const [isAddToStatsOpen, setIsAddToStatsOpen] = useState(false);
+  const [isStatsLedgerOpen, setIsStatsLedgerOpen] = useState(false);
 
   // Auto-load persistent config on mount and prompt if not set
   useEffect(() => {
@@ -383,6 +388,25 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
             </div>
           </div>
         </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <StudioButton
+            variant="glass"
+            size="sm"
+            onClick={() => setIsAddToStatsOpen(true)}
+            icon={<BarChart3 size={14} color="#00F2FE" />}
+          >
+            Add to Stats
+          </StudioButton>
+          <StudioButton
+            variant="glass"
+            size="sm"
+            onClick={() => setIsStatsLedgerOpen(true)}
+            icon={<Database size={14} />}
+          >
+            Stats Ledger
+          </StudioButton>
+        </div>
       </div>
 
       {/* Path Selectors */}
@@ -586,16 +610,32 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
                   </div>
                 </div>
               </div>
-              {onNavigate && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <StudioButton
-                  variant="primary"
+                  variant="glass"
                   size="sm"
-                  onClick={() => onNavigate('excelMerger')}
-                  style={{ backgroundColor: '#F59E0B' }}
+                  onClick={() => setIsAddToStatsOpen(true)}
+                  icon={<BarChart3 size={15} color="#00F2FE" />}
+                  style={{
+                    backgroundColor: 'rgba(0, 242, 254, 0.15)',
+                    border: '1.5px solid rgba(0, 242, 254, 0.45)',
+                    color: '#00F2FE',
+                    fontWeight: 700,
+                  }}
                 >
-                  Proceed to Report Merger (Stage 08) →
+                  Add to Stats 📊
                 </StudioButton>
-              )}
+                {onNavigate && (
+                  <StudioButton
+                    variant="primary"
+                    size="sm"
+                    onClick={() => onNavigate('excelMerger')}
+                    style={{ backgroundColor: '#F59E0B' }}
+                  >
+                    Proceed to Report Merger (Stage 08) →
+                  </StudioButton>
+                )}
+              </div>
             </div>
           )}
 
@@ -960,6 +1000,22 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
           </div>
         </div>
       )}
+
+      {/* Production Stats Integration Modals */}
+      <AddToStatsModal
+        isOpen={isAddToStatsOpen}
+        onClose={() => setIsAddToStatsOpen(false)}
+        onShowToast={onShowToast}
+        initialPath={targetDir || uploadStructure.mainDataPath || ''}
+        onOpenStatsManager={() => setIsStatsLedgerOpen(true)}
+      />
+
+      <SafarStatsModal
+        isOpen={isStatsLedgerOpen}
+        onClose={() => setIsStatsLedgerOpen(false)}
+        onShowToast={onShowToast}
+        onOpenAddModal={() => setIsAddToStatsOpen(true)}
+      />
 
       {/* Live Operation Loading Overlay */}
       <OperationLoadingOverlay

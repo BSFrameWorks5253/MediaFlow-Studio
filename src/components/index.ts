@@ -25,6 +25,8 @@ export { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 export { OperationLoadingOverlay } from './OperationLoadingOverlay';
 export { SetupWizard } from './SetupWizard';
 export { UpdateModal } from './UpdateModal';
+export { AddToStatsModal } from './AddToStatsModal';
+export { SafarStatsModal } from './SafarStatsModal';
 
 // Adobe Splash Screen & Settings
 export { AdobeSplashScreen } from './AdobeSplashScreen';

@@ -219,6 +219,36 @@ export const electronAPI = {
     isSplash ||
     (typeof window !== 'undefined' &&
       (window.location.search.includes('splash') || window.location.hash.includes('splash'))),
+
+  // 13. Production Safar & Date Stats Manager
+  statsGetAll: () => ipcRenderer.invoke('stats:get-all'),
+  statsGetRecents: (limit?: number) => ipcRenderer.invoke('stats:get-recents', limit),
+  statsFindSafars: (query: string) => ipcRenderer.invoke('stats:find-safars', query),
+  statsScanDate: (
+    dateFolderPath: string,
+    customSafarName?: string,
+    customRemainingPath?: string,
+    customThumbnailsPath?: string
+  ) =>
+    ipcRenderer.invoke(
+      'stats:scan-date',
+      dateFolderPath,
+      customSafarName,
+      customRemainingPath,
+      customThumbnailsPath
+    ),
+  statsScanSafar: (safarFolderPath: string) =>
+    ipcRenderer.invoke('stats:scan-safar', safarFolderPath),
+  statsSaveDate: (safarName: string, safarRoot: string, dateStat: any) =>
+    ipcRenderer.invoke('stats:save-date', safarName, safarRoot, dateStat),
+  statsSaveSafar: (record: any) =>
+    ipcRenderer.invoke('stats:save-safar', record),
+  statsDeleteDate: (safarId: string, dateId: string) =>
+    ipcRenderer.invoke('stats:delete-date', safarId, dateId),
+  statsDeleteSafar: (safarId: string) =>
+    ipcRenderer.invoke('stats:delete-safar', safarId),
+  statsExport: (format: 'json' | 'csv') =>
+    ipcRenderer.invoke('stats:export', format),
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);

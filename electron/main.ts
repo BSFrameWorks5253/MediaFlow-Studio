@@ -12,6 +12,7 @@ import { ProductionToolsEngine } from './engines/productionTools';
 import { GoogleDriveManager } from './engines/../managers/googleDriveManager';
 import { ActivityReportsManager } from './engines/../managers/activityReportsManager';
 import { EventImageDistributorEngine } from './engines/eventImageDistributor';
+import { StatsManager } from './managers/statsManager';
 import { WorkstationAutoUpdater, UpdateInfo } from './managers/autoUpdater';
 
 // Windows Taskbar & Action Center Model ID for dedicated window grouping
@@ -112,7 +113,7 @@ function loadAnythingLoaderConfig(forceReload = true): AnythingLoaderConfig {
   return {
     appId: 'mediaflow-studio',
     productName: 'MediaFlow Studio',
-    versionText: 'v26.10.26 (x64)',
+    versionText: 'v26.10.30 (x64)',
     tagline: 'Professional Media Ingestion, Synchronization and Report Fusion Desktop Suite',
     artworkUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1400&q=85',
     artistName: 'Anything Creation',
@@ -145,6 +146,7 @@ const toolsEngine = new ProductionToolsEngine();
 const driveManager = new GoogleDriveManager();
 const activityManager = new ActivityReportsManager();
 const eventDistributorEngine = new EventImageDistributorEngine();
+const statsManager = new StatsManager();
 
 // App Config Store
 const configPath = path.join(app.getPath('userData'), 'app_config.json');
@@ -906,5 +908,45 @@ function setupIpcHandlers() {
       console.error('[AUTO_UPDATER] Install failed:', e);
       return { success: false, error: 'Update installation could not be completed. Please try again.' };
     }
+  });
+
+  // 13. Production Safar & Date Stats Manager
+  ipcMain.handle('stats:get-all', () => statsManager.getStats());
+  ipcMain.handle('stats:get-recents', (_, limit?: number) => statsManager.getRecentSafars(limit));
+  ipcMain.handle('stats:find-safars', (_, query: string) => statsManager.findSafars(query));
+  ipcMain.handle(
+    'stats:scan-date',
+    async (
+      _,
+      dateFolderPath: string,
+      customSafarName?: string,
+      customRemainingPath?: string,
+      customThumbnailsPath?: string
+    ) => {
+      return await statsManager.scanDateFolder(
+        dateFolderPath,
+        customSafarName,
+        customRemainingPath,
+        customThumbnailsPath
+      );
+    }
+  );
+  ipcMain.handle('stats:scan-safar', async (_, safarFolderPath: string) => {
+    return await statsManager.scanSafarFolder(safarFolderPath);
+  });
+  ipcMain.handle('stats:save-date', async (_, safarName: string, safarRoot: string, dateStat: any) => {
+    return await statsManager.addOrUpdateDateToSafar(safarName, safarRoot, dateStat);
+  });
+  ipcMain.handle('stats:save-safar', async (_, record: any) => {
+    return await statsManager.saveSafarRecord(record);
+  });
+  ipcMain.handle('stats:delete-date', (_, safarId: string, dateId: string) => {
+    return statsManager.deleteDate(safarId, dateId);
+  });
+  ipcMain.handle('stats:delete-safar', (_, safarId: string) => {
+    return statsManager.deleteSafar(safarId);
+  });
+  ipcMain.handle('stats:export', (_, format: 'json' | 'csv') => {
+    return statsManager.exportStats(format);
   });
 }
