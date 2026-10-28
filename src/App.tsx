@@ -26,9 +26,9 @@ import {
   ThumbnailSeparatorPage,
   RemainingCollectorPage,
   EventDistributorPage,
+  EventDistributorStatsPage,
   DoNotUploadPage,
   ExcelMergerPage,
-  SafarStatsPage,
   ActivityPage,
   StandaloneToolsPage,
 } from './pages';
@@ -198,8 +198,9 @@ const AppContent: React.FC = () => {
         return <DoNotUploadPage onNavigate={setActivePage} onShowToast={showToast} />;
       case 'excelMerger':
         return <ExcelMergerPage onNavigate={setActivePage} onShowToast={showToast} />;
+      case 'eventStats':
       case 'safarStats':
-        return <SafarStatsPage onNavigate={setActivePage} onShowToast={showToast} />;
+        return <EventDistributorStatsPage onNavigate={setActivePage} onShowToast={showToast} />;
       case 'activity':
         return <ActivityPage />;
       case 'tools':

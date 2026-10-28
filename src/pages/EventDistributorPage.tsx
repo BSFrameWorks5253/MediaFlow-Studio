@@ -395,7 +395,7 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
           <StudioButton
             variant="glass"
             size="sm"
-            onClick={() => onNavigate('safarStats')}
+            onClick={() => onNavigate('eventStats')}
             icon={<BarChart3 size={14} color="#00F2FE" />}
             style={{
               backgroundColor: 'rgba(0, 242, 254, 0.12)',
@@ -404,7 +404,7 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
               fontWeight: 700,
             }}
           >
-            Safar Stats Page (Unlocked) →
+            Event &amp; Safar Stats (Unlocked) →
           </StudioButton>
         )}
       </div>
@@ -617,7 +617,7 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
                     size="sm"
                     onClick={() => {
                       unlockStatsPage();
-                      onNavigate('safarStats');
+                      onNavigate('eventStats');
                     }}
                     icon={<BarChart3 size={15} />}
                     style={{
@@ -627,7 +627,7 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
                       boxShadow: '0 0 15px rgba(0, 242, 254, 0.35)',
                     }}
                   >
-                    Open Safar & Date Stats Page (Unlocked) →
+                    Open Event &amp; Safar Stats Page (Unlocked) →
                   </StudioButton>
                 )}
                 {onNavigate && (

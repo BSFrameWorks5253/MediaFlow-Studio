@@ -30,6 +30,7 @@ export type PageKey =
   | 'googleDrive'
   | 'activity'
   | 'tools'
+  | 'eventStats'
   | 'safarStats';
 
 /**
@@ -155,9 +156,16 @@ export const STAGE_METADATA_MAP: Record<PageKey, Omit<StageMeta, 'key'>> = {
     color: '#00F2FE',
     icon: Cloud,
   },
+  eventStats: {
+    label: 'Event & Safar Stats',
+    shortTitle: 'Event Stats',
+    desc: 'Master Ingestion & Companion Storage Ledger',
+    color: '#00F2FE',
+    icon: BarChart3,
+  },
   safarStats: {
-    label: 'Safar & Date Stats',
-    shortTitle: 'Safar Stats',
+    label: 'Event & Safar Stats',
+    shortTitle: 'Event Stats',
     desc: 'Master Ingestion & Companion Storage Ledger',
     color: '#00F2FE',
     icon: BarChart3,
@@ -182,8 +190,9 @@ export function getStageNumber(key: PageKey): string {
       return 'UTIL';
     case 'googleDrive':
       return 'CLOUD';
+    case 'eventStats':
     case 'safarStats':
-      return 'STATS';
+      return '07.5';
     default:
       return 'SYS';
   }

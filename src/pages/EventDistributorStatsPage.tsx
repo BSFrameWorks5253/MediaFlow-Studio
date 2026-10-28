@@ -32,13 +32,16 @@ import {
 } from '../../electron/managers/statsManager';
 import { toUserErrorMessage } from '../utils/errorSanitizer';
 
-interface SafarStatsPageProps {
+interface EventDistributorStatsPageProps {
   onNavigate?: (page: PageKey) => void;
   onShowToast: (text: string, type: 'success' | 'danger' | 'warning' | 'info') => void;
 }
 
-export const SafarStatsPage: React.FC<SafarStatsPageProps> = ({ onNavigate, onShowToast }) => {
-  const { uploadStructure } = usePipeline();
+export const EventDistributorStatsPage: React.FC<EventDistributorStatsPageProps> = ({
+  onNavigate,
+  onShowToast,
+}) => {
+  const { uploadStructure, isStatsPageUnlocked } = usePipeline();
 
   // Mode selection: 'date' | 'safar'
   const [scopeMode, setScopeMode] = useState<'date' | 'safar'>('date');
@@ -84,7 +87,6 @@ export const SafarStatsPage: React.FC<SafarStatsPageProps> = ({ onNavigate, onSh
     loadLedger();
     loadRecents();
 
-    // If mainDataPath or target directory is set in pipelineContext, try auto-scanning
     if (uploadStructure.mainDataPath) {
       setDateFolderPath(uploadStructure.mainDataPath);
     }
@@ -567,7 +569,7 @@ export const SafarStatsPage: React.FC<SafarStatsPageProps> = ({ onNavigate, onSh
         paddingRight: 6,
       }}
     >
-      {/* Top Banner (Unlocked via Stage 07) */}
+      {/* Top Banner (Positioned right in the pipeline order of Stage 07) */}
       <div
         className="glass-card"
         style={{
@@ -598,7 +600,7 @@ export const SafarStatsPage: React.FC<SafarStatsPageProps> = ({ onNavigate, onSh
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--label)', letterSpacing: 0.3 }}>
-                Safar &amp; Shoot Date Stats Manager
+                Event &amp; Safar Stats
               </span>
               <span
                 style={{
@@ -612,7 +614,7 @@ export const SafarStatsPage: React.FC<SafarStatsPageProps> = ({ onNavigate, onSh
                   fontFamily: 'var(--font-mono)',
                 }}
               >
-                UNLOCKED STEP (STAGE 07.5)
+                STAGE 07.5 • UNLOCKED
               </span>
             </div>
             <div style={{ fontSize: 12, color: 'var(--secondary-label)', marginTop: 2 }}>

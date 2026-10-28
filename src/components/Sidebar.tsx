@@ -35,7 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
     for (const key of PIPELINE_NAV_ORDER) {
       items.push(key);
       if (key === 'eventDistributor') {
-        items.push('safarStats');
+        items.push('eventStats');
       }
     }
     return items;
@@ -177,7 +177,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
         {pipelineNavItems.map((key, index) => {
           const meta = getStageMeta(key);
           const stageNum = getStageNumber(key);
-          const isActive = activePage === key;
+          const isActive =
+            activePage === key ||
+            (key === 'eventStats' && activePage === 'safarStats') ||
+            (key === 'safarStats' && activePage === 'eventStats');
           const Icon = meta.icon;
           const shortcutKey = index < 9 ? `Alt+${index + 1}` : null;
 
@@ -287,7 +290,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
         {/* Dynamic System & Workspace Nav Buttons */}
         {SYSTEM_NAV_ORDER.map((key) => {
           const meta = getStageMeta(key);
-          const isActive = activePage === key;
+          const isActive =
+            activePage === key ||
+            (key === 'eventStats' && activePage === 'safarStats') ||
+            (key === 'safarStats' && activePage === 'eventStats');
           const Icon = meta.icon;
           return (
             <button
