@@ -394,6 +394,47 @@ export const AddToStatsModal: React.FC<AddToStatsModalProps> = ({
     }
   };
 
+  // Rescan folder structure and persist for future reference
+  const handleRescanStructure = async () => {
+    if (scopeMode === 'date') {
+      if (!dateFolderPath.trim()) {
+        onShowToast('Please enter or browse to a valid Date folder.', 'warning');
+        return;
+      }
+      onShowToast('Rescanning Date folder structure & outside companion directories...', 'info');
+      await handleAutoScanDate(dateFolderPath.trim(), customSafarName, customRemainingPath, customThumbnailsPath);
+
+      const targetSafarName =
+        safarSelectType === 'existing'
+          ? selectedExistingSafar?.safarName || customSafarName
+          : customSafarName.trim() || scannedDateResult?.detectedSafarName;
+      const targetSafarRoot =
+        customSafarRoot.trim() ||
+        selectedExistingSafar?.safarRootPath ||
+        scannedDateResult?.detectedSafarRoot;
+
+      if (targetSafarName && scannedDateResult?.dateStat && window.electronAPI?.statsSaveDate) {
+        await window.electronAPI.statsSaveDate(targetSafarName, targetSafarRoot || '', scannedDateResult.dateStat);
+        onShowToast(`✓ Rescanned & saved structure for "${targetSafarName}" for future reference!`, 'success');
+      } else {
+        onShowToast('✓ Date folder structure rescanned successfully.', 'success');
+      }
+    } else {
+      if (!safarFolderPath.trim()) {
+        onShowToast('Please enter or browse to a valid Safar folder.', 'warning');
+        return;
+      }
+      onShowToast('Rescanning Safar directory tree, _P-V, Remaining & Thumbnails...', 'info');
+      await handleScanSafar(safarFolderPath.trim());
+      if (scannedSafarRecord && window.electronAPI?.statsSaveSafar) {
+        await window.electronAPI.statsSaveSafar(scannedSafarRecord);
+        onShowToast(`✓ Rescanned & saved "${scannedSafarRecord.safarName}" for future reference!`, 'success');
+      } else {
+        onShowToast('✓ Safar folder structure rescanned successfully.', 'success');
+      }
+    }
+  };
+
   // Keyboard navigation for Mac Spotlight bar
   const handleSpotlightKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
@@ -1268,6 +1309,28 @@ export const AddToStatsModal: React.FC<AddToStatsModalProps> = ({
             <StudioButton variant="secondary" onClick={onClose}>
               Cancel
             </StudioButton>
+
+            <StudioButton
+              variant="secondary"
+              onClick={handleRescanStructure}
+              disabled={
+                isScanningDate ||
+                isScanningSafar ||
+                isSaving ||
+                (scopeMode === 'date' && !dateFolderPath.trim()) ||
+                (scopeMode === 'safar' && !safarFolderPath.trim())
+              }
+              icon={<RefreshCw size={13} className={isScanningDate || isScanningSafar ? 'spin-anim' : ''} />}
+              style={{
+                borderColor: 'rgba(0, 242, 254, 0.4)',
+                color: '#00F2FE',
+                backgroundColor: 'rgba(0, 242, 254, 0.08)',
+              }}
+              title="Rescan folder tree from disk and save structure for future reference"
+            >
+              🔄 Rescan & Save Structure
+            </StudioButton>
+
             <StudioButton
               variant="primary"
               onClick={handleSaveToStats}
