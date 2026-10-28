@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   ChevronRight,
   Settings as SettingsIcon,
@@ -13,6 +13,7 @@ import {
   getStageMeta,
 } from '../types/pipelineStages';
 import { useTheme } from '../context/ThemeContext';
+import { usePipeline } from '../context/PipelineContext';
 import { MediaFlowLogo } from './MediaFlowLogo';
 
 export type { PageKey };
@@ -26,6 +27,19 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpenSettings }) => {
   const { theme, toggleTheme } = useTheme();
+  const { isStatsPageUnlocked } = usePipeline();
+
+  const pipelineNavItems = useMemo(() => {
+    if (!isStatsPageUnlocked) return PIPELINE_NAV_ORDER;
+    const items: PageKey[] = [];
+    for (const key of PIPELINE_NAV_ORDER) {
+      items.push(key);
+      if (key === 'eventDistributor') {
+        items.push('safarStats');
+      }
+    }
+    return items;
+  }, [isStatsPageUnlocked]);
 
   return (
     <aside
@@ -155,12 +169,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
               fontFamily: 'var(--font-mono)',
             }}
           >
-            9 STAGES
+            {isStatsPageUnlocked ? '10 STAGES' : '9 STAGES'}
           </span>
         </div>
 
         {/* Dynamic Pipeline Stages Render */}
-        {PIPELINE_NAV_ORDER.map((key, index) => {
+        {pipelineNavItems.map((key, index) => {
           const meta = getStageMeta(key);
           const stageNum = getStageNumber(key);
           const isActive = activePage === key;

@@ -19,6 +19,7 @@ import {
   Cloud,
   Clock,
   Wrench,
+  BarChart3,
 } from 'lucide-react';
 import { PageKey } from './Sidebar';
 import { useTheme } from '../context/ThemeContext';
@@ -47,6 +48,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     { label: 'Photo Status Tagger — _U & _R Renamer', category: 'Pipeline', icon: Tags, color: '#8B5CF6', action: () => onNavigate('photoMatcher') },
     { label: 'Remaining Shifter — Date Consolidation', category: 'Pipeline', icon: CalendarSync, color: '#EC4899', action: () => onNavigate('remainingCollector') },
     { label: 'Event Image Shifter — Auto Event Badges', category: 'Pipeline', icon: Camera, color: '#6366F1', action: () => onNavigate('eventDistributor') },
+    { label: 'Safar & Date Stats — Master Volume Ledger', category: 'Pipeline', icon: BarChart3, color: '#00F2FE', action: () => onNavigate('safarStats') },
     { label: 'Sync Photo Video — Sequence Alignment', category: 'Pipeline', icon: Clapperboard, color: '#10B981', action: () => onNavigate('videoTransfer') },
     { label: 'Thumbnail Shifter — _P & _V Isolator', category: 'Pipeline', icon: ImageDown, color: '#0D9488', action: () => onNavigate('thumbnailSeparator') },
     { label: 'DO NOT UPLOAD — Contributor & Documents Isolator', category: 'Pipeline', icon: ShieldAlert, color: '#F43F5E', action: () => onNavigate('doNotUpload') },

@@ -13,6 +13,7 @@ import {
   Clock,
   Wrench,
   Cloud,
+  BarChart3,
 } from 'lucide-react';
 
 export type PageKey =
@@ -28,7 +29,8 @@ export type PageKey =
   | 'excelMerger'
   | 'googleDrive'
   | 'activity'
-  | 'tools';
+  | 'tools'
+  | 'safarStats';
 
 /**
  * Canonical Linear Pipeline Order
@@ -153,6 +155,13 @@ export const STAGE_METADATA_MAP: Record<PageKey, Omit<StageMeta, 'key'>> = {
     color: '#00F2FE',
     icon: Cloud,
   },
+  safarStats: {
+    label: 'Safar & Date Stats',
+    shortTitle: 'Safar Stats',
+    desc: 'Master Ingestion & Companion Storage Ledger',
+    color: '#00F2FE',
+    icon: BarChart3,
+  },
 };
 
 /**
@@ -173,6 +182,8 @@ export function getStageNumber(key: PageKey): string {
       return 'UTIL';
     case 'googleDrive':
       return 'CLOUD';
+    case 'safarStats':
+      return 'STATS';
     default:
       return 'SYS';
   }

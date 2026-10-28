@@ -58,6 +58,10 @@ export interface PipelineContextValue {
   validateEnvironment: () => boolean;
   triggerAutomatedSequence: () => Promise<void>;
   stopAutomatedSequence: () => void;
+
+  // Dynamically Unlocked Pages
+  isStatsPageUnlocked: boolean;
+  unlockStatsPage: () => void;
 }
 
 const STORAGE_KEY = 'dataflow_upload_structure_v1';
@@ -146,6 +150,21 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setUploadStructureState(defaultStructure);
     try {
       localStorage.removeItem(STORAGE_KEY);
+    } catch {}
+  }, []);
+
+  const [isStatsPageUnlocked, setIsStatsPageUnlocked] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('mediaflow_stats_unlocked') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const unlockStatsPage = useCallback(() => {
+    setIsStatsPageUnlocked(true);
+    try {
+      localStorage.setItem('mediaflow_stats_unlocked', 'true');
     } catch {}
   }, []);
 
@@ -295,6 +314,8 @@ export const PipelineProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         validateEnvironment,
         triggerAutomatedSequence,
         stopAutomatedSequence,
+        isStatsPageUnlocked,
+        unlockStatsPage,
       }}
     >
       {children}

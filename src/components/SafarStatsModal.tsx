@@ -726,3 +726,4 @@ export const SafarStatsModal: React.FC<SafarStatsModalProps> = ({
     </div>
   );
 };
+

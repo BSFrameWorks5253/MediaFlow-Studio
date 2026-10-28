@@ -34,7 +34,7 @@ interface EventDistributorPageProps {
 }
 
 export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onShowToast, onNavigate }) => {
-  const { uploadStructure } = usePipeline();
+  const { uploadStructure, isStatsPageUnlocked, unlockStatsPage } = usePipeline();
 
   const [targetDir, setTargetDir] = useState(uploadStructure.mainDataPath || '');
   const [imagesDir, setImagesDir] = useState('');
@@ -286,7 +286,8 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
           skippedExisting: 0,
           errors: [],
         });
-        onShowToast(`Simulation finished! Successfully copied ${scanResult.foldersMatched.length} images. (Preview Mode)`, 'success');
+        unlockStatsPage();
+        onShowToast(`Simulation finished! Successfully copied ${scanResult.foldersMatched.length} images. 'Safar & Date Stats' page is now unlocked!`, 'success');
       }, 600);
       return;
     }
@@ -297,6 +298,7 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
         scanResult.foldersMatched
       );
       setExecutionSummary(summary);
+      unlockStatsPage();
       if (summary.success) {
         onShowToast(
           `Distribution finished! Successfully copied ${summary.totalImagesCopied} images across ${summary.totalFoldersProcessed} folders (${summary.skippedExisting} already existed).`,
@@ -389,24 +391,22 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {isStatsPageUnlocked && onNavigate && (
           <StudioButton
             variant="glass"
             size="sm"
-            onClick={() => setIsAddToStatsOpen(true)}
+            onClick={() => onNavigate('safarStats')}
             icon={<BarChart3 size={14} color="#00F2FE" />}
+            style={{
+              backgroundColor: 'rgba(0, 242, 254, 0.12)',
+              border: '1px solid rgba(0, 242, 254, 0.3)',
+              color: '#00F2FE',
+              fontWeight: 700,
+            }}
           >
-            Add to Stats
+            Safar Stats Page (Unlocked) →
           </StudioButton>
-          <StudioButton
-            variant="glass"
-            size="sm"
-            onClick={() => setIsStatsLedgerOpen(true)}
-            icon={<Database size={14} />}
-          >
-            Stats Ledger
-          </StudioButton>
-        </div>
+        )}
       </div>
 
       {/* Path Selectors */}
@@ -611,28 +611,37 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <StudioButton
-                  variant="glass"
-                  size="sm"
-                  onClick={() => setIsAddToStatsOpen(true)}
-                  icon={<BarChart3 size={15} color="#00F2FE" />}
-                  style={{
-                    backgroundColor: 'rgba(0, 242, 254, 0.15)',
-                    border: '1.5px solid rgba(0, 242, 254, 0.45)',
-                    color: '#00F2FE',
-                    fontWeight: 700,
-                  }}
-                >
-                  Add to Stats 📊
-                </StudioButton>
                 {onNavigate && (
                   <StudioButton
                     variant="primary"
                     size="sm"
-                    onClick={() => onNavigate('excelMerger')}
-                    style={{ backgroundColor: '#F59E0B' }}
+                    onClick={() => {
+                      unlockStatsPage();
+                      onNavigate('safarStats');
+                    }}
+                    icon={<BarChart3 size={15} />}
+                    style={{
+                      background: 'linear-gradient(135deg, #00F2FE 0%, #3B82F6 100%)',
+                      color: '#000',
+                      fontWeight: 800,
+                      boxShadow: '0 0 15px rgba(0, 242, 254, 0.35)',
+                    }}
                   >
-                    Proceed to Report Merger (Stage 08) →
+                    Open Safar & Date Stats Page (Unlocked) →
+                  </StudioButton>
+                )}
+                {onNavigate && (
+                  <StudioButton
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => onNavigate('excelMerger')}
+                    style={{
+                      backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                      color: '#F59E0B',
+                      border: '1px solid rgba(245, 158, 11, 0.3)',
+                    }}
+                  >
+                    Skip to Report Merger (Stage 08) →
                   </StudioButton>
                 )}
               </div>
