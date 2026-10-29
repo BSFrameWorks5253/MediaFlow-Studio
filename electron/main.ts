@@ -14,6 +14,7 @@ import { ActivityReportsManager } from './engines/../managers/activityReportsMan
 import { EventImageDistributorEngine } from './engines/eventImageDistributor';
 import { StatsManager } from './managers/statsManager';
 import { EcosystemManager } from './managers/ecosystemManager';
+import { resolveChildAppLoaderConfig, showChildAppSplash, closeChildAppSplash, ChildAppLoaderConfig } from './splash';
 import { WorkstationAutoUpdater, UpdateInfo } from './managers/autoUpdater';
 
 // Windows Taskbar & Action Center Model ID for dedicated window grouping
@@ -277,12 +278,7 @@ function completeSplashHandoff() {
     clearTimeout(splashSafetyTimeout);
     splashSafetyTimeout = null;
   }
-
-  if (splashWindow && !splashWindow.isDestroyed()) {
-    splashWindow.destroy();
-    splashWindow = null;
-  }
-
+  closeChildAppSplash();
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.show();
     mainWindow.focus();
@@ -457,13 +453,15 @@ app.on('window-all-closed', () => {
 
 function setupIpcHandlers() {
   // Splash Screen Lifecycle & Anything Ecosystem Customization
-  ipcMain.handle('splash:getLoaderConfig', async () => loadAnythingLoaderConfig(true));
+  ipcMain.handle('splash:getLoaderConfig', async () => resolveChildAppLoaderConfig('mediaflow-studio', 'MediaFlow Studio'));
   ipcMain.handle('splash:saveLoaderConfig', async (_, cfg) => {
     try {
       const targets = [
         path.join(process.cwd(), 'loader-config.json'),
         path.join(app.getAppPath(), 'loader-config.json'),
         path.join(app.getPath('userData'), 'loader-config.json'),
+        path.join(process.env.APPDATA || '', 'anything', 'loaders', 'mediaflow-studio.json'),
+        path.join(process.env.APPDATA || '', 'Anything', 'loaders', 'mediaflow-studio.json'),
         'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\New folder (2)\\Anything\\releases\\mediaflow-studio\\loader-config.json',
         'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\New folder (2)\\releases\\mediaflow-studio\\loader-config.json',
       ];
