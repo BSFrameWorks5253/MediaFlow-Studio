@@ -39,11 +39,19 @@ export class WorkstationAutoUpdater {
    * Resolves the Anything Ecosystem root directory if accessible.
    */
   public static resolveAnythingDir(customPath?: string): string | null {
+    const cliArg = process.argv.find((a) => a.startsWith('--anything-dir='))?.split('=')[1];
+    const appData = process.env.APPDATA || (process.env.USERPROFILE ? path.join(process.env.USERPROFILE, 'AppData', 'Roaming') : '');
+
     const candidates = [
       customPath,
+      cliArg,
+      process.env.ANYTHING_DIR,
+      process.env.ANYTHING_ECOSYSTEM_PATH,
       'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Anything\\Anything',
       this.DEFAULT_ANYTHING_DIR,
       'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Anything',
+      appData ? path.join(appData, 'Anything') : '',
+      appData ? path.join(appData, 'anything') : '',
       path.resolve(process.cwd(), '..', '..', 'Anything', 'Anything'),
       path.resolve(process.cwd(), '..', 'Anything', 'Anything'),
       path.resolve(process.cwd(), '..', 'Anything'),
@@ -76,6 +84,45 @@ export class WorkstationAutoUpdater {
     repo: string = this.DEFAULT_REPO
   ): Promise<UpdateInfo | null> {
     const currentVer = (app.getVersion() || '6.0.0').replace(/^v/, '');
+
+    // 0. Probe Anything Local Hub Server (port 49153)
+    try {
+      const hubData = await this.fetchJson('http://127.0.0.1:49153/api/catalog');
+      if (hubData && Array.isArray(hubData.apps)) {
+        const item = hubData.apps.find((a: any) =>
+          a.id === 'mediaflow-studio' || a.id === 'mediaflow' || (typeof a.name === 'string' && a.name.toLowerCase().includes('mediaflow'))
+        );
+        if (item && item.version) {
+          const remoteVer = item.version.replace(/^v/, '');
+          const newer = this.isNewer(remoteVer, currentVer);
+          const setupName = item.setupExecutableName || `Mediaflow_studio_${remoteVer}_Setup.exe`;
+          const downloadUrl = `http://127.0.0.1:49153/api/download-package/mediaflow-studio`;
+          const updateInfo: UpdateInfo = {
+            version: remoteVer,
+            latestVersion: remoteVer,
+            currentVersion: currentVer,
+            hasUpdate: newer,
+            downloadUrl,
+            fileName: setupName,
+            source: 'anything-catalog',
+            releaseNotes: item.changelog || ['Fast Local LAN Update via Anything Hub Server'],
+            publishedAt: item.publishedAt || new Date().toISOString(),
+            sizeFormatted: item.packageSize || '82.2 MB',
+            setupExecutableName: setupName,
+            mandatory: false,
+            success: true,
+            notes: (item.changelog || []).join('\n'),
+            exeUrl: downloadUrl,
+            msiUrl: downloadUrl,
+            releasePageUrl: item.githubRepo || `https://github.com/${repo}/releases`,
+          };
+          if (newer && mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('update:available', updateInfo);
+          }
+          if (newer) return updateInfo;
+        }
+      }
+    } catch {}
 
     // 1. Check Anything Ecosystem
     const resolvedAnythingDir = this.resolveAnythingDir(anythingDirPath);
@@ -187,7 +234,11 @@ export class WorkstationAutoUpdater {
       let releaseJsonItem: any = null;
 
       // Check published-apps/catalog.json
-      const catalogPath = path.join(anythingDir, 'published-apps', 'catalog.json');
+      let catalogPath = path.join(anythingDir, 'published-apps', 'catalog.json');
+      if (!fs.existsSync(catalogPath)) {
+        const alt = path.join(anythingDir, 'ecosystem_catalog.json');
+        if (fs.existsSync(alt)) catalogPath = alt;
+      }
       if (fs.existsSync(catalogPath)) {
         try {
           const raw = fs.readFileSync(catalogPath, 'utf-8').replace(/^\uFEFF/, '').trim();

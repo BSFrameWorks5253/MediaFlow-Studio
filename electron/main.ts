@@ -96,13 +96,13 @@ function loadAnythingLoaderConfig(forceReload = true): AnythingLoaderConfig {
     path.join(__dirname, '../loader-config.json'),
     path.join(app.getAppPath(), 'loader-config.json'),
     path.join(process.resourcesPath || '', 'loader-config.json'),
-    'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\New folder (2)\\Anything\\releases\\mediaflow-studio\\loader-config.json',
-    'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\New folder (2)\\releases\\mediaflow-studio\\loader-config.json',
+    'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Anything\\Anything\\releases\\mediaflow-studio\\loader-config.json',
+    'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Anything\\releases\\mediaflow-studio\\loader-config.json',
     'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Anything\\releases\\mediaflow-studio\\loader-config.json',
     path.join(appData, 'Anything', 'loaders', 'mediaflow-studio.json'),
     path.join(appData, 'anything', 'loaders', 'mediaflow-studio.json'),
     path.join(localAppData, 'anything', 'loaders', 'mediaflow-studio.json'),
-    path.resolve(app.getAppPath(), '..', 'New folder (2)', 'Anything', 'releases', 'mediaflow-studio', 'loader-config.json'),
+    path.resolve(app.getAppPath(), '..', 'Anything', 'Anything', 'releases', 'mediaflow-studio', 'loader-config.json'),
     path.resolve(app.getAppPath(), '..', 'Anything', 'releases', 'mediaflow-studio', 'loader-config.json')
   ];
 
@@ -168,7 +168,7 @@ let appConfig = {
   eventExcelPath: '',
   eventImagesDirPath: '',
   updateMode: 'auto' as 'auto' | 'manual',
-  anythingDirPath: 'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\New folder (2)\\Anything',
+  anythingDirPath: 'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Anything\\Anything',
 };
 
 try {
@@ -179,7 +179,7 @@ try {
 
 if (!appConfig.updateMode) appConfig.updateMode = 'auto';
 if (!appConfig.anythingDirPath) {
-  appConfig.anythingDirPath = 'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\New folder (2)\\Anything';
+  appConfig.anythingDirPath = 'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Anything\\Anything';
 }
 
 function saveAppConfig(newConfig: any) {
@@ -192,7 +192,7 @@ function saveAppConfig(newConfig: any) {
 function createSplashWindow() {
   const iconCandidate1 = path.join(__dirname, '../public/assets/app.ico');
   const iconCandidate2 = path.join(__dirname, '../dist/assets/app.ico');
-  const iconCandidate3 = 'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\New folder (2)\\Anything\\published-apps\\mediaflow-studio\\app.ico';
+  const iconCandidate3 = 'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Anything\\Anything\\published-apps\\mediaflow-studio\\app.ico';
   const iconPath = fs.existsSync(iconCandidate1)
     ? iconCandidate1
     : fs.existsSync(iconCandidate2)
@@ -462,8 +462,8 @@ function setupIpcHandlers() {
         path.join(app.getPath('userData'), 'loader-config.json'),
         path.join(process.env.APPDATA || '', 'anything', 'loaders', 'mediaflow-studio.json'),
         path.join(process.env.APPDATA || '', 'Anything', 'loaders', 'mediaflow-studio.json'),
-        'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\New folder (2)\\Anything\\releases\\mediaflow-studio\\loader-config.json',
-        'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\New folder (2)\\releases\\mediaflow-studio\\loader-config.json',
+        'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Anything\\Anything\\releases\\mediaflow-studio\\loader-config.json',
+        'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Anything\\releases\\mediaflow-studio\\loader-config.json',
       ];
       for (const t of targets) {
         try {

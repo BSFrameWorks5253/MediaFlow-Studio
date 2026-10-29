@@ -485,7 +485,7 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
           </div>
         </div>
 
-        {isStatsPageUnlocked && (
+        true && (
           <StudioButton
             variant="glass"
             size="sm"
@@ -498,7 +498,7 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
               fontWeight: 700,
             }}
           >
-            Event &amp; Safar Stats (Unlocked) →
+            Safar Production Stats Ledger →
           </StudioButton>
         )}
       </div>
@@ -1346,6 +1346,13 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
         onShowToast={onShowToast}
         initialPath={targetDir || uploadStructure.mainDataPath || ''}
         onOpenStatsManager={() => setIsStatsLedgerOpen(true)}
+      />
+
+      <SafarStatsModal
+        isOpen={isStatsLedgerOpen}
+        onClose={() => setIsStatsLedgerOpen(false)}
+        onShowToast={onShowToast}
+        onOpenAddModal={() => setIsAddToStatsOpen(true)}
       />
 
       {/* Live Operation Loading Overlay */}
