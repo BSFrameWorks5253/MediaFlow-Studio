@@ -14,6 +14,11 @@ import {
   X,
   BarChart3,
   Database,
+  Link,
+  Sparkles,
+  Check,
+  Copy,
+  PlusCircle,
 } from 'lucide-react';
 import { StudioButton } from '../components/StudioButton';
 import { StudioFolderInput } from '../components/StudioFolderInput';
@@ -480,11 +485,11 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
           </div>
         </div>
 
-        {isStatsPageUnlocked && onNavigate && (
+        {isStatsPageUnlocked && (
           <StudioButton
             variant="glass"
             size="sm"
-            onClick={() => onNavigate('eventStats')}
+            onClick={() => setIsAddToStatsOpen(true)}
             icon={<BarChart3 size={14} color="#00F2FE" />}
             style={{
               backgroundColor: 'rgba(0, 242, 254, 0.12)',
@@ -881,13 +886,12 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                {onNavigate && (
-                  <StudioButton
+                <StudioButton
                     variant="primary"
                     size="sm"
                     onClick={() => {
                       unlockStatsPage();
-                      onNavigate('eventStats');
+                      setIsAddToStatsOpen(true);
                     }}
                     icon={<BarChart3 size={15} />}
                     style={{
@@ -897,9 +901,8 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
                       boxShadow: '0 0 15px rgba(0, 242, 254, 0.35)',
                     }}
                   >
-                    Open Event &amp; Safar Stats Page (Unlocked) →
+                    + Add to Stats
                   </StudioButton>
-                )}
                 {onNavigate && (
                   <StudioButton
                     variant="secondary"

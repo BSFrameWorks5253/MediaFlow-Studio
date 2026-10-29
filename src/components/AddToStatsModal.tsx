@@ -769,7 +769,6 @@ export const AddToStatsModal: React.FC<AddToStatsModalProps> = ({
                 onChange={(val) => setDateFolderPath(val)}
                 onBrowse={handleBrowseDateFolder}
                 placeholder="e.g. D:\...\1448-10-Istefada ilmiyah_P-V\1448-04-05 _02E"
-                accentColor="#00F2FE"
               />
 
               {/* Step 2: Name the Safar (Select Safar: Existing vs New) */}
@@ -1067,7 +1066,7 @@ export const AddToStatsModal: React.FC<AddToStatsModalProps> = ({
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--secondary-label)', display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span>Remaining Folder:</span>
-                      {scannedDateResult?.remainingMetrics.exists && (
+                      {Boolean(scannedDateResult?.dateStat?.remainingMetrics?.exists) && (
                         <span style={{ color: 'var(--system-green)', fontSize: 10, fontWeight: 700 }}>
                           ✓ AUTO-DETECTED
                         </span>
@@ -1076,7 +1075,7 @@ export const AddToStatsModal: React.FC<AddToStatsModalProps> = ({
                     <div
                       style={{
                         fontSize: 11,
-                        color: scannedDateResult?.remainingMetrics.exists ? 'var(--label)' : 'var(--tertiary-label)',
+                        color: Boolean(scannedDateResult?.dateStat?.remainingMetrics?.exists) ? 'var(--label)' : 'var(--tertiary-label)',
                         fontFamily: 'var(--font-mono)',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -1097,7 +1096,7 @@ export const AddToStatsModal: React.FC<AddToStatsModalProps> = ({
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--secondary-label)', display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span>Thumbnails Folder:</span>
-                      {scannedDateResult?.thumbnailsMetrics.exists && (
+                      {Boolean(scannedDateResult?.dateStat?.thumbnailsMetrics?.exists) && (
                         <span style={{ color: 'var(--system-green)', fontSize: 10, fontWeight: 700 }}>
                           ✓ AUTO-DETECTED
                         </span>
@@ -1106,7 +1105,7 @@ export const AddToStatsModal: React.FC<AddToStatsModalProps> = ({
                     <div
                       style={{
                         fontSize: 11,
-                        color: scannedDateResult?.thumbnailsMetrics.exists ? 'var(--label)' : 'var(--tertiary-label)',
+                        color: Boolean(scannedDateResult?.dateStat?.thumbnailsMetrics?.exists) ? 'var(--label)' : 'var(--tertiary-label)',
                         fontFamily: 'var(--font-mono)',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -1201,7 +1200,6 @@ export const AddToStatsModal: React.FC<AddToStatsModalProps> = ({
                 }}
                 onBrowse={handleBrowseSafarFolder}
                 placeholder="e.g. D:\To Delete\1448-10-Istefada ilmiyah"
-                accentColor="#8B5CF6"
               />
 
               {isScanningSafar && (
