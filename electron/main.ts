@@ -212,10 +212,10 @@ function createSplashWindow() {
     backgroundColor: '#00000000',
     center: true,
     resizable: false,
-    alwaysOnTop: true,
+    alwaysOnTop: false,
     hasShadow: true,
     show: true, // Only the loader rectangle appears on screen first
-    skipTaskbar: false,
+    skipTaskbar: true,
     icon: iconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -250,6 +250,13 @@ function createSplashWindow() {
     return { action: 'deny' };
   });
 
+  splashWindow.webContents.on('did-fail-load', (_e, code, desc) => {
+    if (code !== -3) {
+      console.warn('[SPLASH] Failed to load splash screen:', code, desc);
+      completeSplashHandoff();
+    }
+  });
+
   const isDev = !app.isPackaged && (process.env.NODE_ENV === 'development' || process.argv.includes('--dev'));
   const distHtmlPath = path.join(__dirname, '../dist/index.html');
 
@@ -257,11 +264,15 @@ function createSplashWindow() {
     splashWindow.loadURL('http://127.0.0.1:5173?view=splash&window=splash#splash').catch(() => {
       if (fs.existsSync(distHtmlPath)) {
         splashWindow?.loadFile(distHtmlPath, { query: { view: 'splash', window: 'splash' }, hash: 'splash' });
+      } else {
+        completeSplashHandoff();
       }
     });
   } else {
     if (fs.existsSync(distHtmlPath)) {
       splashWindow.loadFile(distHtmlPath, { query: { view: 'splash', window: 'splash' }, hash: 'splash' });
+    } else {
+      completeSplashHandoff();
     }
   }
 
@@ -280,6 +291,14 @@ function completeSplashHandoff() {
     splashSafetyTimeout = null;
   }
   closeChildAppSplash();
+  if (splashWindow && !splashWindow.isDestroyed()) {
+    try {
+      splashWindow.destroy();
+    } catch (e) {
+      console.warn('[SPLASH] Error destroying splashWindow:', e);
+    }
+    splashWindow = null;
+  }
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.show();
     mainWindow.focus();

@@ -26,6 +26,30 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpenSettings }) => {
+  const [activeSlide, setActiveSlide] = React.useState<0 | 1>(0);
+  const [userProfile, setUserProfile] = React.useState<{ name: string; username: string } | null>(null);
+
+  React.useEffect(() => {
+    const api = (window as any).electronAPI || (window as any).api;
+    if (api?.userProfile?.load) {
+      api.userProfile.load().then((p: any) => {
+        if (p && (p.name || p.username || p.email)) {
+          setUserProfile({
+            name: p.name || 'Creator',
+            username: p.username || (p.email ? p.email.split('@')[0] : 'creator')
+          });
+        }
+      }).catch(() => {});
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (!userProfile) return;
+    const interval = setInterval(() => {
+      setActiveSlide((prev) => (prev === 0 ? 1 : 0));
+    }, 4500);
+    return () => clearInterval(interval);
+  }, [userProfile]);
   const { theme, toggleTheme } = useTheme();
   const { isStatsPageUnlocked } = usePipeline();
 
@@ -89,32 +113,45 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontWeight: 800,
-              fontSize: 13.5,
-              letterSpacing: 1.2,
-              color: 'var(--label)',
-            }}
-          >
-            MEDIAFLOW
-          </span>
-          <span
-            style={{
-              padding: '1.5px 5px',
-              borderRadius: 4,
-              fontSize: 8.5,
-              fontFamily: 'var(--font-mono)',
-              fontWeight: 800,
-              color: '#00F2FE',
-              background: 'rgba(0, 242, 254, 0.12)',
-              border: '1px solid rgba(0, 242, 254, 0.3)',
-            }}
-          >
-            v5.0
-          </span>
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 140, overflow: 'hidden' }}>
+          {activeSlide === 0 || !userProfile ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, animation: 'fadeIn 0.3s ease-in-out' }}>
+              <span
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontWeight: 800,
+                  fontSize: 13,
+                  letterSpacing: 1.1,
+                  color: 'var(--label)',
+                }}
+              >
+                MEDIAFLOW
+              </span>
+              <span
+                style={{
+                  padding: '1px 5px',
+                  borderRadius: 4,
+                  fontSize: 8.5,
+                  fontFamily: 'var(--font-mono)',
+                  fontWeight: 800,
+                  color: '#00F2FE',
+                  background: 'rgba(0, 242, 254, 0.12)',
+                  border: '1px solid rgba(0, 242, 254, 0.3)',
+                }}
+              >
+                v26.10.31
+              </span>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', animation: 'fadeIn 0.3s ease-in-out' }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--label)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {userProfile.name}
+              </span>
+              <span style={{ fontSize: 9.5, fontFamily: 'var(--font-mono)', fontWeight: 600, color: '#00F2FE', opacity: 0.9 }}>
+                @{userProfile.username}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

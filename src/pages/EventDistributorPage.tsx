@@ -41,7 +41,7 @@ interface EventDistributorPageProps {
 export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onShowToast, onNavigate }) => {
   const { uploadStructure, isStatsPageUnlocked, unlockStatsPage } = usePipeline();
 
-  const [targetDir, setTargetDir] = useState(uploadStructure.mainDataPath || '');
+  const [targetDir, setTargetDir] = useState(uploadStructure.mainDataDatePath || uploadStructure.mainDataPath || '');
   const [imagesDir, setImagesDir] = useState('');
   const [excelPath, setExcelPath] = useState('');
 
@@ -149,9 +149,16 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
             if (cfg.eventImagesDirPath && !imagesDir) {
               setImagesDir(cfg.eventImagesDirPath);
               setSetupImagesPath(cfg.eventImagesDirPath);
+            } else if (!imagesDir) {
+              setImagesDir('C:\\Users\\Burhanuddin\\Downloads\\Full Downloads Data\\Warning and iltemas');
+              setSetupImagesPath('C:\\Users\\Burhanuddin\\Downloads\\Full Downloads Data\\Warning and iltemas');
             }
           } else {
             setExcelPath('C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Pla Cards.xlsx');
+            if (!imagesDir) {
+              setImagesDir('C:\\Users\\Burhanuddin\\Downloads\\Full Downloads Data\\Warning and iltemas');
+              setSetupImagesPath('C:\\Users\\Burhanuddin\\Downloads\\Full Downloads Data\\Warning and iltemas');
+            }
           }
         });
 
@@ -485,7 +492,7 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
           </div>
         </div>
 
-        true && (
+        {true && (
           <StudioButton
             variant="glass"
             size="sm"

@@ -33,7 +33,7 @@ export const ThumbnailSeparatorPage: React.FC<ThumbnailSeparatorPageProps> = ({ 
   const { uploadStructure } = usePipeline();
   const [sourceDir, setSourceDir] = useState('');
   const [destDir, setDestDir] = useState(uploadStructure.thumbnailsPath || '');
-  const [mode, setMode] = useState<'copy' | 'move'>('copy');
+  const [mode, setMode] = useState<'copy' | 'move'>('move');
 
   // Auto-update destDir when uploadStructure changes
   React.useEffect(() => {

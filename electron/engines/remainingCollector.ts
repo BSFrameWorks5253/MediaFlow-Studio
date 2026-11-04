@@ -184,8 +184,9 @@ export class RemainingCollectorEngine {
       }
     }
 
-    // Save JSON manifest to Document/ folder
-    const docDir = path.join(cleanDest, 'Document');
+    // Save JSON manifest to App Temp directory
+    const os = require('os');
+    const docDir = path.join(os.tmpdir(), 'MediaFlow_Studio_Reports');
     await fs.promises.mkdir(docDir, { recursive: true });
     const timestamp = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14);
     const manifestPath = path.join(docDir, `remaining_shift_manifest_${timestamp}.json`);

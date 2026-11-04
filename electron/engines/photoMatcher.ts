@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 
 export const PHOTO_MATCHER_EXTS = new Set([
   '.cr2', '.cr3', '.nef', '.arw', '.raf', '.dng', '.orf', '.rw2',
@@ -584,7 +585,7 @@ export class PhotoMatcherEngine {
       ) {
         baseDir = path.dirname(baseDir);
       }
-      const docDir = path.join(baseDir, 'Document');
+      const docDir = path.join(os.tmpdir(), 'MediaFlow_Studio_Reports');
       await fs.promises.mkdir(docDir, { recursive: true });
       const timestamp = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14);
       reportPath = path.join(docDir, `Photo_Match_Report_${timestamp}.csv`);

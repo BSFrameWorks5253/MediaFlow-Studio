@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import { pipeline } from 'stream/promises';
 
 export const VIDEO_TRANSFER_EXTS = new Set([
@@ -995,7 +996,7 @@ export class VideoTransferEngine {
     // Save Undo Manifest in Document/
     let manifestPath = '';
     if (pairs.length > 0) {
-      const docDir = path.join(path.dirname(pairs[0].photoFolderPath), 'Document');
+      const docDir = path.join(os.tmpdir(), 'MediaFlow_Studio_Reports');
       await fs.promises.mkdir(docDir, { recursive: true });
       const timestamp = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14);
       manifestPath = path.join(docDir, `Video_Transfer_Undo_Manifest_${timestamp}.json`);

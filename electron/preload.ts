@@ -53,8 +53,8 @@ export const electronAPI = {
     ipcRenderer.invoke('path:check-exists', targetPath),
 
   // Upload Structure Generator (Structure A)
-  createUploadStructure: (baseDir: string, safarName: string) =>
-    ipcRenderer.invoke('workspace:create-upload-structure', baseDir, safarName),
+  createUploadStructure: (baseDir: string, safarName: string, dateFolderName?: string, projectName?: string) =>
+    ipcRenderer.invoke('workspace:create-upload-structure', baseDir, safarName, dateFolderName, projectName),
   moveMergedFolder: (sourceDir: string, targetMainDataDir: string) =>
     ipcRenderer.invoke('workspace:move-merged-folder', sourceDir, targetMainDataDir),
 
@@ -267,6 +267,12 @@ export const electronAPI = {
     };
   },
 };
+
+// Anything Universal Identity & SSO
+(electronAPI as any).userProfile = {
+  load: () => ipcRenderer.invoke('userProfile:load'),
+};
+(electronAPI as any).getEcosystemUser = () => ipcRenderer.invoke('userProfile:load');
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);
 contextBridge.exposeInMainWorld('api', electronAPI);

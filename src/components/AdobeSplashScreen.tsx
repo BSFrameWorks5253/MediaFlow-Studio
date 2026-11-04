@@ -280,6 +280,16 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
     return () => clearInterval(timer);
   }, [isOpen, totalDurationMs, diagnosticSteps]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleFinish();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isDone]);
+
   if (!isOpen) return null;
 
   const activeArtworkUrl =

@@ -3,11 +3,17 @@ import { PageKey, PIPELINE_NAV_ORDER } from '../types/pipelineStages';
 
 export interface UploadStructurePaths {
   baseDir: string;
+  projectName?: string;
   safarName: string;
   safarRoot: string;
   mainDataPath: string;
   thumbnailsPath: string;
+  thumbnailPath?: string;
   remainingPath: string;
+  mainDataDatePath?: string;
+  thumbnailDatePath?: string;
+  remainingDatePath?: string;
+  dateFolderName?: string;
 }
 
 export type StageExecutionStatus = 'IDLE' | 'PROCESSING' | 'SUCCESS' | 'FAILED';

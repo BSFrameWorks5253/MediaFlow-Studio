@@ -146,13 +146,13 @@ def merge_inventory_reports(file_paths, output_path=None):
         raise FileNotFoundError(f"No valid Excel (.xlsx/.xlsm) files found in: {file_paths}")
 
     if not output_path:
-        # When 2 files provided (Photo + Video inventory), save in the 2nd file's directory
-        # so the merged report lands next to the Video Inventory file.
+        # Save into App Temp directory (Never inside active working data media folders)
+        import tempfile
+        output_dir = os.path.join(tempfile.gettempdir(), "MediaFlow_Studio_Reports")
+        os.makedirs(output_dir, exist_ok=True)
         if len(valid_files) >= 2:
-            output_dir = os.path.dirname(os.path.abspath(valid_files[1]))
             second_stem = Path(valid_files[1]).stem
         else:
-            output_dir = os.path.dirname(os.path.abspath(valid_files[0]))
             second_stem = Path(valid_files[0]).stem
 
         # Derive shared base name — strip _01M / _02E / photo / video type suffixes

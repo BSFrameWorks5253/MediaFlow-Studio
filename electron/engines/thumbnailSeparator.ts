@@ -67,16 +67,25 @@ export class ThumbnailSeparatorEngine {
         if (ent.isDirectory()) {
           if (!ent.name.startsWith('.')) await walk(full);
         } else if (ent.isFile()) {
-          const ext = path.extname(ent.name).toLowerCase();
+          const rawExt = path.extname(ent.name);
+          const ext = rawExt.toLowerCase();
           if (THUMB_SEPARATOR_EXTS.has(ext)) {
-            const stem = path.basename(ent.name, ext);
+            const stem = path.basename(ent.name, rawExt);
             const isP = /_[pP]$/.test(stem);
             const isV = /_[vV]$/.test(stem);
 
             if (isP || isV) {
               const rel = path.relative(cleanSource, full);
               const stat = await fs.promises.stat(full);
-              const target = destDir ? path.join(path.resolve(destDir), rel) : '';
+              let resolvedDest = destDir ? path.resolve(destDir.replace(/^file:\/\/\/?/, '')) : '';
+              if (resolvedDest) {
+                const srcBase = path.basename(cleanSource);
+                const destBase = path.basename(resolvedDest);
+                if (/^\d{4}[-_.]\d{2}[-_.]\d{2}/.test(srcBase) && srcBase !== destBase) {
+                  resolvedDest = path.join(resolvedDest, srcBase);
+                }
+              }
+              const target = resolvedDest ? path.join(resolvedDest, rel) : '';
 
               if (isP) totalPhotos++;
               if (isV) totalVideos++;
@@ -240,7 +249,7 @@ export class ThumbnailSeparatorEngine {
   async executeSeparation(
     items: ThumbnailItem[],
     destDir: string,
-    mode: 'copy' | 'move' = 'copy'
+    mode: 'copy' | 'move' = 'move'
   ): Promise<{ success_count: number; error_count: number; report_path: string }> {
     this.isProcessing = true;
     const cleanDest = path.resolve(destDir.replace(/^file:\/\/\/?/, ''));
@@ -267,8 +276,9 @@ export class ThumbnailSeparatorEngine {
       }
     }
 
-    // Export CSV report
-    const docDir = path.join(cleanDest, 'Document');
+    // Export CSV report to App Temp directory (Never in active working media)
+    const os = require('os');
+    const docDir = path.join(os.tmpdir(), 'MediaFlow_Studio_Reports');
     await fs.promises.mkdir(docDir, { recursive: true });
     const timestamp = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14);
     const reportPath = path.join(docDir, `Thumbnail_Separation_Report_${timestamp}.csv`);

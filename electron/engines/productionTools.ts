@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 
 export class ProductionToolsEngine {
   // 1. Extension Normalizer
@@ -327,10 +328,10 @@ export class ProductionToolsEngine {
     let manifestPath = '';
     if (items.length > 0 && !dryRun) {
       try {
-        const dnuDir = path.dirname(path.dirname(items[0].destination));
-        await fs.promises.mkdir(dnuDir, { recursive: true });
+        const reportFolder = path.join(os.tmpdir(), 'MediaFlow_Studio_Reports');
+        await fs.promises.mkdir(reportFolder, { recursive: true });
         const ts = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14);
-        manifestPath = path.join(dnuDir, `isolation_manifest_${ts}.csv`);
+        manifestPath = path.join(reportFolder, `isolation_manifest_${ts}.csv`);
         const csvContent =
           'Source,Destination,Date Folder,Status\n' +
           manifestRows.map((r) => `"${r.source}","${r.destination}","${r.dateFolder}","${r.status}"`).join('\n');
@@ -532,8 +533,10 @@ export class ProductionToolsEngine {
     let manifestPath = '';
     if (!dryRun && success > 0) {
       try {
+        const reportFolder = path.join(os.tmpdir(), 'MediaFlow_Studio_Reports');
+        await fs.promises.mkdir(reportFolder, { recursive: true });
         const ts = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14);
-        manifestPath = path.join(allReportsFolder, `collection_manifest_${ts}.csv`);
+        manifestPath = path.join(reportFolder, `collection_manifest_${ts}.csv`);
         const csvContent =
           'Source,Destination,Shoot Folder,Status\n' +
           manifestRows.map((r) => `"${r.source}","${r.destination}","${r.shoot}","${r.status}"`).join('\n');
