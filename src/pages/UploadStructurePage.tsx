@@ -28,7 +28,9 @@ export const UploadStructurePage: React.FC<UploadStructurePageProps> = ({
   const { uploadStructure, setUploadStructure } = usePipeline();
 
   const [baseDir, setBaseDir] = useState(uploadStructure.baseDir || '');
+  const [projectName, setProjectName] = useState(uploadStructure.projectName || '');
   const [safarName, setSafarName] = useState(uploadStructure.safarName || '');
+  const [dateFolderName, setDateFolderName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [createdResult, setCreatedResult] = useState<{
     safarRoot: string;
@@ -55,7 +57,8 @@ export const UploadStructurePage: React.FC<UploadStructurePageProps> = ({
     }
   }, []);
 
-  const cleanSafar = (safarName || '').trim().replace(/[<>:"/\\|?*]/g, '_');
+  const cleanProject = (projectName || '').trim().replace(/[<>:"/\\|?*]/g, '_');
+  const cleanSafar = (safarName || '').trim().replace(/[<>:"/\\|?*]/g, '_') || cleanProject;
 
   const handleBrowseBase = async () => {
     if (!window.electronAPI) return;
@@ -78,11 +81,16 @@ export const UploadStructurePage: React.FC<UploadStructurePageProps> = ({
 
     if (!window.electronAPI || typeof window.electronAPI.createUploadStructure !== 'function') {
       const mockRoot = `${baseDir || 'D:\\DATAFLOW_WORKSPACE'}\\${cleanSafar}`;
+      const dName = dateFolderName.trim() || '1448-10-15_01M';
       const mockResult = {
         safarRoot: mockRoot,
         mainDataPath: `${mockRoot}\\Main Data\\${cleanSafar}`,
-        thumbnailsPath: `${mockRoot}\\Thumbnails\\${cleanSafar}`,
-        remainingPath: `${mockRoot}\\Remaining\\${cleanSafar}`,
+        thumbnailsPath: `${mockRoot}\\Thumbnail\\${cleanSafar}`,
+        thumbnailPath: `${mockRoot}\\Thumbnail\\${cleanSafar}`,
+        remainingPath: `${mockRoot}\\Remaining`,
+        mainDataDatePath: `${mockRoot}\\Main Data\\${cleanSafar}\\${dName}`,
+        thumbnailDatePath: `${mockRoot}\\Thumbnail\\${cleanSafar}\\${dName}`,
+        remainingDatePath: `${mockRoot}\\Remaining\\${dName}`,
       };
       setCreatedResult(mockResult);
       setUploadStructure({
@@ -96,7 +104,7 @@ export const UploadStructurePage: React.FC<UploadStructurePageProps> = ({
 
     setIsCreating(true);
     try {
-      const res = await window.electronAPI.createUploadStructure(baseDir, cleanSafar);
+      const res = await window.electronAPI.createUploadStructure(baseDir, cleanSafar, dateFolderName.trim());
       if (res && res.success) {
         setCreatedResult({
           safarRoot: res.safarRoot,
@@ -230,6 +238,81 @@ export const UploadStructurePage: React.FC<UploadStructurePageProps> = ({
           </div>
         </div>
 
+        {/* Project / Root Folder Name (Notebook Top-Level: [name given by user]) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--label)' }}>
+              1. Project / Root Folder Name <span style={{ color: '#38BDF8', fontWeight: 600 }}>[Name given by user]</span>:
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 10, color: 'var(--tertiary-label)' }}>Presets:</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setProjectName('1448-15-Mumbai Mutabiq');
+                  setSafarName('1448-15-Mumbai');
+                }}
+                style={{
+                  background: 'rgba(56, 189, 248, 0.15)',
+                  border: '1px solid rgba(56, 189, 248, 0.4)',
+                  borderRadius: 4,
+                  padding: '2px 8px',
+                  color: '#38BDF8',
+                  fontSize: 10.5,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                1448-15-Mumbai Mutabiq
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setProjectName('1448-09-Morbi Atraf');
+                  setSafarName('1448-09-Morbi');
+                }}
+                style={{
+                  background: 'rgba(16, 185, 129, 0.12)',
+                  border: '1px solid rgba(16, 185, 129, 0.35)',
+                  borderRadius: 4,
+                  padding: '2px 8px',
+                  color: '#10E79D',
+                  fontSize: 10.5,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                1448-09-Morbi Atraf
+              </button>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <input
+              type="text"
+              value={projectName}
+              onChange={(e) => {
+                setProjectName(e.target.value);
+                if (e.target.value.includes(' ') && !safarName) {
+                  setSafarName(e.target.value.split(' ')[0]);
+                }
+              }}
+              placeholder="e.g. 1448-15-Mumbai Mutabiq (Top-level project folder)"
+              style={{
+                flex: 1,
+                padding: '9px 12px',
+                borderRadius: 8,
+                backgroundColor: 'var(--surface-elevated)',
+                border: '1px solid var(--border)',
+                fontSize: 13,
+                fontWeight: 600,
+                color: 'var(--label)',
+                outline: 'none',
+                fontFamily: 'var(--font-system)',
+              }}
+            />
+          </div>
+        </div>
+
         {/* Safar Name Input & Quick Generation Buttons */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -312,8 +395,56 @@ export const UploadStructurePage: React.FC<UploadStructurePageProps> = ({
             />
           </div>
           <span style={{ fontSize: 11, color: 'var(--tertiary-label)' }}>
-            Creates standardized root: <b>{baseDir ? `${baseDir}\\${cleanSafar || '1448-09-Morbi Atraf'}` : `[Base]\\${cleanSafar || '1448-09-Morbi Atraf'}`}</b> with <b>Main Data\{cleanSafar || '...'}\</b>, <b>Thumbnails\{cleanSafar || '...'}\</b>, and <b>Remaining\{cleanSafar || '...'}\</b> trees.
+            Root: <b>{baseDir ? `${baseDir}\\${cleanSafar || '1448-15-Mumbai Mutabiq'}` : `[Base]\\${cleanSafar || '1448-15-Mumbai Mutabiq'}`}</b> (Notebook Standardized Structure).
           </span>
+        </div>
+
+        {/* Date Session Folder Input (Notebook Hierarchy Spec) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--secondary-label)' }}>
+              Date Session Folder (Optional / Initial Day):
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 10, color: 'var(--tertiary-label)' }}>Quick Preset:</span>
+              <button
+                type="button"
+                onClick={() => setDateFolderName('1448-10-15_01M')}
+                style={{
+                  background: 'rgba(56, 189, 248, 0.15)',
+                  border: '1px solid rgba(56, 189, 248, 0.4)',
+                  borderRadius: 4,
+                  padding: '2px 8px',
+                  color: '#38BDF8',
+                  fontSize: 10.5,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                1448-10-15_01M
+              </button>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <input
+              type="text"
+              value={dateFolderName}
+              onChange={(e) => setDateFolderName(e.target.value)}
+              placeholder="e.g. 1448-10-15_01M (Auto-created inside Main Data, Remaining, & Thumbnail)"
+              style={{
+                flex: 1,
+                padding: '9px 12px',
+                borderRadius: 8,
+                backgroundColor: 'var(--surface-elevated)',
+                border: '1px solid var(--border)',
+                fontSize: 13,
+                fontWeight: 600,
+                color: 'var(--label)',
+                outline: 'none',
+                fontFamily: 'var(--font-system)',
+              }}
+            />
+          </div>
         </div>
       </div>
 
@@ -413,52 +544,57 @@ export const UploadStructurePage: React.FC<UploadStructurePageProps> = ({
             <div style={{ marginLeft: 16, display: 'flex', alignItems: 'center', gap: 8, color: '#38BDF8', fontWeight: 700 }}>
               <span style={{ color: '#475569' }}>└──</span>
               <FolderOpen size={15} color="#38BDF8" />
-              <span>{cleanSafar || '[Safar Name]'}\</span>
+              <span>{cleanProject || cleanSafar || '[Project Root Name]'}\</span>
             </div>
 
-            {/* 1. Main Data */}
+            {/* 1. Main Data -> [Safar Name] -> [Date folder] */}
             <div style={{ marginLeft: 44, display: 'flex', alignItems: 'center', gap: 8, color: '#10B981' }}>
               <span style={{ color: '#475569' }}>├──</span>
               <Folder size={14} color="#10B981" />
-              <span style={{ fontWeight: 600 }}>Main Data\</span>
+              <span style={{ fontWeight: 700 }}>Main Data\</span>
             </div>
             <div style={{ marginLeft: 72, display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ color: '#475569' }}>└──</span>
               <FolderOpen size={13} color="#6EE7B7" />
               <span style={{ color: '#6EE7B7', fontWeight: 600 }}>{cleanSafar || '[Safar Name]'}\</span>
-              <span style={{ color: '#94A3B8', fontSize: 10.5 }}>
-                (Actual Master Production Footage & Photos)
-              </span>
+            </div>
+            <div style={{ marginLeft: 100, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ color: '#475569' }}>└──</span>
+              <Folder size={12} color="#A7F3D0" />
+              <span style={{ color: '#A7F3D0', fontWeight: 500 }}>{dateFolderName.trim() || '1448-10-15_01M'}\</span>
+              <span style={{ color: '#94A3B8', fontSize: 10 }}>[Date Folder]</span>
             </div>
 
-            {/* 2. Thumbnails */}
-            <div style={{ marginLeft: 44, display: 'flex', alignItems: 'center', gap: 8, color: '#0D9488' }}>
+            {/* 2. Remaining -> [Date folder] directly */}
+            <div style={{ marginLeft: 44, display: 'flex', alignItems: 'center', gap: 8, color: '#EC4899' }}>
               <span style={{ color: '#475569' }}>├──</span>
+              <Folder size={14} color="#EC4899" />
+              <span style={{ fontWeight: 700 }}>Remaining\</span>
+            </div>
+            <div style={{ marginLeft: 72, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ color: '#475569' }}>└──</span>
+              <Layers size={13} color="#F472B6" />
+              <span style={{ color: '#F472B6', fontWeight: 600 }}>{dateFolderName.trim() || '1448-10-15-01M'}\</span>
+              <span style={{ color: '#94A3B8', fontSize: 10 }}>[Date folder directly inside Remaining]</span>
+            </div>
+
+            {/* 3. Thumbnail (singular) -> [Safar Name] -> [Date folder] */}
+            <div style={{ marginLeft: 44, display: 'flex', alignItems: 'center', gap: 8, color: '#0D9488' }}>
+              <span style={{ color: '#475569' }}>└──</span>
               <Folder size={14} color="#0D9488" />
-              <span style={{ fontWeight: 600 }}>Thumbnails\</span>
+              <span style={{ fontWeight: 700 }}>Thumbnail\</span>
+              <span style={{ color: '#2DD4BF', fontSize: 10, fontWeight: 600 }}>[Same structure as Main Data]</span>
             </div>
             <div style={{ marginLeft: 72, display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ color: '#475569' }}>└──</span>
               <FolderArchive size={13} color="#2DD4BF" />
               <span style={{ color: '#2DD4BF', fontWeight: 600 }}>{cleanSafar || '[Safar Name]'}\</span>
-              <span style={{ color: '#2DD4BF', fontSize: 10.5, fontWeight: 600 }}>
-                ➔ Connected to Thumbnail Shifter (Stage 05)
-              </span>
             </div>
-
-            {/* 3. Remaining */}
-            <div style={{ marginLeft: 44, display: 'flex', alignItems: 'center', gap: 8, color: '#EC4899' }}>
+            <div style={{ marginLeft: 100, display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ color: '#475569' }}>└──</span>
-              <Folder size={14} color="#EC4899" />
-              <span style={{ fontWeight: 600 }}>Remaining\</span>
-            </div>
-            <div style={{ marginLeft: 72, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ color: '#475569' }}>└──</span>
-              <Layers size={13} color="#F472B6" />
-              <span style={{ color: '#F472B6', fontWeight: 600 }}>{cleanSafar || '[Safar Name]'}\</span>
-              <span style={{ color: '#F472B6', fontSize: 10.5, fontWeight: 600 }}>
-                ➔ Connected to Remaining Shifter (Stage 03)
-              </span>
+              <Folder size={12} color="#99F6E4" />
+              <span style={{ color: '#99F6E4', fontWeight: 500 }}>{dateFolderName.trim() || '1448-10-15_01M'}\</span>
+              <span style={{ color: '#94A3B8', fontSize: 10 }}>[Date Folder]</span>
             </div>
           </div>
         </div>

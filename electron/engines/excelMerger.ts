@@ -1,6 +1,7 @@
 import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs';
+import { getPythonExecutable } from '../utils/pythonResolver';
 
 export interface ExcelInspectItem {
   path: string;
@@ -57,7 +58,7 @@ export class ExcelMergerEngine {
 
   private runPython(action: string, payload: any): Promise<any> {
     return new Promise((resolve, reject) => {
-      const py = spawn('python', [this.scriptPath, action, '-'], {
+      const py = spawn(getPythonExecutable(), [this.scriptPath, action, '-'], {
         windowsHide: true,
       });
 
@@ -107,6 +108,9 @@ export class ExcelMergerEngine {
   }
 
   async mergeFiles(filePaths: string[], outputPath?: string): Promise<ExcelMergeStats> {
+    const os = require('os');
+    const defaultDir = path.join(os.tmpdir(), 'MediaFlow_Studio_Reports');
+    await fs.promises.mkdir(defaultDir, { recursive: true }).catch(() => {});
     const res = await this.runPython('merge', {
       files: filePaths,
       output_path: outputPath || '',

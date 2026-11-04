@@ -16,6 +16,7 @@ import { StatsManager } from './managers/statsManager';
 import { EcosystemManager } from './managers/ecosystemManager';
 import { resolveChildAppLoaderConfig, showChildAppSplash, closeChildAppSplash, ChildAppLoaderConfig } from './splash';
 import { WorkstationAutoUpdater, UpdateInfo } from './managers/autoUpdater';
+import { openInEcosystemExplorer, showItemInEcosystemExplorer } from './utils/ecosystemExplorer';
 
 // Windows Taskbar & Action Center Model ID for dedicated window grouping
 if (process.platform === 'win32') {
@@ -617,23 +618,13 @@ function setupIpcHandlers() {
 
   ipcMain.handle('shell:open-path', async (_, targetPath: string) => {
     if (!targetPath || !targetPath.trim()) return 'No path provided';
-    const clean = path.resolve(targetPath.replace(/^file:\/\/\/?/, ''));
-    if (fs.existsSync(clean)) {
-      return await shell.openPath(clean);
-    }
-    // If target doesn't exist, open its parent directory so the user can inspect
-    const parent = path.dirname(clean);
-    if (fs.existsSync(parent)) {
-      await shell.openPath(parent);
-      return `Target does not exist: "${path.basename(clean)}". Opened parent folder: "${parent}"`;
-    }
-    return `Path does not exist: ${clean}`;
+    const ok = await openInEcosystemExplorer(targetPath);
+    return ok ? '' : `Unable to open path: ${targetPath}`;
   });
 
-  ipcMain.handle('shell:show-item-in-folder', (_, targetPath: string) => {
+  ipcMain.handle('shell:show-item-in-folder', async (_, targetPath: string) => {
     if (!targetPath || !targetPath.trim()) return;
-    const clean = path.resolve(targetPath.replace(/^file:\/\/\/?/, ''));
-    shell.showItemInFolder(clean);
+    await showItemInEcosystemExplorer(targetPath);
   });
 
   ipcMain.handle('path:check-exists', async (_, targetPath: string) => {

@@ -3,6 +3,7 @@ import path from 'path';
 import { pipeline } from 'stream/promises';
 import { exec, spawn } from 'child_process';
 import util from 'util';
+import { getPythonExecutable } from '../utils/pythonResolver';
 
 const execPromise = util.promisify(exec);
 
@@ -312,7 +313,8 @@ export class PVSeparatorEngine {
 
     const cleanSource = path.resolve(sourceDir.replace(/^file:\/\/\/?/, ''));
     const cleanDest = destDir && destDir.trim() ? path.resolve(destDir.replace(/^file:\/\/\/?/, '')) : cleanSource;
-    const reportFolder = (mode === 'delete' && (!destDir || !destDir.trim())) ? cleanSource : cleanDest;
+    const os = require('os');
+    const reportFolder = path.join(os.tmpdir(), 'MediaFlow_Studio_Reports');
 
     // Scan source directory for selected target files
     const scan = await this.scanDirectory(cleanSource, target);
@@ -511,7 +513,7 @@ export class PVSeparatorEngine {
             outputPath: expectedXlsx,
           };
 
-          const p = spawn('python', [pyScript, '-'], { windowsHide: true });
+          const p = spawn(getPythonExecutable(), [pyScript, '-'], { windowsHide: true });
           p.stdin.write(JSON.stringify(payload));
           p.stdin.end();
 

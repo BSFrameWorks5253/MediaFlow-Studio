@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { app, shell } from 'electron';
+import { openInEcosystemExplorer, showItemInEcosystemExplorer } from '../utils/ecosystemExplorer';
 
 export interface ActivityItem {
   id: string;
@@ -95,17 +96,14 @@ export class ActivityReportsManager {
   }
 
   async openPath(targetPath: string): Promise<string> {
-    const clean = path.resolve(targetPath.replace(/^file:\/\/\/?/, ''));
-    if (fs.existsSync(clean)) {
-      return await shell.openPath(clean);
+    const ok = await openInEcosystemExplorer(targetPath);
+    if (!ok) {
+      throw new Error('The requested file or directory could not be opened.');
     }
-    throw new Error('The requested file or directory could not be found.');
+    return '';
   }
 
   showItemInFolder(targetPath: string) {
-    const clean = path.resolve(targetPath.replace(/^file:\/\/\/?/, ''));
-    if (fs.existsSync(clean)) {
-      shell.showItemInFolder(clean);
-    }
+    showItemInEcosystemExplorer(targetPath);
   }
 }

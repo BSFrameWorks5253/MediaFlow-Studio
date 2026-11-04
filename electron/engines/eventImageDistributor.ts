@@ -1,3 +1,4 @@
+import { getPythonExecutable } from '../utils/pythonResolver';
 import * as fs from 'fs';
 import * as path from 'path';
 import { spawn } from 'child_process';
@@ -19,6 +20,7 @@ export interface FolderEventMatch {
   matchedEventName: string;
   expectedPlacardFile?: string;
   its: string;
+  relativeChain?: string;
   matchedImages: {
     fileName: string;
     filePath: string;
@@ -52,7 +54,10 @@ export interface EventDistributorSummary {
 
 export const BUILTIN_EVENT_MAPPINGS: EventMappingItem[] = [
   { eventName: 'Aqiqa', abbreviation: 'AQ', placardFileName: '__09 Aqeeqa Tasaweer Instructions.jpg' },
+  { eventName: 'Aqiqa', abbreviation: 'AQIQA', placardFileName: '__09 Aqeeqa Tasaweer Instructions.jpg' },
   { eventName: 'Bethak', abbreviation: 'Bethak' },
+  { eventName: 'Bethak', abbreviation: 'B' },
+  { eventName: 'Bethak', abbreviation: 'BK' },
   { eventName: 'Bethak Majlis', abbreviation: 'BM', placardFileName: '__19 Bethak Majlis Tasaweer Instructions.jpg' },
   { eventName: 'Bethak Qadam', abbreviation: 'BQ', placardFileName: '__20 Bethak Qadam Tasaweer Instructions.jpg' },
   { eventName: 'Bethak QMZ', abbreviation: 'BQMZ' },
@@ -79,7 +84,7 @@ export const BUILTIN_EVENT_MAPPINGS: EventMappingItem[] = [
   { eventName: 'Other', abbreviation: 'OT' },
   { eventName: 'Qadam', abbreviation: 'Q', placardFileName: '__03 Qadam Tasaweer Instructions.jpg' },
   { eventName: 'Qadam Majlis Ziyafat', abbreviation: 'QMZ' },
-  { eventName: 'Salaam', abbreviation: 'S' },
+  { eventName: 'Salaam', abbreviation: 'S', placardFileName: '__13 Salaam Tasaweer Instructions.jpg' },
   { eventName: 'Sharaf', abbreviation: 'SH', placardFileName: '__11 Sharaf Tasaweer Instructions.jpg' },
   { eventName: 'Shifa Qadam', abbreviation: 'SQ' },
   { eventName: 'Tijarat', abbreviation: 'TJR' },
@@ -87,6 +92,8 @@ export const BUILTIN_EVENT_MAPPINGS: EventMappingItem[] = [
   { eventName: 'Tahneeq', abbreviation: 'TQN', placardFileName: '__17 Tahneeq Tasaweer Instructions.jpg' },
   { eventName: 'Tahneeq', abbreviation: 'TNQ', placardFileName: '__17 Tahneeq Tasaweer Instructions.jpg' },
   { eventName: 'Waaz', abbreviation: 'WAAZ' },
+  { eventName: 'Waaz', abbreviation: 'WA' },
+  { eventName: 'Waaz', abbreviation: 'WZ' },
   { eventName: 'Wada', abbreviation: 'WD' },
   { eventName: 'Ziyafat', abbreviation: 'Z', placardFileName: '__01 Ziyafat Tasaweer Instructions.jpg' },
   { eventName: 'Ziyarat', abbreviation: 'Ziyarat' },
@@ -104,15 +111,17 @@ function normalizePlacardName(s: string): string {
 
 function isDateSessionContainer(name: string): boolean {
   const clean = name.trim();
-  // Matches e.g. "1448-04-02 _01M", "1448-03-27_02E", "1448-04-02", "2026-10-17 _01M"
-  return /^\d{4}[-_.]\d{2}[-_.]\d{2}(?:[\s_-]*\w+)?$/i.test(clean);
+  return (
+    /^\d{4}[-_.]\d{2}[-_.]\d{2}(?:[\s_-]*\w+)?$/i.test(clean) ||
+    /^\d{2}[-_.]\d{2}[-_.]\d{4}(?:[\s_-]*\w+)?$/i.test(clean) ||
+    /^(?:day|date|session|event)[-_.\s]*\d+/i.test(clean)
+  );
 }
 
 function isCategoryContainer(name: string): boolean {
   const clean = name.trim();
-  // e.g. 01-Bhuj-Waaz, 02-Bhuj-QMZ, 01-Surendranagar-QMZ, 01-Mumbai-Bethak
   return (
-    /^\d{2}[-_][a-zA-Z0-9\s]+[-_][a-zA-Z0-9\s]+$/i.test(clean) &&
+    /^\d{1,3}[-_][a-zA-Z0-9\s]+(?:[-_][a-zA-Z0-9\s]+)*$/i.test(clean) &&
     !/^\d{4}[-_.]\d{2}/.test(clean)
   );
 }
@@ -140,9 +149,12 @@ export class EventImageDistributorEngine {
     const clean = folderName.trim();
     if (!clean) return null;
 
-    // 0. Ignore date session containers (e.g. 1448-04-02 _01M) and category containers (e.g. 01-Bhuj-Waaz, 01-Surendranagar-QMZ)
-    // They are parent grouping folders, NOT leaf event shot folders!
-    if (isDateSessionContainer(clean) || isCategoryContainer(clean)) {
+    // 0. Ignore date session containers, upload branch roots, and parent containers
+    const lower = clean.toLowerCase();
+    if (['main data', 'thumbnail', 'thumbnails', 'remaining', 'documents', 'document', 'dnu', 'do not upload'].includes(lower)) {
+      return null;
+    }
+    if (isDateSessionContainer(clean)) {
       return null;
     }
 
@@ -237,51 +249,49 @@ export class EventImageDistributorEngine {
       }
     }
 
-    const pythonCode = `
-import openpyxl, json, sys
-try:
-    wb = openpyxl.load_workbook(r'''${resolvedExcel}''', data_only=True)
-    ws = wb.active
-    mappings = []
-    rows = list(ws.iter_rows(values_only=True))
-    if rows:
-        header = [str(c).strip().lower() if c is not None else '' for c in rows[0]]
-        name_col = -1
-        abbr_col = -1
-        placard_col = -1
-        for idx, col in enumerate(header):
-            if 'name' in col or 'event' in col:
-                name_col = idx
-            if 'abbrev' in col or 'code' in col:
-                abbr_col = idx
-            if 'placard' in col or 'instruction' in col or 'file' in col:
-                placard_col = idx
-        if name_col == -1: name_col = 0
-        if abbr_col == -1: abbr_col = 1
-        if placard_col == -1 and len(header) >= 3: placard_col = 2
-
-        for r in rows[1:]:
-            if not r or len(r) <= max(name_col, abbr_col): continue
-            val_name = str(r[name_col]).strip() if r[name_col] is not None else ''
-            val_abbr = str(r[abbr_col]).strip() if r[abbr_col] is not None else ''
-            val_placard = ''
-            if placard_col != -1 and len(r) > placard_col and r[placard_col] is not None:
-                p_raw = str(r[placard_col]).strip()
-                if p_raw.lower() not in ('none (skipped)', 'none', 'skipped', ''):
-                    val_placard = p_raw
-            if val_name and val_abbr and val_name.lower() != 'none':
-                item = {"eventName": val_name, "abbreviation": val_abbr.upper()}
-                if val_placard:
-                    item["placardFileName"] = val_placard
-                mappings.append(item)
-
-    print(json.dumps(mappings))
-except Exception as e:
-    print(json.dumps([]))
-`;
+    const pythonInlineScript = [
+      'import openpyxl, json, sys',
+      'try:',
+      '    excel_path = sys.argv[1]',
+      '    wb = openpyxl.load_workbook(excel_path, data_only=True)',
+      '    ws = wb.active',
+      '    mappings = []',
+      '    rows = list(ws.iter_rows(values_only=True))',
+      '    if rows:',
+      '        header = [str(c).strip().lower() if c is not None else "" for c in rows[0]]',
+      '        name_col = -1',
+      '        abbr_col = -1',
+      '        placard_col = -1',
+      '        for idx, col in enumerate(header):',
+      '            if "name" in col or "event" in col:',
+      '                name_col = idx',
+      '            if "abbrev" in col or "code" in col:',
+      '                abbr_col = idx',
+      '            if "placard" in col or "instruction" in col or "file" in col:',
+      '                placard_col = idx',
+      '        if name_col == -1: name_col = 0',
+      '        if abbr_col == -1: abbr_col = 1',
+      '        if placard_col == -1 and len(header) >= 3: placard_col = 2',
+      '        for r in rows[1:]:',
+      '            if not r or len(r) <= max(name_col, abbr_col): continue',
+      '            val_name = str(r[name_col]).strip() if r[name_col] is not None else ""',
+      '            val_abbr = str(r[abbr_col]).strip() if r[abbr_col] is not None else ""',
+      '            val_placard = ""',
+      '            if placard_col != -1 and len(r) > placard_col and r[placard_col] is not None:',
+      '                p_raw = str(r[placard_col]).strip()',
+      '                if p_raw.lower() not in ("none (skipped)", "none", "skipped", ""):',
+      '                    val_placard = p_raw',
+      '            if val_name and val_abbr and val_name.lower() != "none":',
+      '                item = {"eventName": val_name, "abbreviation": val_abbr.upper()}',
+      '                if val_placard: item["placardFileName"] = val_placard',
+      '                mappings.append(item)',
+      '    print(json.dumps(mappings))',
+      'except Exception as e:',
+      '    print(json.dumps([]))'
+    ].join('\n');
 
     return new Promise((resolve) => {
-      const py = spawn('python', ['-c', pythonCode], { windowsHide: true });
+      const py = spawn(getPythonExecutable(), ['-c', pythonInlineScript, resolvedExcel], { windowsHide: true });
       let stdout = '';
       py.stdout.on('data', (d) => (stdout += d.toString()));
       py.on('close', (code) => {
@@ -313,9 +323,24 @@ except Exception as e:
     matchedEventNames: string[];
     matchedAbbreviations: string[];
   }[]> {
-    if (!fs.existsSync(imagesDirPath)) {
-      throw new Error('Master event reference images folder could not be found.');
+    let resolvedDir = (imagesDirPath || '').trim();
+    if (!resolvedDir || !fs.existsSync(resolvedDir)) {
+      const candidates = [
+        'C:\\Users\\Burhanuddin\\Downloads\\Full Downloads Data\\Warning and iltemas',
+        'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Warning and iltemas',
+        'C:\\Users\\Burhanuddin\\Downloads\\Warning and iltemas',
+      ];
+      for (const c of candidates) {
+        if (fs.existsSync(c)) {
+          resolvedDir = c;
+          break;
+        }
+      }
     }
+    if (!resolvedDir || !fs.existsSync(resolvedDir)) {
+      throw new Error('Master event reference images folder could not be found. Please configure the "Warning and iltemas" folder path.');
+    }
+    imagesDirPath = resolvedDir;
 
     const validImgExts = new Set(['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tiff', '.tif']);
     const files = await fs.promises.readdir(imagesDirPath);
@@ -432,55 +457,65 @@ except Exception as e:
     const unmatchedFolders: string[] = [];
     let totalPlannedCopies = 0;
 
-    // Recursively find candidate folders, skipping quarantine & non-media directories
-    const findCandidateFolders = async (dir: string, depth = 0): Promise<string[]> => {
-      const candidates: string[] = [];
-      try {
-        const entries = await fs.promises.readdir(dir, { withFileTypes: true });
-        for (const entry of entries) {
-          if (!entry.isDirectory()) continue;
-          const lowerName = entry.name.toLowerCase();
-          if (
-            entry.name.startsWith('.') ||
-            lowerName === 'documents' ||
-            lowerName === 'do not upload' ||
-            lowerName === 'dnu'
-          ) {
-            continue;
-          }
+    const cleanTargetRoot = path.resolve((targetWorkingDir || '').replace(/^file:\/\/\/?/, ''));
+    const EXCLUDED_DIR_NAMES = new Set([
+      'thumbnail', 'thumbnails', 'remaining', 'documents', 'document', 'doc', 'docs',
+      'dnu', 'do not upload', 'do_not_upload', 'temp', 'tmp', '.git', '.vscode'
+    ]);
 
-          const fullSub = path.join(dir, entry.name);
-          const isDateContainer = isDateSessionContainer(entry.name);
-          const isCategory = isCategoryContainer(entry.name) ||
-                             /^\d{2}[-_].*?(bethak|waaz|namaz|ziyarat|majlis|qmz)/i.test(entry.name);
-
-          if (isDateContainer || isCategory) {
-            // Container folder (e.g. 1448-04-02 _01M or 01-Surendranagar-QMZ): recurse directly into it
-            const subCandidates = await findCandidateFolders(fullSub, depth + 1);
-            candidates.push(...subCandidates);
-            continue;
-          }
-
-          const parsed = EventImageDistributorEngine.parseFolderTokens(entry.name);
-          if (parsed) {
-            candidates.push(fullSub);
-          } else if (depth < 6) {
-            // Check subfolders
-            const subCandidates = await findCandidateFolders(fullSub, depth + 1);
-            candidates.push(...subCandidates);
-          }
-        }
-      } catch {}
-      return candidates;
+    const isExplicitContainer = (name: string): boolean => {
+      const lower = name.toLowerCase().trim();
+      if (lower === 'main data' || lower === 'main_data' || lower === 'maindata') return true;
+      if (isDateSessionContainer(name)) return true;
+      if (lower === 'photos' || lower === 'photo' || lower === 'videos' || lower === 'video' || lower.includes('_p-v')) return true;
+      return false;
     };
 
-    // If targetWorkingDir itself is directly an event folder
-    let candidatePaths: string[] = [];
-    const rootParsed = EventImageDistributorEngine.parseFolderTokens(path.basename(targetWorkingDir));
-    if (rootParsed) {
-      candidatePaths = [targetWorkingDir];
-    } else {
-      candidatePaths = await findCandidateFolders(targetWorkingDir);
+    // Robust multi-level recursive scanner that traverses ANY level (Main Data, Safar folder, Date folder, Category, or direct)
+    const findEventFoldersRecursive = async (dir: string, depth = 0): Promise<string[]> => {
+      if (depth > 12) return [];
+      const results: string[] = [];
+      try {
+        const entries = await fs.promises.readdir(dir, { withFileTypes: true });
+        const subDirs = entries.filter((e) => {
+          if (!e.isDirectory()) return false;
+          if (e.name.startsWith('.')) return false;
+          return !EXCLUDED_DIR_NAMES.has(e.name.toLowerCase().trim());
+        });
+
+        // First check if any subDirectory has event folders under it
+        let foundDescendantEvents = false;
+        for (const s of subDirs) {
+          const subPath = path.join(dir, s.name);
+          const subResults = await findEventFoldersRecursive(subPath, depth + 1);
+          if (subResults.length > 0) {
+            results.push(...subResults);
+            foundDescendantEvents = true;
+          }
+        }
+
+        // If NO descendant directories were event folders, check if this directory itself is an event folder
+        if (!foundDescendantEvents) {
+          const dirBase = path.basename(dir);
+          if (!isExplicitContainer(dirBase)) {
+            const parsed = EventImageDistributorEngine.parseFolderTokens(dirBase);
+            if (parsed) {
+              results.push(dir);
+            }
+          }
+        }
+      } catch (err) {}
+      return results;
+    };
+
+    let candidatePaths: string[] = await findEventFoldersRecursive(cleanTargetRoot);
+
+    // If no child event folders were found, check if cleanTargetRoot itself is directly a leaf event folder
+    if (candidatePaths.length === 0) {
+      const rootParsed = EventImageDistributorEngine.parseFolderTokens(path.basename(cleanTargetRoot));
+      if (rootParsed) {
+        candidatePaths = [cleanTargetRoot];
+      }
     }
 
     for (const folderPath of candidatePaths) {
@@ -555,6 +590,9 @@ except Exception as e:
         });
       }
 
+      const relPath = path.relative(cleanTargetRoot, folderPath);
+      const relativeChain = relPath ? relPath.replace(/[\\/]+/g, ' > ') : folderName;
+
       foldersMatched.push({
         folderPath,
         folderName,
@@ -566,6 +604,7 @@ except Exception as e:
         matchedEventName,
         expectedPlacardFile,
         its: parsed.its,
+        relativeChain,
         matchedImages: folderMatchedImages,
       });
     }
