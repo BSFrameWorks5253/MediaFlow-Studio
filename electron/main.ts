@@ -453,6 +453,43 @@ app.on('window-all-closed', () => {
 
 function setupIpcHandlers() {
   // Splash Screen Lifecycle & Anything Ecosystem Customization
+    ipcMain.handle('userProfile:load', async () => {
+    try {
+      const appData = process.env.APPDATA || (process.env.USERPROFILE ? path.join(process.env.USERPROFILE, 'AppData', 'Roaming') : '');
+      const candidates = [
+        path.join(appData, 'Anything', 'ecosystem_session.json'),
+        path.join(appData, 'anything', 'ecosystem_session.json'),
+        path.join(app.getPath('userData'), 'ecosystem_session.json'),
+      ];
+      for (const p of candidates) {
+        if (fs.existsSync(p)) {
+          const sess = JSON.parse(fs.readFileSync(p, 'utf-8'));
+          if (sess?.user) {
+            return {
+              name: sess.user.name || 'Creative Member',
+              email: sess.user.email || '',
+              username: sess.user.username || (sess.user.email ? sess.user.email.split('@')[0] : 'creator'),
+              userId: sess.user.username || sess.user.id || 'creator',
+              avatar: sess.user.avatar || null,
+              role: sess.user.role || 'member'
+            };
+          }
+        }
+      }
+      if (process.env.ANYTHING_USER_ID) {
+        return {
+          name: process.env.ANYTHING_USER_NAME || 'Creative Member',
+          email: process.env.ANYTHING_USER_EMAIL || '',
+          username: process.env.ANYTHING_USER_HANDLE || process.env.ANYTHING_USER_ID,
+          userId: process.env.ANYTHING_USER_HANDLE || process.env.ANYTHING_USER_ID,
+          avatar: process.env.ANYTHING_USER_AVATAR || null,
+          role: process.env.ANYTHING_USER_ROLE || 'member'
+        };
+      }
+    } catch (e) {}
+    return null;
+  });
+
   ipcMain.handle('splash:getLoaderConfig', async () => resolveChildAppLoaderConfig('mediaflow-studio', 'MediaFlow Studio'));
   ipcMain.handle('splash:saveLoaderConfig', async (_, cfg) => {
     try {
@@ -515,9 +552,24 @@ function setupIpcHandlers() {
   ipcMain.handle('window:close', () => mainWindow?.close());
   ipcMain.handle('window:is-maximized', () => mainWindow?.isMaximized() ?? false);
 
+  // Native Dialog Helper: reliably acquire active focused window
+  const getDialogParentWin = (event?: Electron.IpcMainInvokeEvent): BrowserWindow | undefined => {
+    if (event?.sender) {
+      const fromSender = BrowserWindow.fromWebContents(event.sender);
+      if (fromSender && !fromSender.isDestroyed()) return fromSender;
+    }
+    if (mainWindow && !mainWindow.isDestroyed()) return mainWindow;
+    const focused = BrowserWindow.getFocusedWindow();
+    return (focused && !focused.isDestroyed()) ? focused : undefined;
+  };
+
   // Native Dialogs
-  ipcMain.handle('dialog:select-directory', async (_, title?: string, startDir?: string) => {
-    const res = await dialog.showOpenDialog(mainWindow!, {
+  ipcMain.handle('dialog:select-directory', async (event, title?: string, startDir?: string) => {
+    const parentWin = getDialogParentWin(event);
+    if (parentWin && !parentWin.isDestroyed()) {
+      parentWin.focus();
+    }
+    const res = await dialog.showOpenDialog(parentWin as any, {
       title: title || 'Select Directory',
       defaultPath: startDir || undefined,
       properties: ['openDirectory', 'createDirectory'],
@@ -525,8 +577,12 @@ function setupIpcHandlers() {
     return res.canceled ? '' : res.filePaths[0];
   });
 
-  ipcMain.handle('dialog:select-open-file', async (_, title?: string, filter?: any) => {
-    const res = await dialog.showOpenDialog(mainWindow!, {
+  ipcMain.handle('dialog:select-open-file', async (event, title?: string, filter?: any) => {
+    const parentWin = getDialogParentWin(event);
+    if (parentWin && !parentWin.isDestroyed()) {
+      parentWin.focus();
+    }
+    const res = await dialog.showOpenDialog(parentWin as any, {
       title: title || 'Select File',
       filters: filter || [],
       properties: ['openFile'],
@@ -534,8 +590,12 @@ function setupIpcHandlers() {
     return res.canceled ? '' : res.filePaths[0];
   });
 
-  ipcMain.handle('dialog:select-open-files', async (_, title?: string, filter?: any) => {
-    const res = await dialog.showOpenDialog(mainWindow!, {
+  ipcMain.handle('dialog:select-open-files', async (event, title?: string, filter?: any) => {
+    const parentWin = getDialogParentWin(event);
+    if (parentWin && !parentWin.isDestroyed()) {
+      parentWin.focus();
+    }
+    const res = await dialog.showOpenDialog(parentWin as any, {
       title: title || 'Select Files',
       filters: filter || [],
       properties: ['openFile', 'multiSelections'],
@@ -543,8 +603,12 @@ function setupIpcHandlers() {
     return res.canceled ? [] : res.filePaths;
   });
 
-  ipcMain.handle('dialog:select-save-file', async (_, title?: string, filter?: any) => {
-    const res = await dialog.showSaveDialog(mainWindow!, {
+  ipcMain.handle('dialog:select-save-file', async (event, title?: string, filter?: any) => {
+    const parentWin = getDialogParentWin(event);
+    if (parentWin && !parentWin.isDestroyed()) {
+      parentWin.focus();
+    }
+    const res = await dialog.showSaveDialog(parentWin as any, {
       title: title || 'Save File',
       filters: filter || [],
     });
@@ -597,8 +661,8 @@ function setupIpcHandlers() {
     }
   });
 
-  // Upload Structure Generator (Structure A)
-  ipcMain.handle('workspace:create-upload-structure', async (_, baseDir: string, safarName: string) => {
+  // Upload Structure Generator (Standardized 3-Branch Architecture per Studio Spec)
+  ipcMain.handle('workspace:create-upload-structure', async (_, baseDir: string, safarName: string, dateFolderName?: string, projectName?: string) => {
     if (!baseDir || !baseDir.trim()) {
       throw new Error('Base destination directory must be selected.');
     }
@@ -607,22 +671,44 @@ function setupIpcHandlers() {
       throw new Error('Valid Safar name must be provided.');
     }
 
+    const cleanProject = (projectName || '').trim().replace(/[<>:"/\\|?*]/g, '_');
     const cleanBase = path.resolve(baseDir.replace(/^file:\/\/\/?/, ''));
-    const safarRoot = path.join(cleanBase, cleanSafar);
+    const safarRoot = path.join(cleanBase, cleanProject || cleanSafar);
     const mainDataPath = path.join(safarRoot, 'Main Data', cleanSafar);
-    const thumbnailsPath = path.join(safarRoot, 'Thumbnails', cleanSafar);
-    const remainingPath = path.join(safarRoot, 'Remaining', cleanSafar);
+    const thumbnailPath = path.join(safarRoot, 'Thumbnail', cleanSafar);
+    const remainingPath = path.join(safarRoot, 'Remaining');
 
     fs.mkdirSync(mainDataPath, { recursive: true });
-    fs.mkdirSync(thumbnailsPath, { recursive: true });
+    fs.mkdirSync(thumbnailPath, { recursive: true });
     fs.mkdirSync(remainingPath, { recursive: true });
+
+    let mainDataDatePath = '';
+    let thumbnailDatePath = '';
+    let remainingDatePath = '';
+
+    if (dateFolderName && dateFolderName.trim()) {
+      const cleanDate = dateFolderName.trim().replace(/[<>:"/\\|?*]/g, '_');
+      mainDataDatePath = path.join(mainDataPath, cleanDate);
+      thumbnailDatePath = path.join(thumbnailPath, cleanDate);
+      remainingDatePath = path.join(remainingPath, cleanDate);
+
+      fs.mkdirSync(mainDataDatePath, { recursive: true });
+      fs.mkdirSync(thumbnailDatePath, { recursive: true });
+      fs.mkdirSync(remainingDatePath, { recursive: true });
+    }
 
     return {
       safarRoot,
+      projectName: cleanProject || cleanSafar,
       mainDataPath,
-      thumbnailsPath,
+      thumbnailPath,
+      thumbnailsPath: thumbnailPath, // backward compatibility
       remainingPath,
+      mainDataDatePath,
+      thumbnailDatePath,
+      remainingDatePath,
       safarName: cleanSafar,
+      dateFolderName: dateFolderName || '',
       success: true,
     };
   });

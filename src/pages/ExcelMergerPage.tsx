@@ -116,21 +116,33 @@ export const ExcelMergerPage: React.FC<ExcelMergerPageProps> = ({ onShowToast, o
 
   const handleBrowsePhoto = async () => {
     if (!window.electronAPI) return;
-    const selected = await window.electronAPI.selectOpenFiles('Select Photo Inventory Report', [
-      { name: 'Excel Spreadsheets', extensions: ['xlsx', 'xlsm'] },
-    ]);
-    if (selected && selected.length > 0) {
-      loadPhotoFile(selected[0]);
+    try {
+      const selected = await window.electronAPI.selectOpenFiles('Select Photo Inventory Report', [
+        { name: 'Excel Spreadsheets (*.xlsx, *.xls, *.xlsm, *.csv)', extensions: ['xlsx', 'xls', 'xlsm', 'csv'] },
+        { name: 'All Files (*.*)', extensions: ['*'] }
+      ]);
+      if (selected && selected.length > 0) {
+        loadPhotoFile(selected[0]);
+      }
+    } catch (err: any) {
+      console.error('Error selecting photo inventory:', err);
+      onShowToast(`File dialog error: ${err?.message || err}`, 'danger');
     }
   };
 
   const handleBrowseVideo = async () => {
     if (!window.electronAPI) return;
-    const selected = await window.electronAPI.selectOpenFiles('Select Video Inventory Report', [
-      { name: 'Excel Spreadsheets', extensions: ['xlsx', 'xlsm'] },
-    ]);
-    if (selected && selected.length > 0) {
-      loadVideoFile(selected[0]);
+    try {
+      const selected = await window.electronAPI.selectOpenFiles('Select Video Inventory Report', [
+        { name: 'Excel Spreadsheets (*.xlsx, *.xls, *.xlsm, *.csv)', extensions: ['xlsx', 'xls', 'xlsm', 'csv'] },
+        { name: 'All Files (*.*)', extensions: ['*'] }
+      ]);
+      if (selected && selected.length > 0) {
+        loadVideoFile(selected[0]);
+      }
+    } catch (err: any) {
+      console.error('Error selecting video inventory:', err);
+      onShowToast(`File dialog error: ${err?.message || err}`, 'danger');
     }
   };
 
@@ -1439,18 +1451,22 @@ const FilePickerCard: React.FC<FilePickerCardProps> = ({
         </div>
       </div>
 
-      {/* File path display */}
+      {/* File path display (clickable to browse) */}
       <div
+        onClick={onBrowse}
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: 10,
           backgroundColor: 'var(--surface-elevated)',
-          border: `1px solid ${hasFile ? `rgba(${accentColorRgb}, 0.2)` : 'var(--border)'}`,
+          border: `1px solid ${hasFile ? `rgba(${accentColorRgb}, 0.35)` : 'var(--border)'}`,
           borderRadius: 10,
           padding: '0 12px',
           height: 40,
+          cursor: 'pointer',
+          transition: 'all 0.15s ease',
         }}
+        title="Click to browse file"
       >
         <Folder size={14} color={hasFile ? accentColor : 'var(--tertiary-label)'} />
         <span
