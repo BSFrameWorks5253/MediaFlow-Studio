@@ -15,6 +15,7 @@ import { StudioButton } from '../components/StudioButton';
 import { usePipeline } from '../context/PipelineContext';
 import { PageKey } from '../types/pipelineStages';
 import { toUserErrorMessage } from '../utils/errorSanitizer';
+import { notifyAnyShareUploadComplete } from '../services/anyshareUploadSync';
 
 interface UploadStructurePageProps {
   onNavigate: (page: PageKey) => void;
@@ -124,6 +125,13 @@ export const UploadStructurePage: React.FC<UploadStructurePageProps> = ({
         });
 
         onShowToast(`Upload structure created for "${cleanSafar}"! Outputs are auto-linked.`, 'success');
+        notifyAnyShareUploadComplete({
+          safarName: cleanSafar,
+          dateFolder: dateFolderName.trim(),
+          safarRoot: res.safarRoot,
+          mainDataPath: res.mainDataPath,
+          uploadedBy: 'mediaflow_studio'
+        });
       }
     } catch (e: any) {
       console.error('Failed to create upload structure:', e);
