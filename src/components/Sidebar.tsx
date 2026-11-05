@@ -26,30 +26,57 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpenSettings }) => {
-  const [activeSlide, setActiveSlide] = React.useState<0 | 1>(0);
-  const [userProfile, setUserProfile] = React.useState<{ name: string; username: string } | null>(null);
-
-  React.useEffect(() => {
-    const api = (window as any).electronAPI || (window as any).api;
-    if (api?.userProfile?.load) {
-      api.userProfile.load().then((p: any) => {
-        if (p && (p.name || p.username || p.email)) {
-          setUserProfile({
-            name: p.name || 'Creator',
-            username: p.username || (p.email ? p.email.split('@')[0] : 'creator')
-          });
+  const [userProfile, setUserProfile] = React.useState<{ name: string; username: string; avatar?: string | null }>(() => {
+    try {
+      const saved = localStorage.getItem('anything_last_signed_in_account') || localStorage.getItem('anything_ecosystem_session');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const user = parsed.user || parsed;
+        if (user && (user.name || user.username || user.email)) {
+          return {
+            name: user.name || 'Master Architect',
+            username: user.username || (user.email ? user.email.split('@')[0] : 'admin'),
+            avatar: user.avatar || user.avatarBase64 || null
+          };
         }
-      }).catch(() => {});
-    }
-  }, []);
+      }
+    } catch {}
+    return {
+      name: 'Master Architect',
+      username: 'admin',
+      avatar: null
+    };
+  });
 
   React.useEffect(() => {
-    if (!userProfile) return;
-    const interval = setInterval(() => {
-      setActiveSlide((prev) => (prev === 0 ? 1 : 0));
-    }, 4500);
-    return () => clearInterval(interval);
-  }, [userProfile]);
+    const loadProfile = () => {
+      const api = (window as any).electronAPI || (window as any).api;
+      if (api?.userProfile?.load) {
+        api.userProfile.load().then((p: any) => {
+          if (p && (p.name || p.username || p.email)) {
+            setUserProfile({
+              name: p.name || 'Creator',
+              username: p.username || (p.email ? p.email.split('@')[0] : 'creator'),
+              avatar: p.avatar || p.avatarBase64 || null
+            });
+          }
+        }).catch(() => {});
+      }
+    };
+
+    loadProfile();
+    const pollInterval = setInterval(loadProfile, 3000);
+    window.addEventListener('storage', loadProfile);
+    window.addEventListener('anything:ecosystem-auth-change', loadProfile);
+    window.addEventListener('focus', loadProfile);
+
+    return () => {
+      clearInterval(pollInterval);
+      window.removeEventListener('storage', loadProfile);
+      window.removeEventListener('anything:ecosystem-auth-change', loadProfile);
+      window.removeEventListener('focus', loadProfile);
+    };
+  }, []);
   const { theme, toggleTheme } = useTheme();
   const { isStatsPageUnlocked } = usePipeline();
 
@@ -96,6 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
+            overflow: 'hidden',
           }}
         >
           <div
@@ -107,6 +135,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
               alignItems: 'center',
               justifyContent: 'center',
               overflow: 'hidden',
+              background: '#0f172a',
             }}
           >
             <MediaFlowLogo size={28} />
@@ -114,44 +143,36 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 140, overflow: 'hidden' }}>
-          {activeSlide === 0 || !userProfile ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, animation: 'fadeIn 0.3s ease-in-out' }}>
-              <span
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  fontWeight: 800,
-                  fontSize: 13,
-                  letterSpacing: 1.1,
-                  color: 'var(--label)',
-                }}
-              >
-                MEDIAFLOW
-              </span>
-              <span
-                style={{
-                  padding: '1px 5px',
-                  borderRadius: 4,
-                  fontSize: 8.5,
-                  fontFamily: 'var(--font-mono)',
-                  fontWeight: 800,
-                  color: '#00F2FE',
-                  background: 'rgba(0, 242, 254, 0.12)',
-                  border: '1px solid rgba(0, 242, 254, 0.3)',
-                }}
-              >
-                v26.10.31
-              </span>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', animation: 'fadeIn 0.3s ease-in-out' }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--label)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {userProfile.name}
-              </span>
-              <span style={{ fontSize: 9.5, fontFamily: 'var(--font-mono)', fontWeight: 600, color: '#00F2FE', opacity: 0.9 }}>
-                @{userProfile.username}
-              </span>
-            </div>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontWeight: 800,
+                fontSize: 13,
+                letterSpacing: 1.1,
+                color: 'var(--label)',
+              }}
+            >
+              MEDIAFLOW
+            </span>
+            <span
+              style={{
+                padding: '1px 5px',
+                borderRadius: 4,
+                fontSize: 8.5,
+                fontFamily: 'var(--font-mono)',
+                fontWeight: 800,
+                color: '#00F2FE',
+                background: 'rgba(0, 242, 254, 0.12)',
+                border: '1px solid rgba(0, 242, 254, 0.3)',
+              }}
+            >
+              v26.11.07
+            </span>
+          </div>
+          <span style={{ fontSize: 10, color: 'var(--secondary-label)', fontFamily: 'var(--font-mono)' }}>
+            CREATIVE PRODUCTION
+          </span>
         </div>
       </div>
 
@@ -368,6 +389,107 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
             </button>
           );
         })}
+      </div>
+
+      {/* Permanent Dedicated User Profile Card */}
+      <div
+        style={{
+          padding: '10px 12px',
+          margin: '8px 10px 6px 10px',
+          borderRadius: 12,
+          background: 'linear-gradient(135deg, rgba(0, 242, 254, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%)',
+          border: '1px solid rgba(0, 242, 254, 0.25)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)',
+          flexShrink: 0,
+        }}
+      >
+        <div
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: '50%',
+            padding: 1.5,
+            background: 'linear-gradient(135deg, #00F2FE 0%, #8B5CF6 100%)',
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+            boxShadow: '0 0 10px rgba(0, 242, 254, 0.35)',
+          }}
+        >
+          {userProfile?.avatar ? (
+            <img
+              src={userProfile.avatar}
+              alt={userProfile.name}
+              style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+            />
+          ) : (
+            <div
+              style={{
+                width: '100%',
+                height: '100%',
+                borderRadius: '50%',
+                background: '#0f172a',
+                color: '#00F2FE',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 12,
+                fontWeight: 800,
+                fontFamily: 'var(--font-mono)',
+              }}
+            >
+              {(userProfile?.name || 'MA').slice(0, 2).toUpperCase()}
+            </div>
+          )}
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                color: 'var(--label)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+              title={userProfile?.name}
+            >
+              {userProfile?.name || 'Master Architect'}
+            </span>
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                backgroundColor: '#10B981',
+                boxShadow: '0 0 6px #10B981',
+                flexShrink: 0,
+              }}
+              title="Anything Ecosystem Synced"
+            />
+          </div>
+          <span
+            style={{
+              fontSize: 10,
+              fontFamily: 'var(--font-mono)',
+              fontWeight: 600,
+              color: '#00F2FE',
+              opacity: 0.9,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            @{userProfile?.username || 'admin'}
+          </span>
+        </div>
       </div>
 
       {/* Footer System Dock: Settings & Theme Toggle */}

@@ -6,34 +6,45 @@ let cachedPythonPath: string | null = null;
 
 /**
  * Robustly discovers the active Python executable on the host system.
- * Checks environment overrides, PATH executables (python, py, python3),
- * and standard Windows installation directories.
+ * Prioritizes executables that have openpyxl installed and direct
+ * binary installations over Windows execution aliases.
  */
 export function getPythonExecutable(): string {
   if (cachedPythonPath) return cachedPythonPath;
 
+  const testCandidate = (exe: string): boolean => {
+    try {
+      const out = execSync(`"${exe}" -c "import openpyxl; print('OK')"`, {
+        encoding: 'utf-8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+        timeout: 3000,
+      });
+      if (out && out.includes('OK')) return true;
+    } catch {}
+    try {
+      const out = execSync(`"${exe}" --version`, {
+        encoding: 'utf-8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+        timeout: 2000,
+      });
+      if (out && out.toLowerCase().includes('python')) return true;
+    } catch {}
+    return false;
+  };
+
   // 1. Explicit override from environment
   if (process.env.PYTHON_PATH && fs.existsSync(process.env.PYTHON_PATH)) {
-    cachedPythonPath = process.env.PYTHON_PATH;
-    return cachedPythonPath;
+    if (testCandidate(process.env.PYTHON_PATH)) {
+      cachedPythonPath = process.env.PYTHON_PATH;
+      return cachedPythonPath;
+    }
   }
 
-  // 2. Test standard PATH commands: 'python', 'py', 'python3'
-  const commandCandidates = ['python', 'py', 'python3'];
-  for (const cmd of commandCandidates) {
-    try {
-      const out = execSync(`${cmd} --version`, { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 2000 });
-      if (out && out.toLowerCase().includes('python')) {
-        cachedPythonPath = cmd;
-        return cachedPythonPath;
-      }
-    } catch {}
-  }
-
-  // 3. Scan common Windows installation directories
+  // 2. Scan common Windows installation directories FIRST (standalone binaries are most reliable)
   const localAppData = process.env.LOCALAPPDATA || '';
   const appData = process.env.APPDATA || '';
   const programFiles = process.env.ProgramFiles || 'C:\\Program Files';
+  const programFilesX86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
 
   const dirCandidates: string[] = [];
 
@@ -69,15 +80,30 @@ export function getPythonExecutable(): string {
     } catch {}
   }
 
+  // C:\Program Files (x86)\Python*
+  if (fs.existsSync(programFilesX86)) {
+    try {
+      const entries = fs.readdirSync(programFilesX86).filter((e) => e.toLowerCase().startsWith('python'));
+      for (const entry of entries) {
+        dirCandidates.push(path.join(programFilesX86, entry, 'python.exe'));
+      }
+    } catch {}
+  }
+
+  // Test discovered concrete paths
   for (const exePath of dirCandidates) {
-    if (fs.existsSync(exePath)) {
-      try {
-        const out = execSync(`"${exePath}" --version`, { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 2000 });
-        if (out && out.toLowerCase().includes('python')) {
-          cachedPythonPath = exePath;
-          return cachedPythonPath;
-        }
-      } catch {}
+    if (fs.existsSync(exePath) && testCandidate(exePath)) {
+      cachedPythonPath = exePath;
+      return cachedPythonPath;
+    }
+  }
+
+  // 3. Test standard PATH commands: 'python', 'py', 'python3'
+  const commandCandidates = ['python', 'py', 'python3'];
+  for (const cmd of commandCandidates) {
+    if (testCandidate(cmd)) {
+      cachedPythonPath = cmd;
+      return cachedPythonPath;
     }
   }
 
@@ -85,4 +111,3 @@ export function getPythonExecutable(): string {
   cachedPythonPath = 'python';
   return cachedPythonPath;
 }
-

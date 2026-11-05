@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
 import path from 'path';
+import { pathToFileURL } from 'url';
 import fs from 'fs';
 import os from 'os';
 import { PVSeparatorEngine } from './engines/pvSeparator';
@@ -27,6 +28,13 @@ if (process.platform === 'win32') {
 app.commandLine.appendSwitch('high-dpi-support', '1');
 
 // Single-Instance Enforcement
+// Enable GPU Hardware Acceleration & Instant Window Compositing
+app.commandLine.appendSwitch('enable-gpu-rasterization');
+app.commandLine.appendSwitch('enable-zero-copy');
+app.commandLine.appendSwitch('ignore-gpu-blocklist');
+app.commandLine.appendSwitch('enable-accelerated-2d-canvas');
+app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
+
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
   console.log('[INFO] Another instance of MediaFlow Studio is already running.');
@@ -37,6 +45,7 @@ if (!gotLock) {
 let mainWindow: BrowserWindow | null = null;
 let splashWindow: BrowserWindow | null = null;
 let splashSafetyTimeout: NodeJS.Timeout | null = null;
+const isDev = !app.isPackaged && (process.env.NODE_ENV === 'development' || process.argv.includes('--dev'));
 
 export interface AnythingLoaderConfig {
   appId?: string;
@@ -121,7 +130,7 @@ function loadAnythingLoaderConfig(forceReload = true): AnythingLoaderConfig {
     artworkUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1400&q=85',
     artistName: 'Anything Creation',
     artworkTitle: '-Designed by Burhanuddin',
-    durationMs: 2800,
+    durationMs: 850,
     logoText: 'Ms',
     badgeGradient: 'from-blue-600 to-indigo-700',
     artworkFit: 'cover',
@@ -233,14 +242,8 @@ function createSplashWindow() {
   }
 
   // Navigation Security: Disallow remote top-level navigations
-  splashWindow.webContents.on('will-navigate', (event, navigationUrl) => {
-    const isDev = !app.isPackaged && (process.env.NODE_ENV === 'development' || process.argv.includes('--dev'));
-    const isLocalDev = isDev && (navigationUrl.includes('localhost') || navigationUrl.includes('127.0.0.1'));
-    const isLocalFile = navigationUrl.startsWith('file://');
-    if (!isLocalDev && !isLocalFile) {
-      event.preventDefault();
-      shell.openExternal(navigationUrl);
-    }
+  splashWindow.webContents.on('will-navigate', (event) => {
+    event.preventDefault();
   });
 
   splashWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -261,7 +264,7 @@ function createSplashWindow() {
   const distHtmlPath = path.join(__dirname, '../dist/index.html');
 
   if (isDev) {
-    splashWindow.loadURL('http://127.0.0.1:5173?view=splash&window=splash#splash').catch(() => {
+    splashWindow.loadURL('http://127.0.0.1:5175?view=splash&window=splash#splash').catch(() => {
       if (fs.existsSync(distHtmlPath)) {
         splashWindow?.loadFile(distHtmlPath, { query: { view: 'splash', window: 'splash' }, hash: 'splash' });
       } else {
@@ -326,8 +329,35 @@ function createWindow() {
       contextIsolation: true,
       sandbox: false,
       webviewTag: true,
-      webSecurity: false,
+      webSecurity: true,
     },
+  });
+
+  // Navigation & Link Security: Disallow arbitrary navigation & validate external links
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol === 'https:' || parsed.protocol === 'http:' || parsed.protocol === 'mailto:') {
+        shell.openExternal(url);
+      }
+    } catch {}
+    return { action: 'deny' };
+  });
+
+  mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
+    const isDevMode = !app.isPackaged && (process.env.NODE_ENV === 'development' || process.argv.includes('--dev'));
+    const isLocalDev = isDevMode && (navigationUrl.includes('localhost') || navigationUrl.includes('127.0.0.1'));
+    const expectedFileUrl = pathToFileURL(path.join(__dirname, '../dist/index.html')).toString().toLowerCase();
+    const isAppEntry = navigationUrl.toLowerCase() === expectedFileUrl || navigationUrl.toLowerCase().startsWith(expectedFileUrl + '#') || navigationUrl.toLowerCase().startsWith(expectedFileUrl + '?');
+    if (!isLocalDev && !isAppEntry) {
+      event.preventDefault();
+      try {
+        const parsed = new URL(navigationUrl);
+        if (parsed.protocol === 'https:' || parsed.protocol === 'http:' || parsed.protocol === 'mailto:') {
+          shell.openExternal(navigationUrl);
+        }
+      } catch {}
+    }
   });
 
   const isDev = !app.isPackaged && (process.env.NODE_ENV === 'development' || process.argv.includes('--dev'));
@@ -370,7 +400,7 @@ function createWindow() {
   mainWindow.webContents.on('did-fail-load', (e, code, desc, validatedURL) => {
     console.error('[LOAD_ERROR]', code, desc, validatedURL);
     // Ignore aborted redirects (code -3)
-    if (code !== -3 && validatedURL && (validatedURL.includes('5173') || validatedURL.includes('localhost'))) {
+    if (code !== -3 && validatedURL && (validatedURL.includes('5175') || validatedURL.includes('5173') || validatedURL.includes('localhost'))) {
       console.log('[FALLBACK] Dev server unreachable, falling back to local dist bundle');
       loadFallbackBundle();
     }
@@ -378,6 +408,16 @@ function createWindow() {
 
   mainWindow.webContents.on('console-message', (e, level, message, line, sourceId) => {
     console.log(`[RENDERER_CONSOLE] [L${line}] ${message} (${sourceId})`);
+  });
+
+  mainWindow.once('ready-to-show', () => {
+    if (isDev) {
+      completeSplashHandoff();
+    } else {
+      setTimeout(() => {
+        completeSplashHandoff();
+      }, 700);
+    }
   });
 
   mainWindow.webContents.on('did-finish-load', () => {
@@ -404,9 +444,9 @@ function createWindow() {
   });
 
   if (isDev) {
-    console.log('[DEV_LOAD] Attempting connection to dev server: http://127.0.0.1:5173');
-    mainWindow.loadURL('http://127.0.0.1:5173').catch((err) => {
-      console.warn('[DEV_LOAD_WARN] Failed to load 127.0.0.1:5173, loading local bundle:', err);
+    console.log('[DEV_LOAD] Attempting connection to dev server: http://127.0.0.1:5175');
+    mainWindow.loadURL('http://127.0.0.1:5175').catch((err) => {
+      console.warn('[DEV_LOAD_WARN] Failed to load 127.0.0.1:5175, loading local bundle:', err);
       loadFallbackBundle();
     });
   } else {
@@ -455,7 +495,7 @@ app.whenReady().then(() => {
   // Safety fallback: ensure main window reveals even if splash hangs, with buffer
   splashSafetyTimeout = setTimeout(() => {
     completeSplashHandoff();
-  }, Math.max(6000, splashDuration + 3000));
+  }, isDev ? 1800 : 2500);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -476,38 +516,98 @@ function setupIpcHandlers() {
     ipcMain.handle('userProfile:load', async () => {
     try {
       const appData = process.env.APPDATA || (process.env.USERPROFILE ? path.join(process.env.USERPROFILE, 'AppData', 'Roaming') : '');
+      const localAppData = process.env.LOCALAPPDATA || (process.env.USERPROFILE ? path.join(process.env.USERPROFILE, 'AppData', 'Local') : '');
       const candidates = [
         path.join(appData, 'Anything', 'ecosystem_session.json'),
         path.join(appData, 'anything', 'ecosystem_session.json'),
+        path.join(localAppData, 'anything', 'ecosystem_session.json'),
         path.join(app.getPath('userData'), 'ecosystem_session.json'),
+        'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Anything\\ecosystem_session.json',
+        'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Anything\\Anything\\ecosystem_session.json',
+        'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Anything\\Anything Apps\\ecosystem_session.json',
+        path.resolve(app.getAppPath(), '..', '..', 'ecosystem_session.json'),
+        path.resolve(app.getAppPath(), '..', 'ecosystem_session.json'),
+        path.join(process.cwd(), 'ecosystem_session.json'),
       ];
+
+      let sessUser: any = null;
       for (const p of candidates) {
         if (fs.existsSync(p)) {
-          const sess = JSON.parse(fs.readFileSync(p, 'utf-8'));
-          if (sess?.user) {
-            return {
-              name: sess.user.name || 'Creative Member',
-              email: sess.user.email || '',
-              username: sess.user.username || (sess.user.email ? sess.user.email.split('@')[0] : 'creator'),
-              userId: sess.user.username || sess.user.id || 'creator',
-              avatar: sess.user.avatar || null,
-              role: sess.user.role || 'member'
-            };
-          }
+          try {
+            const sess = JSON.parse(fs.readFileSync(p, 'utf-8'));
+            if (sess?.user) {
+              sessUser = sess.user;
+              break;
+            }
+          } catch {}
         }
       }
-      if (process.env.ANYTHING_USER_ID) {
+
+      for (const arg of process.argv) {
+        if (arg.startsWith('--ecosystem-user-name=') || arg.startsWith('--user-name=')) {
+          const name = decodeURIComponent(arg.split('=')[1] || '');
+          if (name) sessUser = { ...sessUser, name };
+        } else if (arg.startsWith('--ecosystem-user-email=') || arg.startsWith('--user-email=')) {
+          const email = arg.split('=')[1] || '';
+          if (email) sessUser = { ...sessUser, email };
+        } else if (arg.startsWith('--ecosystem-user-id=') || arg.startsWith('--user-id=')) {
+          const id = arg.split('=')[1] || '';
+          if (id) sessUser = { ...sessUser, id };
+        } else if (arg.startsWith('--ecosystem-user-handle=') || arg.startsWith('--user-handle=')) {
+          const username = arg.split('=')[1] || '';
+          if (username) sessUser = { ...sessUser, username };
+        } else if (arg.startsWith('--ecosystem-user-avatar=') || arg.startsWith('--user-avatar=')) {
+          const avatar = decodeURIComponent(arg.split('=')[1] || '');
+          if (avatar) sessUser = { ...sessUser, avatar };
+        }
+      }
+
+      if (sessUser) {
+        const resolvedAvatar = sessUser.avatar || null;
+        return {
+          name: sessUser.name || 'Creative Member',
+          email: sessUser.email || '',
+          username: sessUser.username || (sessUser.email ? sessUser.email.split('@')[0] : 'creator'),
+          userId: sessUser.username || sessUser.id || 'creator',
+          avatar: resolvedAvatar,
+          avatarBase64: resolvedAvatar,
+          role: sessUser.role || 'member'
+        };
+      }
+
+      if (process.env.ANYTHING_USER_ID || process.env.ANYTHING_USER_NAME) {
+        const resolvedAvatar = process.env.ANYTHING_USER_AVATAR || null;
         return {
           name: process.env.ANYTHING_USER_NAME || 'Creative Member',
           email: process.env.ANYTHING_USER_EMAIL || '',
-          username: process.env.ANYTHING_USER_HANDLE || process.env.ANYTHING_USER_ID,
-          userId: process.env.ANYTHING_USER_HANDLE || process.env.ANYTHING_USER_ID,
-          avatar: process.env.ANYTHING_USER_AVATAR || null,
+          username: process.env.ANYTHING_USER_HANDLE || process.env.ANYTHING_USER_ID || 'creator',
+          userId: process.env.ANYTHING_USER_HANDLE || process.env.ANYTHING_USER_ID || 'creator',
+          avatar: resolvedAvatar,
+          avatarBase64: resolvedAvatar,
           role: process.env.ANYTHING_USER_ROLE || 'member'
         };
       }
-    } catch (e) {}
-    return null;
+
+      return {
+        name: 'Master Architect',
+        email: 'admin@anything.local',
+        username: 'admin',
+        userId: 'admin',
+        avatar: null,
+        avatarBase64: null,
+        role: 'admin'
+      };
+    } catch (e) {
+      return {
+        name: 'Master Architect',
+        email: 'admin@anything.local',
+        username: 'admin',
+        userId: 'admin',
+        avatar: null,
+        avatarBase64: null,
+        role: 'admin'
+      };
+    }
   });
 
   ipcMain.handle('splash:getLoaderConfig', async () => resolveChildAppLoaderConfig('mediaflow-studio', 'MediaFlow Studio'));
@@ -999,8 +1099,13 @@ function setupIpcHandlers() {
   });
 
   ipcMain.handle('updater:open-url', async (_, url: string) => {
-    if (url) {
-      await shell.openExternal(url);
+    if (url && typeof url === 'string') {
+      try {
+        const parsed = new URL(url.trim());
+        if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+          await shell.openExternal(url.trim());
+        }
+      } catch {}
     }
     return true;
   });

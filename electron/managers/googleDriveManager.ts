@@ -56,6 +56,11 @@ export class GoogleDriveManager {
   openExternal(url: string) {
     let target = url.trim();
     if (!target.startsWith('http')) target = 'https://' + target;
-    shell.openExternal(target);
+    try {
+      const parsed = new URL(target);
+      if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+        shell.openExternal(target);
+      }
+    } catch {}
   }
 }

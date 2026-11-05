@@ -1,6 +1,6 @@
 {
   "name": "mediaflow-studio",
-  "version": "26.11.07",
+  "version": "26.11.11",
   "description": "DataFlow Studio — Professional Media Ingestion, Synchronization and Report Fusion Desktop Suite",
   "main": "dist-electron/main.js",
   "author": "BSFrameWorks",
@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "concurrently -k -r \"npm run dev:vite\" \"npm run dev:electron\"",
     "dev:vite": "vite",
-    "dev:electron": "wait-on -t 30000 tcp:127.0.0.1:5173 && npm run build:electron && cross-env NODE_ENV=development electron dist-electron/main.js",
+    "dev:electron": "wait-on -t 30000 tcp:127.0.0.1:5175 && cross-env NODE_ENV=development electron dist-electron/main.js",
     "build:vite": "vite build",
     "build:electron": "tsc -p tsconfig.electron.json && node -e \"const fs=require('fs'); fs.mkdirSync('dist-electron/engines/scripts', {recursive:true}); fs.copyFileSync('electron/engines/scripts/excel_merger.py', 'dist-electron/engines/scripts/excel_merger.py'); fs.copyFileSync('electron/engines/scripts/generate_separation_report.py', 'dist-electron/engines/scripts/generate_separation_report.py')\"",
     "build:installer-assets": "python scripts/generate_installer_assets.py && python scripts/generate_appx_assets.py",

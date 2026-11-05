@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer, webFrame } from 'electron';
+import { contextBridge, ipcRenderer, webFrame, webUtils } from 'electron';
 
 const isSplash = process.argv.includes('--window-type=splash');
 if (isSplash) {
@@ -51,6 +51,14 @@ export const electronAPI = {
     ipcRenderer.invoke('shell:show-item-in-folder', targetPath),
   checkPathExists: (targetPath: string) =>
     ipcRenderer.invoke('path:check-exists', targetPath),
+  getPathForFile: (file: any): string => {
+    try {
+      if (webUtils && typeof webUtils.getPathForFile === 'function') {
+        return webUtils.getPathForFile(file);
+      }
+    } catch {}
+    return (file as any)?.path || '';
+  },
 
   // Upload Structure Generator (Structure A)
   createUploadStructure: (baseDir: string, safarName: string, dateFolderName?: string, projectName?: string) =>

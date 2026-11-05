@@ -44,8 +44,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     } catch (e: any) {
       setUpdateResult({
         hasUpdate: false,
-        currentVersion: 'v26.11.07',
-        latestVersion: 'v26.11.07',
+        currentVersion: 'v26.11.11',
+        latestVersion: 'v26.11.11',
         releaseNotes: ['Checked Anything Hub and release channels.'],
         source: 'anything-catalog',
       });
@@ -478,7 +478,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>Suite Release Build:</span>
                 <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--accent)' }}>
-                  v26.11.07 Production Build (x64)
+                  v26.11.11 Production Build (x64)
                 </span>
               </div>
             </div>

@@ -91,8 +91,13 @@ export const ExcelMergerPage: React.FC<ExcelMergerPageProps> = ({ onShowToast, o
       const inspected = await window.electronAPI.inspectExcelFiles([filePath]);
       if (inspected && inspected.length > 0) {
         setPhotoInspected(inspected[0]);
+        if (!inspected[0].valid) {
+          onShowToast(`Photo report notice: ${inspected[0].error || 'Invalid format'}`, 'warning');
+        }
       }
-    } catch {
+    } catch (e: any) {
+      console.warn('Inspection error:', e);
+      onShowToast(`Could not inspect photo report: ${e?.message || e}`, 'warning');
     } finally {
       setIsInspecting(false);
     }
@@ -107,12 +112,19 @@ export const ExcelMergerPage: React.FC<ExcelMergerPageProps> = ({ onShowToast, o
       const inspected = await window.electronAPI.inspectExcelFiles([filePath]);
       if (inspected && inspected.length > 0) {
         setVideoInspected(inspected[0]);
+        if (!inspected[0].valid) {
+          onShowToast(`Video report notice: ${inspected[0].error || 'Invalid format'}`, 'warning');
+        }
       }
-    } catch {
+    } catch (e: any) {
+      console.warn('Inspection error:', e);
+      onShowToast(`Could not inspect video report: ${e?.message || e}`, 'warning');
     } finally {
       setIsInspecting(false);
     }
   };
+
+
 
   const handleBrowsePhoto = async () => {
     if (!window.electronAPI) return;
@@ -1002,7 +1014,14 @@ export const ExcelMergerPage: React.FC<ExcelMergerPageProps> = ({ onShowToast, o
                 e.preventDefault();
                 setIsCollectorDragOver(false);
                 if (e.dataTransfer.files.length > 0) {
-                  const fp = (e.dataTransfer.files[0] as any).path || '';
+                  const file = e.dataTransfer.files[0];
+                  let fp = '';
+                  if ((window as any).electronAPI?.getPathForFile) {
+                    try {
+                      fp = (window as any).electronAPI.getPathForFile(file);
+                    } catch {}
+                  }
+                  if (!fp) fp = (file as any).path || '';
                   if (fp) setCollectorSourceDir(fp);
                 }
               }}
@@ -1370,7 +1389,13 @@ const FilePickerCard: React.FC<FilePickerCardProps> = ({
     setIsDragOver(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
-      const p = (file as any).path || file.name;
+      let p = '';
+      if ((window as any).electronAPI?.getPathForFile) {
+        try {
+          p = (window as any).electronAPI.getPathForFile(file);
+        } catch {}
+      }
+      if (!p) p = (file as any).path || '';
       if (p) onDropFile(p);
     }
   };
@@ -1497,6 +1522,26 @@ const FilePickerCard: React.FC<FilePickerCardProps> = ({
       >
         {hasFile ? `Change ${label}` : `Select ${label}`}
       </StudioButton>
+
+      {/* Invalid file notice */}
+      {inspected && !inspected.valid && (
+        <div
+          style={{
+            padding: '8px 12px',
+            borderRadius: 8,
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            fontSize: 11,
+            color: '#ef4444',
+          }}
+        >
+          <AlertTriangle size={14} style={{ flexShrink: 0 }} />
+          <span>{inspected.error || 'Invalid spreadsheet file'}</span>
+        </div>
+      )}
 
       {/* Inspected file details */}
       {inspected && (

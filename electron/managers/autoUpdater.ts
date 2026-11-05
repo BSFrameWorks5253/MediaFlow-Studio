@@ -32,7 +32,7 @@ export interface UpdateInfo {
 
 export class WorkstationAutoUpdater {
   private static DEFAULT_REPO = 'BSFrameWorks5253/MediaFlow-Studio';
-  private static DEFAULT_ANYTHING_DIR = 'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Anything\\Anything';
+  private static DEFAULT_ANYTHING_DIR = path.resolve(app.getAppPath(), '..', '..', 'Anything', 'Anything');
   private static isDownloading = false;
 
   /**
@@ -41,17 +41,17 @@ export class WorkstationAutoUpdater {
   public static resolveAnythingDir(customPath?: string): string | null {
     const cliArg = process.argv.find((a) => a.startsWith('--anything-dir='))?.split('=')[1];
     const appData = process.env.APPDATA || (process.env.USERPROFILE ? path.join(process.env.USERPROFILE, 'AppData', 'Roaming') : '');
+    const parentOfApp = path.resolve(app.getAppPath(), '..', '..');
 
     const candidates = [
       customPath,
       cliArg,
       process.env.ANYTHING_DIR,
       process.env.ANYTHING_ECOSYSTEM_PATH,
-      'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Anything\\Anything',
-      this.DEFAULT_ANYTHING_DIR,
-      'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Anything',
       appData ? path.join(appData, 'Anything') : '',
       appData ? path.join(appData, 'anything') : '',
+      path.resolve(parentOfApp, 'Anything', 'Anything'),
+      path.resolve(parentOfApp, 'Anything'),
       path.resolve(process.cwd(), '..', '..', 'Anything', 'Anything'),
       path.resolve(process.cwd(), '..', 'Anything', 'Anything'),
       path.resolve(process.cwd(), '..', 'Anything'),
@@ -468,16 +468,55 @@ export class WorkstationAutoUpdater {
             detached: true,
             stdio: 'ignore',
           });
+          setTimeout(() => {
+            app.quit();
+          }, 1200);
         } else {
-          // NSIS silent installer switch: /S
-          spawn(tempPath, ['/S'], {
+          // Out-of-Process Windows Supervisor Updater
+          const safeInstallerPath = tempPath.replace(/["&]/g, '');
+          const tempFolder = app.getPath('temp');
+          const batPath = path.join(tempFolder, `mediaflow_updater_${Date.now()}.bat`);
+          const currentExe = process.execPath.replace(/["&]/g, '');
+          const batContent = `@echo off
+setlocal
+chcp 65001 >nul
+
+:: Wait for MediaFlow Studio process to exit and release file locks
+timeout /t 2 /nobreak >nul
+
+:: Ensure any lingering process instances are terminated
+taskkill /F /IM "MediaFlow Studio.exe" >nul 2>&1
+taskkill /F /IM "MediaFlow_Studio.exe" >nul 2>&1
+taskkill /F /IM "MediaFlow.exe" >nul 2>&1
+timeout /t 1 /nobreak >nul
+
+:: Execute the NSIS installer
+start /wait "" "${safeInstallerPath}" /S
+if %ERRORLEVEL% NEQ 0 (
+    start /wait "" "${safeInstallerPath}"
+)
+
+:: Re-launch updated application
+if exist "${currentExe}" (
+    start "" "${currentExe}"
+)
+
+:: Cleanup supervisor script
+(goto) 2>nul & del "%~f0"
+`;
+          fs.writeFileSync(batPath, batContent, 'utf8');
+
+          const batProcess = spawn('cmd.exe', ['/c', batPath], {
             detached: true,
             stdio: 'ignore',
+            windowsHide: true,
           });
+          batProcess.unref();
+
+          setTimeout(() => {
+            app.exit(0);
+          }, 400);
         }
-        setTimeout(() => {
-          app.quit();
-        }, 1200);
       }
     } finally {
       this.isDownloading = false;

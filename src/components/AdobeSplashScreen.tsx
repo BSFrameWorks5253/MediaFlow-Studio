@@ -202,17 +202,23 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
   }, [loaderConfig]);
 
   const totalDurationMs = useMemo(() => {
+    const isDev = typeof window !== 'undefined' && (
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.port === '5175'
+    );
+    if (isDev) return 450;
     if (loaderConfig?.durationMs && typeof loaderConfig.durationMs === 'number' && loaderConfig.durationMs > 0) {
-      return loaderConfig.durationMs;
+      return Math.min(loaderConfig.durationMs, 1000);
     }
     switch (effectiveSettings.speed) {
       case 'quick':
-        return 1400;
+        return 500;
       case 'cinematic':
-        return 4200;
+        return 1200;
       case 'standard':
       default:
-        return 2800;
+        return 850;
     }
   }, [loaderConfig, effectiveSettings.speed]);
 

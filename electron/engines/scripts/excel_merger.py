@@ -11,6 +11,7 @@
       * 'Folder Structure' (Horizontal column fusion preserving width & indent)
       * 'Camera Summary' (Total Found / Total Missing aggregation with conditional format)
       * Generic Tabular Sheets (Sequential row concatenation with merged range support)
+  - Universal CSV import support
   - File lock collision handling with timestamp suffix fallback
 ===============================================================================
 """
@@ -20,8 +21,22 @@ import sys
 import re
 import json
 import copy
+import csv
 from pathlib import Path
 from datetime import datetime
+
+# Configure standard streams for UTF-8 on Windows
+if sys.platform == "win32":
+    try:
+        if hasattr(sys.stdin, "reconfigure"):
+            sys.stdin.reconfigure(encoding="utf-8", errors="replace")
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        if hasattr(sys.stderr, "reconfigure"):
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
@@ -72,6 +87,33 @@ def copy_col_dimensions(ws_src, ws_dst, src_col_idx, dst_col_idx):
         pass
 
 
+def load_workbook_or_csv(fp):
+    """Loads an Excel workbook (.xlsx/.xlsm) or converts a .csv file into an openpyxl Workbook in-memory."""
+    clean_fp = clean_excel_path(fp)
+    if clean_fp.lower().endswith('.csv'):
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = Path(clean_fp).stem[:31]
+        try:
+            with open(clean_fp, 'r', encoding='utf-8-sig', errors='replace') as f:
+                reader = csv.reader(f)
+                for r_idx, row in enumerate(reader, start=1):
+                    for c_idx, val in enumerate(row, start=1):
+                        ws.cell(r_idx, c_idx, value=val)
+        except Exception:
+            with open(clean_fp, 'r', encoding='latin-1', errors='replace') as f:
+                reader = csv.reader(f)
+                for r_idx, row in enumerate(reader, start=1):
+                    for c_idx, val in enumerate(row, start=1):
+                        ws.cell(r_idx, c_idx, value=val)
+        return wb
+    else:
+        try:
+            return openpyxl.load_workbook(clean_fp, data_only=False)
+        except Exception:
+            return openpyxl.load_workbook(clean_fp)
+
+
 def inspect_files(file_paths):
     """Returns metadata preview of files for the UI (size, sheet names, row count)."""
     results = []
@@ -87,6 +129,38 @@ def inspect_files(file_paths):
                 sz_str = f"{sz / 1024:.0f} KB"
             else:
                 sz_str = f"{sz} B"
+
+            if fp.lower().endswith('.csv'):
+                row_count = 0
+                try:
+                    with open(fp, 'r', encoding='utf-8-sig', errors='replace') as f:
+                        row_count = sum(1 for _ in f)
+                except Exception:
+                    pass
+                sheets = [Path(fp).stem[:31]]
+                results.append({
+                    "path": fp,
+                    "name": os.path.basename(fp),
+                    "size": sz_str,
+                    "sheets": sheets,
+                    "sheet_count": len(sheets),
+                    "rows": row_count,
+                    "valid": True
+                })
+                continue
+
+            if fp.lower().endswith('.xls'):
+                results.append({
+                    "path": fp,
+                    "name": os.path.basename(fp),
+                    "size": sz_str,
+                    "sheets": [],
+                    "sheet_count": 0,
+                    "rows": 0,
+                    "valid": False,
+                    "error": "Legacy .xls format is not supported. Please open in Excel and Save As .xlsx or .csv."
+                })
+                continue
 
             wb = openpyxl.load_workbook(fp, read_only=True)
             sheets = list(wb.sheetnames)
@@ -135,25 +209,26 @@ def scan_directory(folder_path):
 def merge_inventory_reports(file_paths, output_path=None):
     """
     Merges multiple Excel inventory report files into a single workbook with full style fidelity,
-    supporting standard DataFlow inventory formats as well as generic workbooks.
+    supporting standard DataFlow inventory formats as well as generic workbooks and CSV files.
     """
     if not file_paths or len(file_paths) < 1:
         raise ValueError("At least one Excel file path must be provided for merging.")
 
     cleaned_paths = [clean_excel_path(f) for f in file_paths if f]
-    valid_files = [f for f in cleaned_paths if os.path.isfile(f) and f.lower().endswith(('.xlsx', '.xlsm'))]
+    valid_files = [f for f in cleaned_paths if os.path.isfile(f) and f.lower().endswith(('.xlsx', '.xlsm', '.csv'))]
     if not valid_files:
-        raise FileNotFoundError(f"No valid Excel (.xlsx/.xlsm) files found in: {file_paths}")
+        raise FileNotFoundError(f"No valid Excel (.xlsx/.xlsm/.csv) files found in: {file_paths}")
 
     if not output_path:
-        # Save into App Temp directory (Never inside active working data media folders)
-        import tempfile
-        output_dir = os.path.join(tempfile.gettempdir(), "MediaFlow_Studio_Reports")
-        os.makedirs(output_dir, exist_ok=True)
+        # Default destination: Save in the 2nd file's directory (Video Inventory)
+        # so the merged report lands right next to the user's project files.
         if len(valid_files) >= 2:
-            second_stem = Path(valid_files[1]).stem
+            target_file = valid_files[1]
         else:
-            second_stem = Path(valid_files[0]).stem
+            target_file = valid_files[0]
+
+        output_dir = os.path.dirname(os.path.abspath(target_file))
+        second_stem = Path(target_file).stem
 
         # Derive shared base name — strip _01M / _02E / photo / video type suffixes
         clean_prefix = re.sub(
@@ -166,6 +241,19 @@ def merge_inventory_reports(file_paths, output_path=None):
             clean_prefix = second_stem
 
         merged_filename = f"{clean_prefix}_Inventory_Report_MERGED.xlsx"
+        try:
+            os.makedirs(output_dir, exist_ok=True)
+            # Test write permission in project directory
+            test_file = os.path.join(output_dir, '.mf_perm_check')
+            with open(test_file, 'w') as f:
+                f.write('1')
+            os.remove(test_file)
+        except Exception:
+            # Fallback to App Temp directory only if project folder is write-protected/read-only
+            import tempfile
+            output_dir = os.path.join(tempfile.gettempdir(), "MediaFlow_Studio_Reports")
+            os.makedirs(output_dir, exist_ok=True)
+
         output_path = os.path.join(output_dir, merged_filename)
     else:
         output_path = clean_excel_path(output_path)
@@ -173,11 +261,13 @@ def merge_inventory_reports(file_paths, output_path=None):
     loaded_wbs = []
     for fp in valid_files:
         try:
-            wb = openpyxl.load_workbook(fp, data_only=False)
+            wb = load_workbook_or_csv(fp)
             loaded_wbs.append((fp, wb))
-        except Exception:
-            wb = openpyxl.load_workbook(fp)
-            loaded_wbs.append((fp, wb))
+        except Exception as e:
+            print(f"[Warning] Failed to load {fp}: {e}", file=sys.stderr)
+
+    if not loaded_wbs:
+        raise RuntimeError(f"Could not load any spreadsheets from: {valid_files}")
 
     wb_out = openpyxl.Workbook()
     if wb_out.sheetnames:
@@ -190,7 +280,7 @@ def merge_inventory_reports(file_paths, output_path=None):
                 sheet_order.append(sname)
 
     stats = {
-        "files_merged": len(valid_files),
+        "files_merged": len(loaded_wbs),
         "sheets_processed": 0,
         "total_rows_merged": 0,
         "missing_files_count": 0,
@@ -389,23 +479,35 @@ def merge_inventory_reports(file_paths, output_path=None):
                             if sname.strip().lower() == 'issues':
                                 stats["issues_count"] += 1
 
+    # Ensure workbook has at least one sheet
+    if not wb_out.sheetnames:
+        ws_fallback = wb_out.create_sheet(title="Merged Summary")
+        ws_fallback.cell(1, 1, value="No sheets found in source files to merge.")
+
     target_save_path = output_path
     os.makedirs(os.path.dirname(os.path.abspath(target_save_path)), exist_ok=True)
     try:
         wb_out.save(target_save_path)
-    except PermissionError:
-        stem, ext = os.path.splitext(output_path)
-        timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-        target_save_path = f"{stem}_{timestamp_str}{ext}"
-        wb_out.save(target_save_path)
-        stats["output_path"] = target_save_path
+    except (PermissionError, OSError):
+        try:
+            stem, ext = os.path.splitext(output_path)
+            timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+            target_save_path = f"{stem}_{timestamp_str}{ext}"
+            wb_out.save(target_save_path)
+        except Exception:
+            import tempfile
+            temp_dir = os.path.join(tempfile.gettempdir(), "MediaFlow_Studio_Reports")
+            os.makedirs(temp_dir, exist_ok=True)
+            target_save_path = os.path.join(temp_dir, os.path.basename(output_path))
+            wb_out.save(target_save_path)
 
+    stats["output_path"] = target_save_path
     return stats
 
 
 def main():
     if len(sys.argv) < 2:
-        print(json.dumps({"error": "No action specified"}))
+        print(json.dumps({"success": False, "error": "No action specified"}))
         sys.exit(1)
 
     action = sys.argv[1]
@@ -436,7 +538,7 @@ def main():
             print(json.dumps({"success": True, "stats": stats}))
 
         else:
-            print(json.dumps({"error": f"Unknown action: {action}"}))
+            print(json.dumps({"success": False, "error": f"Unknown action: {action}"}))
             sys.exit(1)
 
     except Exception as e:

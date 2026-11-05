@@ -40,10 +40,13 @@ export class ExcelMergerEngine {
       path.join(process.resourcesPath || '', 'scripts', scriptName),
       // 2. Extra unpacked resources if unpacked by asarUnpack
       path.join(process.resourcesPath || '', 'app.asar.unpacked', 'dist-electron', 'engines', 'scripts', scriptName),
-      // 3. Dev / local relative paths
-      path.join(__dirname, 'scripts', scriptName).replace('app.asar', 'app.asar.unpacked'),
+      // 3. Current working directory electron source
       path.join(process.cwd(), 'electron', 'engines', 'scripts', scriptName),
+      // 4. Current working directory dist-electron copy
       path.join(process.cwd(), 'dist-electron', 'engines', 'scripts', scriptName),
+      // 5. Dev / local relative paths
+      path.join(__dirname, 'scripts', scriptName).replace('app.asar', 'app.asar.unpacked'),
+      path.join(__dirname, '..', 'scripts', scriptName).replace('app.asar', 'app.asar.unpacked'),
     ];
 
     for (const candidate of candidates) {
@@ -58,7 +61,13 @@ export class ExcelMergerEngine {
 
   private runPython(action: string, payload: any): Promise<any> {
     return new Promise((resolve, reject) => {
-      const py = spawn(getPythonExecutable(), [this.scriptPath, action, '-'], {
+      // Re-verify script path in case files were moved/built
+      if (!fs.existsSync(this.scriptPath)) {
+        this.scriptPath = this.resolveScriptPath();
+      }
+
+      const pythonExe = getPythonExecutable();
+      const py = spawn(pythonExe, [this.scriptPath, action, '-'], {
         windowsHide: true,
       });
 
@@ -73,16 +82,32 @@ export class ExcelMergerEngine {
         stderr += data.toString();
       });
 
+      py.on('error', (err) => {
+        console.error('[ExcelMerger Engine Spawn Error]:', err);
+        reject(new Error(`Failed to launch Python engine (${err.message}). Please ensure Python with openpyxl is installed.`));
+      });
+
+      py.stdin.on('error', (err) => {
+        console.warn('[ExcelMerger Stdin Warning]:', err);
+      });
+
       py.on('close', (code) => {
         if (code !== 0) {
           console.error('[ExcelMerger Engine Failure]:', { code, stderr, stdout });
-          return reject(new Error('Excel processing failed. Please verify the spreadsheet format and retry.'));
+          try {
+            const parsed = JSON.parse(stdout.trim());
+            if (parsed && parsed.error) {
+              return reject(new Error(parsed.error));
+            }
+          } catch {}
+          const errorMsg = stderr.trim() || stdout.trim() || `Process exited with code ${code}`;
+          return reject(new Error(`Excel processing failed: ${errorMsg}`));
         }
         try {
           const json = JSON.parse(stdout.trim());
           if (!json.success) {
             console.error('[ExcelMerger Application Error]:', json.error);
-            return reject(new Error(typeof json.error === 'string' && json.error.length < 100 && !json.error.includes('\\') ? json.error : 'Excel processing could not be completed.'));
+            return reject(new Error(json.error || 'Excel processing could not be completed.'));
           }
           resolve(json);
         } catch (e: any) {
@@ -92,8 +117,13 @@ export class ExcelMergerEngine {
       });
 
       // Write JSON payload to stdin
-      py.stdin.write(JSON.stringify(payload));
-      py.stdin.end();
+      try {
+        py.stdin.write(JSON.stringify(payload));
+        py.stdin.end();
+      } catch (err: any) {
+        console.error('[ExcelMerger Stdin Write Error]:', err);
+        reject(err);
+      }
     });
   }
 
@@ -108,9 +138,6 @@ export class ExcelMergerEngine {
   }
 
   async mergeFiles(filePaths: string[], outputPath?: string): Promise<ExcelMergeStats> {
-    const os = require('os');
-    const defaultDir = path.join(os.tmpdir(), 'MediaFlow_Studio_Reports');
-    await fs.promises.mkdir(defaultDir, { recursive: true }).catch(() => {});
     const res = await this.runPython('merge', {
       files: filePaths,
       output_path: outputPath || '',
