@@ -14,6 +14,7 @@ import {
   Wrench,
   Cloud,
   BarChart3,
+  FolderCheck,
 } from 'lucide-react';
 
 export type PageKey =
@@ -29,7 +30,8 @@ export type PageKey =
   | 'excelMerger'
   | 'googleDrive'
   | 'activity'
-  | 'tools';
+  | 'tools'
+  | 'folderVerification';
 
 /**
  * Canonical Linear Pipeline Order
@@ -51,6 +53,7 @@ export const SYSTEM_NAV_ORDER: PageKey[] = [
   'overview',             // Command Overview
   'activity',             // Activity & Audit Log
   'tools',                // Automation Utilities
+  'folderVerification',   // Folder Verification & Size Audit
 ];
 
 export interface StageMeta {
@@ -147,6 +150,13 @@ export const STAGE_METADATA_MAP: Record<PageKey, Omit<StageMeta, 'key'>> = {
     color: '#3B82F6',
     icon: Wrench,
   },
+  folderVerification: {
+    label: 'Folder Size Verification',
+    shortTitle: 'Folder Verifier',
+    desc: 'Verify Folder Sizes, Files & Head Reports',
+    color: '#10B981',
+    icon: FolderCheck,
+  },
   googleDrive: {
     label: 'Cloud Sync',
     shortTitle: 'Google Drive',
@@ -172,6 +182,8 @@ export function getStageNumber(key: PageKey): string {
       return 'AUDIT';
     case 'tools':
       return 'UTIL';
+    case 'folderVerification':
+      return 'VERIFY';
     case 'googleDrive':
       return 'CLOUD';
     default:

@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer, webFrame, webUtils } from 'electron';
+import type { FolderVerificationSummary } from './engines/folderVerifier';
 
 const isSplash = process.argv.includes('--window-type=splash');
 if (isSplash) {
@@ -40,6 +41,8 @@ export const electronAPI = {
   // Native Dialogs
   selectDirectory: (title?: string, startDir?: string) =>
     ipcRenderer.invoke('dialog:select-directory', title, startDir),
+  selectDirectories: (title?: string, startDir?: string): Promise<string[]> =>
+    ipcRenderer.invoke('dialog:select-directories', title, startDir),
   selectOpenFile: (title?: string, filter?: any) =>
     ipcRenderer.invoke('dialog:select-open-file', title, filter),
   selectOpenFiles: (title?: string, filter?: any) =>
@@ -160,6 +163,12 @@ export const electronAPI = {
     ipcRenderer.invoke('tools:scan-inventory-reports', sourceDir, destDir),
   executeInventoryReports: (items: any[], destDir: string, mode?: 'copy' | 'move', dryRun?: boolean) =>
     ipcRenderer.invoke('tools:execute-inventory-reports', items, destDir, mode, dryRun),
+
+  // 7b. Folder Verification & Clipboard
+  verifyFolders: (folderPaths: string[], customNote?: string): Promise<FolderVerificationSummary> =>
+    ipcRenderer.invoke('folder-verifier:verify-folders', folderPaths, customNote),
+  copyToClipboard: (text: string): Promise<boolean> =>
+    ipcRenderer.invoke('clipboard:write-text', text),
 
   // 8. Google Drive
   getDriveConfig: () => ipcRenderer.invoke('drive:get-config'),

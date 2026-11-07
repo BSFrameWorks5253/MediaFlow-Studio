@@ -14,17 +14,19 @@ import {
   FileSpreadsheet,
   Copy,
   CheckCircle2,
+  FolderCheck,
 } from 'lucide-react';
 import { StudioButton } from '../components/StudioButton';
 import { DoNotUploadItem, InventoryReportItem } from '../../electron/engines/productionTools';
 import { toUserErrorMessage } from '../utils/errorSanitizer';
+import { FolderVerificationPage } from './FolderVerificationPage';
 
 interface StandaloneToolsPageProps {
   onShowToast: (text: string, type: 'success' | 'danger' | 'warning' | 'info') => void;
 }
 
 export const StandaloneToolsPage: React.FC<StandaloneToolsPageProps> = ({ onShowToast }) => {
-  const [activeTab, setActiveTab] = useState<'normalizer' | 'taggerP' | 'taggerV' | 'doNotUpload' | 'collector'>('collector');
+  const [activeTab, setActiveTab] = useState<'folderVerification' | 'collector' | 'doNotUpload' | 'normalizer' | 'taggerP' | 'taggerV'>('folderVerification');
 
   // Inventory Report Collector State
   const [irSourceDir, setIrSourceDir] = useState('');
@@ -312,6 +314,26 @@ export const StandaloneToolsPage: React.FC<StandaloneToolsPageProps> = ({ onShow
         }}
       >
         <button
+          onClick={() => setActiveTab('folderVerification')}
+          style={{
+            padding: '6px 16px',
+            borderRadius: 8,
+            border: activeTab === 'folderVerification' ? '1px solid #10B981' : '1px solid var(--border)',
+            backgroundColor: activeTab === 'folderVerification' ? 'rgba(16, 185, 129, 0.15)' : 'transparent',
+            color: activeTab === 'folderVerification' ? '#10B981' : 'var(--secondary-label)',
+            fontSize: 12,
+            fontWeight: 700,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+          }}
+        >
+          <FolderCheck size={14} />
+          <span>Folder Size & Verification</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('collector')}
           style={{
             padding: '6px 16px',
@@ -400,7 +422,9 @@ export const StandaloneToolsPage: React.FC<StandaloneToolsPageProps> = ({ onShow
         </button>
       </div>
 
-      {activeTab === 'collector' ? (
+      {activeTab === 'folderVerification' ? (
+        <FolderVerificationPage onShowToast={onShowToast} />
+      ) : activeTab === 'collector' ? (
         /* ── INVENTORY REPORT COLLECTOR PANEL ── */
         <div
           className="glass-card"

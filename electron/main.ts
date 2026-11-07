@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell, clipboard } from 'electron';
 import path from 'path';
 import { pathToFileURL } from 'url';
 import fs from 'fs';
@@ -10,6 +10,7 @@ import { ThumbnailSeparatorEngine } from './engines/thumbnailSeparator';
 import { RemainingCollectorEngine } from './engines/remainingCollector';
 import { ExcelMergerEngine } from './engines/excelMerger';
 import { ProductionToolsEngine } from './engines/productionTools';
+import { FolderVerifierEngine } from './engines/folderVerifier';
 import { GoogleDriveManager } from './engines/../managers/googleDriveManager';
 import { ActivityReportsManager } from './engines/../managers/activityReportsManager';
 import { EventImageDistributorEngine } from './engines/eventImageDistributor';
@@ -18,6 +19,7 @@ import { EcosystemManager } from './managers/ecosystemManager';
 import { resolveChildAppLoaderConfig, showChildAppSplash, closeChildAppSplash, ChildAppLoaderConfig } from './splash';
 import { WorkstationAutoUpdater, UpdateInfo } from './managers/autoUpdater';
 import { openInEcosystemExplorer, showItemInEcosystemExplorer } from './utils/ecosystemExplorer';
+import { sanitizeBackendError } from './utils/errorSanitizer';
 
 // Windows Taskbar & Action Center Model ID for dedicated window grouping
 if (process.platform === 'win32') {
@@ -155,6 +157,7 @@ const thumbEngine = new ThumbnailSeparatorEngine();
 const remainingEngine = new RemainingCollectorEngine();
 const excelEngine = new ExcelMergerEngine();
 const toolsEngine = new ProductionToolsEngine();
+const folderVerifierEngine = new FolderVerifierEngine();
 const driveManager = new GoogleDriveManager();
 const activityManager = new ActivityReportsManager();
 const eventDistributorEngine = new EventImageDistributorEngine();
@@ -697,6 +700,19 @@ function setupIpcHandlers() {
     return res.canceled ? '' : res.filePaths[0];
   });
 
+  ipcMain.handle('dialog:select-directories', async (event, title?: string, startDir?: string) => {
+    const parentWin = getDialogParentWin(event);
+    if (parentWin && !parentWin.isDestroyed()) {
+      parentWin.focus();
+    }
+    const res = await dialog.showOpenDialog(parentWin as any, {
+      title: title || 'Select Folders',
+      defaultPath: startDir || undefined,
+      properties: ['openDirectory', 'multiSelections'],
+    });
+    return res.canceled ? [] : res.filePaths;
+  });
+
   ipcMain.handle('dialog:select-open-file', async (event, title?: string, filter?: any) => {
     const parentWin = getDialogParentWin(event);
     if (parentWin && !parentWin.isDestroyed()) {
@@ -709,6 +725,7 @@ function setupIpcHandlers() {
     });
     return res.canceled ? '' : res.filePaths[0];
   });
+
 
   ipcMain.handle('dialog:select-open-files', async (event, title?: string, filter?: any) => {
     const parentWin = getDialogParentWin(event);
@@ -1044,6 +1061,24 @@ function setupIpcHandlers() {
 
   ipcMain.handle('tools:execute-inventory-reports', async (_, items: any[], destDir: string, mode?: any, dryRun?: boolean) => {
     return await toolsEngine.executeInventoryReports(items, destDir, mode, dryRun);
+  });
+
+  // 7b. Folder Verification & Clipboard
+  ipcMain.handle('folder-verifier:verify-folders', async (_, folderPaths: string[], customNote?: string) => {
+    try {
+      return await folderVerifierEngine.verifyFolders(folderPaths || [], customNote || '');
+    } catch (err: any) {
+      console.error('[FolderVerifier] Verification failed:', err);
+      throw new Error(sanitizeBackendError(err, 'Failed to complete folder verification.'));
+    }
+  });
+
+  ipcMain.handle('clipboard:write-text', async (_, text: string) => {
+    if (typeof text === 'string') {
+      clipboard.writeText(text);
+      return true;
+    }
+    return false;
   });
 
   // 8. Google Drive

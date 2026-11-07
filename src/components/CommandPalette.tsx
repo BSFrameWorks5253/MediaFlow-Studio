@@ -20,6 +20,7 @@ import {
   Clock,
   Wrench,
   BarChart3,
+  FolderCheck,
 } from 'lucide-react';
 import { PageKey } from './Sidebar';
 import { useTheme } from '../context/ThemeContext';
@@ -54,6 +55,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     { label: 'Report Merger — Master Inventory Delivery Package', category: 'Pipeline', icon: FileSpreadsheet, color: '#F59E0B', action: () => onNavigate('excelMerger') },
     { label: 'Activity & Delivery Reports Manifest', category: 'Workspace', icon: Clock, color: '#A855F7', action: () => onNavigate('activity') },
     { label: 'Production Automation Utilities', category: 'Tools', icon: Wrench, color: '#3B82F6', action: () => onNavigate('tools') },
+    { label: 'Folder Size Verification & Head Clipboard', category: 'Tools', icon: FolderCheck, color: '#10B981', action: () => onNavigate('folderVerification') },
     { label: 'Toggle Light / Dark Master Mode', category: 'Appearance', icon: Sun, color: '#FF9F0A', action: () => toggleTheme() },
     { label: 'Open Studio Preferences', category: 'Settings', icon: Settings, color: '#94A3B8', action: () => onOpenSettings() },
   ];

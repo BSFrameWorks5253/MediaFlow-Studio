@@ -30,6 +30,7 @@ import {
   ExcelMergerPage,
   ActivityPage,
   StandaloneToolsPage,
+  FolderVerificationPage,
 } from './pages';
 
 const AppContent: React.FC = () => {
@@ -201,6 +202,8 @@ const AppContent: React.FC = () => {
         return <ActivityPage />;
       case 'tools':
         return <StandaloneToolsPage onShowToast={showToast} />;
+      case 'folderVerification':
+        return <FolderVerificationPage onShowToast={showToast} onNavigate={setActivePage} />;
       default:
         return <OverviewPage onNavigate={setActivePage} />;
     }
