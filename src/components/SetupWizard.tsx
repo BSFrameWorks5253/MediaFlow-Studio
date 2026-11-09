@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Folder, Cpu, ShieldCheck, Check, ArrowRight, Zap, HardDrive } from 'lucide-react';
+import { Folder, Cpu, Check, ArrowRight, Zap, HardDrive } from 'lucide-react';
 import { toUserErrorMessage } from '../utils/errorSanitizer';
 import './SetupWizard.css';
 
@@ -10,7 +10,6 @@ interface SetupWizardProps {
 export const SetupWizard: React.FC<SetupWizardProps> = ({ onDone }) => {
   const [storageDir, setStorageDir] = useState('');
   const [concurrency, setConcurrency] = useState<number>(32);
-  const [dryRunDefault, setDryRunDefault] = useState<boolean>(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -20,7 +19,6 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onDone }) => {
         if (cfg) {
           if (cfg.storageDir) setStorageDir(cfg.storageDir);
           if (cfg.threadsActive) setConcurrency(cfg.threadsActive);
-          if (typeof cfg.dryRun === 'boolean') setDryRunDefault(cfg.dryRun);
         }
       });
     }
@@ -49,7 +47,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onDone }) => {
         await window.electronAPI.saveConfig({
           storageDir: storageDir.trim(),
           threadsActive: concurrency,
-          dryRun: dryRunDefault,
+          dryRun: false,
           firstRunCompleted: true,
         });
       }
@@ -147,40 +145,6 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ onDone }) => {
                   <span className="setup-option-title">Balanced (16 Threads)</span>
                   <span className="setup-option-desc">Recommended for standard PCs</span>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Safety Verification Profile */}
-          <div className="setup-section">
-            <label className="setup-section-label">
-              <ShieldCheck size={14} />
-              Safety &amp; Audit Profile
-            </label>
-            <div
-              className={`setup-option-card ${dryRunDefault ? 'active' : ''}`}
-              onClick={() => setDryRunDefault(!dryRunDefault)}
-              style={{ cursor: 'pointer' }}
-            >
-              <div
-                style={{
-                  width: 20,
-                  height: 20,
-                  borderRadius: 6,
-                  border: `1.5px solid ${dryRunDefault ? '#00F2FE' : 'rgba(255,255,255,0.2)'}`,
-                  background: dryRunDefault ? 'rgba(0,242,254,0.2)' : 'transparent',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {dryRunDefault && <Check size={14} color="#00F2FE" />}
-              </div>
-              <div className="setup-option-info">
-                <span className="setup-option-title">Dry-Run Preview Enabled by Default</span>
-                <span className="setup-option-desc">
-                  Simulate rename/shift passes and verify manifests before touching physical disks.
-                </span>
               </div>
             </div>
           </div>

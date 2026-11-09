@@ -33,7 +33,6 @@ export const PhotoMatcherPage: React.FC<PhotoMatcherPageProps> = ({ onShowToast,
   const [scanResult, setScanResult] = useState<PhotoMatchScanResult | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
-  const [dryRun, setDryRun] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'MATCHED' | 'UNMATCHED' | 'IGNORED'>('ALL');
@@ -205,20 +204,13 @@ export const PhotoMatcherPage: React.FC<PhotoMatcherPageProps> = ({ onShowToast,
 
     setIsRenaming(true);
     try {
-      const summary = await window.electronAPI.executePhotoRename(scanResult.all_items, dryRun);
-      if (dryRun) {
-        onShowToast(
-          `Dry run validated: ${summary.success_count} files would be safely renamed.`,
-          'info'
-        );
-      } else {
-        onShowToast(
-          `Renamed ${summary.success_count} files successfully!`,
-          'success'
-        );
-        // Refresh scan to update status
-        handleScan();
-      }
+      const summary = await window.electronAPI.executePhotoRename(scanResult.all_items, false);
+      onShowToast(
+        `Renamed ${summary.success_count} files successfully!`,
+        'success'
+      );
+      // Refresh scan to update status
+      handleScan();
     } catch (e: any) {
       console.error('Photo rename execution error:', e);
       onShowToast(toUserErrorMessage(e, 'Rename execution failed. Please verify files are not in use.'), 'danger');
@@ -736,43 +728,20 @@ export const PhotoMatcherPage: React.FC<PhotoMatcherPageProps> = ({ onShowToast,
           ))}
         </div>
 
-        {/* Dry Run + Action */}
+        {/* Action Button */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <label
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              cursor: 'pointer',
-              fontSize: 11.5,
-              color: 'var(--secondary-label)',
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={dryRun}
-              onChange={(e) => setDryRun(e.target.checked)}
-              style={{ cursor: 'pointer' }}
-            />
-            Dry Run
-          </label>
-
           <StudioButton
-            variant={dryRun ? 'secondary' : 'success'}
+            variant="success"
             loading={isRenaming}
             icon={<Check size={14} />}
             onClick={handleExecuteRename}
             disabled={!scanResult || scanResult.all_items.length === 0}
-            style={
-              !dryRun
-                ? {
-                    background: 'linear-gradient(135deg, #10E79D, #0BC47C)',
-                    boxShadow: '0 4px 16px rgba(16, 231, 157, 0.35)',
-                  }
-                : undefined
-            }
+            style={{
+              background: 'linear-gradient(135deg, #10E79D, #0BC47C)',
+              boxShadow: '0 4px 16px rgba(16, 231, 157, 0.35)',
+            }}
           >
-            {dryRun ? 'Validate Renaming' : 'Apply _U / _R Tags'}
+            Apply _U / _R Tags
           </StudioButton>
         </div>
       </div>

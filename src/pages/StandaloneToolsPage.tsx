@@ -34,7 +34,6 @@ export const StandaloneToolsPage: React.FC<StandaloneToolsPageProps> = ({ onShow
   const [irSourceDir, setIrSourceDir] = useState('');
   const [irDestDir, setIrDestDir] = useState('');
   const [irMode, setIrMode] = useState<'copy' | 'move'>('copy');
-  const [irDryRun, setIrDryRun] = useState(false);
   const [irScanning, setIrScanning] = useState(false);
   const [irExecuting, setIrExecuting] = useState(false);
   const [irItems, setIrItems] = useState<InventoryReportItem[]>([]);
@@ -43,7 +42,6 @@ export const StandaloneToolsPage: React.FC<StandaloneToolsPageProps> = ({ onShow
 
   // Normalizer State
   const [normDir, setNormDir] = useState('');
-  const [normDryRun, setNormDryRun] = useState(true);
   const [normLoading, setNormLoading] = useState(false);
   const [normItems, setNormItems] = useState<{ old: string; new: string; path: string }[]>([]);
 
@@ -54,7 +52,6 @@ export const StandaloneToolsPage: React.FC<StandaloneToolsPageProps> = ({ onShow
   // DO NOT UPLOAD Isolator State
   const [dnuDir, setDnuDir] = useState('');
   const [dnuMode, setDnuMode] = useState<'move' | 'copy'>('move');
-  const [dnuDryRun, setDnuDryRun] = useState(true);
   const [dnuScanning, setDnuScanning] = useState(false);
   const [dnuExecuting, setDnuExecuting] = useState(false);
   const [dnuItems, setDnuItems] = useState<DoNotUploadItem[]>([]);
@@ -126,14 +123,10 @@ export const StandaloneToolsPage: React.FC<StandaloneToolsPageProps> = ({ onShow
     }
     setIrExecuting(true);
     try {
-      const res = await window.electronAPI.executeInventoryReports(irItems, irDestDir, irMode, irDryRun);
+      const res = await window.electronAPI.executeInventoryReports(irItems, irDestDir, irMode, false);
       setIrTargetFolder(res.allReportsFolder);
-      if (irDryRun) {
-        onShowToast(`Simulation: ${res.success} files would be collected into 'All Inventory Reports'.`, 'info');
-      } else {
-        onShowToast(`Successfully collected ${res.success} reports into 'All Inventory Reports'!`, 'success');
-        setIrItems((prev) => prev.map((item) => ({ ...item, status: 'Copied' })));
-      }
+      onShowToast(`Successfully collected ${res.success} reports into 'All Inventory Reports'!`, 'success');
+      setIrItems((prev) => prev.map((item) => ({ ...item, status: 'Copied' })));
     } catch (e: any) {
       console.error('Inventory report execution failed:', e);
       onShowToast(toUserErrorMessage(e, 'Failed to collect inventory reports. Please check file permissions and disk space.'), 'danger');
@@ -165,14 +158,9 @@ export const StandaloneToolsPage: React.FC<StandaloneToolsPageProps> = ({ onShow
     }
     setNormLoading(true);
     try {
-      const res = await window.electronAPI.normalizeExtensions(normDir, normDryRun);
+      const res = await window.electronAPI.normalizeExtensions(normDir, false);
       setNormItems(res.items);
-      onShowToast(
-        normDryRun
-          ? `Simulation: ${res.renamed} compound extensions identified for normalization.`
-          : `Normalized ${res.renamed} file extensions in-place!`,
-        'success'
-      );
+      onShowToast(`Normalized ${res.renamed} file extensions in-place!`, 'success');
     } catch (e: any) {
       console.error('Normalize extensions failed:', e);
       onShowToast(toUserErrorMessage(e, 'Failed to normalize file extensions. Please verify files are not in use.'), 'danger');
@@ -272,15 +260,11 @@ export const StandaloneToolsPage: React.FC<StandaloneToolsPageProps> = ({ onShow
     }
     setDnuExecuting(true);
     try {
-      const res = await window.electronAPI.executeDoNotUpload(dnuItems, dnuMode, dnuDryRun);
-      if (dnuDryRun) {
-        onShowToast(`Dry Run: ${res.success} folder(s) validated for isolation into 'DO NOT UPLOAD'.`, 'info');
-      } else {
-        setDnuManifest(res.manifestPath);
-        onShowToast(`Successfully isolated ${res.success} folder(s) into 'DO NOT UPLOAD' date-wise!`, 'success');
-        // Rescan directory
-        scanDnuDirectory(dnuDir);
-      }
+      const res = await window.electronAPI.executeDoNotUpload(dnuItems, dnuMode, false);
+      setDnuManifest(res.manifestPath);
+      onShowToast(`Successfully isolated ${res.success} folder(s) into 'DO NOT UPLOAD' date-wise!`, 'success');
+      // Rescan directory
+      scanDnuDirectory(dnuDir);
     } catch (e: any) {
       console.error('Execute DO NOT UPLOAD failed:', e);
       onShowToast(toUserErrorMessage(e, 'Failed to isolate folders. Please verify files are not in use and try again.'), 'danger');
@@ -625,26 +609,6 @@ export const StandaloneToolsPage: React.FC<StandaloneToolsPageProps> = ({ onShow
                   <span>Move</span>
                 </label>
               </div>
-
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  fontSize: 11.5,
-                  cursor: 'pointer',
-                  color: 'var(--label)',
-                  paddingLeft: 8,
-                  borderLeft: '1px solid var(--border)',
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={irDryRun}
-                  onChange={(e) => setIrDryRun(e.target.checked)}
-                />
-                <span>Dry Run (Preview Only)</span>
-              </label>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -917,24 +881,15 @@ export const StandaloneToolsPage: React.FC<StandaloneToolsPageProps> = ({ onShow
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', color: 'var(--secondary-label)' }}>
-                <input
-                  type="checkbox"
-                  checked={dnuDryRun}
-                  onChange={(e) => setDnuDryRun(e.target.checked)}
-                />
-                <span>Dry Run Simulation</span>
-              </label>
-
               <StudioButton
-                variant={dnuDryRun ? 'secondary' : 'primary'}
+                variant="primary"
                 loading={dnuExecuting}
                 icon={<Play size={13} />}
                 onClick={handleExecuteDnu}
                 disabled={dnuItems.length === 0}
-                style={!dnuDryRun ? { background: 'linear-gradient(135deg, #10E79D, #059669)' } : undefined}
+                style={{ background: 'linear-gradient(135deg, #10E79D, #059669)' }}
               >
-                {dnuDryRun ? 'Validate Isolation' : 'Execute Move'}
+                Execute Move
               </StudioButton>
             </div>
           </div>
@@ -1129,14 +1084,9 @@ export const StandaloneToolsPage: React.FC<StandaloneToolsPageProps> = ({ onShow
             </StudioButton>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 6 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--secondary-label)', cursor: 'pointer' }}>
-              <input type="checkbox" checked={normDryRun} onChange={(e) => setNormDryRun(e.target.checked)} />
-              <span>Dry Run Simulation</span>
-            </label>
-
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingTop: 6 }}>
             <StudioButton variant="primary" loading={normLoading} icon={<Play size={14} />} onClick={handleRunNormalizer}>
-              {normDryRun ? 'Validate Extensions' : 'Execute Renames'}
+              Execute Renames
             </StudioButton>
           </div>
 

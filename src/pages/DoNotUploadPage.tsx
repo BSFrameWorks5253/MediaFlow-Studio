@@ -27,7 +27,6 @@ export const DoNotUploadPage: React.FC<DoNotUploadPageProps> = ({ onShowToast, o
 
   const [dnuDir, setDnuDir] = useState('');
   const [dnuMode, setDnuMode] = useState<'move' | 'copy'>('move');
-  const [dnuDryRun, setDnuDryRun] = useState(false);
   const [dnuScanning, setDnuScanning] = useState(false);
   const [dnuExecuting, setDnuExecuting] = useState(false);
   const [dnuItems, setDnuItems] = useState<DoNotUploadItem[]>([]);
@@ -116,15 +115,11 @@ export const DoNotUploadPage: React.FC<DoNotUploadPageProps> = ({ onShowToast, o
     }
     setDnuExecuting(true);
     try {
-      const res = await window.electronAPI.executeDoNotUpload(dnuItems, dnuMode, dnuDryRun);
-      if (dnuDryRun) {
-        onShowToast(`Dry Run: ${res.success} folder(s) validated for isolation into 'DO NOT UPLOAD'.`, 'info');
-      } else {
-        setDnuManifest(res.manifestPath);
-        onShowToast(`Successfully isolated ${res.success} folder(s) into 'DO NOT UPLOAD' date-wise!`, 'success');
-        // Rescan directory
-        scanDirectory(dnuDir);
-      }
+      const res = await window.electronAPI.executeDoNotUpload(dnuItems, dnuMode, false);
+      setDnuManifest(res.manifestPath);
+      onShowToast(`Successfully isolated ${res.success} folder(s) into 'DO NOT UPLOAD' date-wise!`, 'success');
+      // Rescan directory
+      scanDirectory(dnuDir);
     } catch (e: any) {
       onShowToast(toUserErrorMessage(e, 'Failed to isolate quarantine folders. Please verify write permissions.'), 'danger');
     } finally {
@@ -330,25 +325,16 @@ export const DoNotUploadPage: React.FC<DoNotUploadPageProps> = ({ onShowToast, o
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', color: 'var(--secondary-label)' }}>
-              <input
-                type="checkbox"
-                checked={dnuDryRun}
-                onChange={(e) => setDnuDryRun(e.target.checked)}
-              />
-              <span>Dry Run Simulation</span>
-            </label>
-
             <StudioButton
-              variant={dnuDryRun ? 'secondary' : 'primary'}
+              variant="primary"
               size="md"
               loading={dnuExecuting}
               icon={<Play size={13} />}
               onClick={handleExecute}
               disabled={dnuItems.length === 0}
-              style={!dnuDryRun ? { background: 'linear-gradient(135deg, #10E79D, #059669)' } : undefined}
+              style={{ background: 'linear-gradient(135deg, #10E79D, #059669)' }}
             >
-              {dnuDryRun ? 'Validate Isolation' : `Execute Isolation (${dnuItems.length} Folders)`}
+              {`Execute Isolation (${dnuItems.length} Folders)`}
             </StudioButton>
           </div>
         </div>

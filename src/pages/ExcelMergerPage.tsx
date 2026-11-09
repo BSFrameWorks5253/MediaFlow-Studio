@@ -36,7 +36,6 @@ export const ExcelMergerPage: React.FC<ExcelMergerPageProps> = ({ onShowToast, o
   const [collectorSourceDir, setCollectorSourceDir] = useState('');
   const [collectorDestDir, setCollectorDestDir] = useState('');
   const [collectorMode, setCollectorMode] = useState<'copy' | 'move'>('copy');
-  const [collectorDryRun, setCollectorDryRun] = useState(false);
   const [collectorScanning, setCollectorScanning] = useState(false);
   const [collectorExecuting, setCollectorExecuting] = useState(false);
   const [collectorItems, setCollectorItems] = useState<InventoryReportItem[]>([]);
@@ -248,14 +247,10 @@ export const ExcelMergerPage: React.FC<ExcelMergerPageProps> = ({ onShowToast, o
     }
     setCollectorExecuting(true);
     try {
-      const res = await window.electronAPI.executeInventoryReports(collectorItems, collectorDestDir, collectorMode, collectorDryRun);
+      const res = await window.electronAPI.executeInventoryReports(collectorItems, collectorDestDir, collectorMode, false);
       setCollectorTargetFolder(res.allReportsFolder);
-      if (collectorDryRun) {
-        onShowToast(`Simulation: ${res.success} files would be copied into 'All Inventory Reports'.`, 'info');
-      } else {
-        onShowToast(`Successfully collected ${res.success} reports into 'All Inventory Reports'!`, 'success');
-        setCollectorItems((prev) => prev.map((item) => ({ ...item, status: 'Copied' })));
-      }
+      onShowToast(`Successfully collected ${res.success} reports into 'All Inventory Reports'!`, 'success');
+      setCollectorItems((prev) => prev.map((item) => ({ ...item, status: 'Copied' })));
     } catch (e: any) {
       onShowToast(toUserErrorMessage(e, 'Failed to collect inventory reports. Please check write permissions.'), 'danger');
     } finally {
@@ -1148,26 +1143,6 @@ export const ExcelMergerPage: React.FC<ExcelMergerPageProps> = ({ onShowToast, o
                   <span>Move</span>
                 </label>
               </div>
-
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  fontSize: 11.5,
-                  cursor: 'pointer',
-                  color: 'var(--label)',
-                  paddingLeft: 8,
-                  borderLeft: '1px solid var(--border)',
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={collectorDryRun}
-                  onChange={(e) => setCollectorDryRun(e.target.checked)}
-                />
-                <span>Dry Run (Preview Only)</span>
-              </label>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
