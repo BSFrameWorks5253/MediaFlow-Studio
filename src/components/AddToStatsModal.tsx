@@ -415,9 +415,9 @@ export const AddToStatsModal: React.FC<AddToStatsModalProps> = ({
 
       if (targetSafarName && scannedDateResult?.dateStat && window.electronAPI?.statsSaveDate) {
         await window.electronAPI.statsSaveDate(targetSafarName, targetSafarRoot || '', scannedDateResult.dateStat);
-        onShowToast(`✓ Rescanned & saved structure for "${targetSafarName}" for future reference!`, 'success');
+        onShowToast(`Rescanned & saved structure for "${targetSafarName}" for future reference!`, 'success');
       } else {
-        onShowToast('✓ Date folder structure rescanned successfully.', 'success');
+        onShowToast('Date folder structure rescanned successfully.', 'success');
       }
     } else {
       if (!safarFolderPath.trim()) {
@@ -428,9 +428,9 @@ export const AddToStatsModal: React.FC<AddToStatsModalProps> = ({
       await handleScanSafar(safarFolderPath.trim());
       if (scannedSafarRecord && window.electronAPI?.statsSaveSafar) {
         await window.electronAPI.statsSaveSafar(scannedSafarRecord);
-        onShowToast(`✓ Rescanned & saved "${scannedSafarRecord.safarName}" for future reference!`, 'success');
+        onShowToast(`Rescanned & saved "${scannedSafarRecord.safarName}" for future reference!`, 'success');
       } else {
-        onShowToast('✓ Safar folder structure rescanned successfully.', 'success');
+        onShowToast('Safar folder structure rescanned successfully.', 'success');
       }
     }
   };
@@ -492,7 +492,7 @@ export const AddToStatsModal: React.FC<AddToStatsModalProps> = ({
         }
 
         onShowToast(
-          `✓ Date "${scannedDateResult.dateStat.dateName}" added to Safar "${targetSafarName}" stats!`,
+          `Date "${scannedDateResult.dateStat.dateName}" added to Safar "${targetSafarName}" stats!`,
           'success'
         );
       } else {
@@ -508,7 +508,7 @@ export const AddToStatsModal: React.FC<AddToStatsModalProps> = ({
         }
 
         onShowToast(
-          `✓ Safar "${scannedSafarRecord.safarName}" with ${scannedSafarRecord.totalDates} dates saved to stats!`,
+          `Safar "${scannedSafarRecord.safarName}" with ${scannedSafarRecord.totalDates} dates saved to stats!`,
           'success'
         );
       }
@@ -1068,7 +1068,7 @@ export const AddToStatsModal: React.FC<AddToStatsModalProps> = ({
                       <span>Remaining Folder:</span>
                       {Boolean(scannedDateResult?.dateStat?.remainingMetrics?.exists) && (
                         <span style={{ color: 'var(--system-green)', fontSize: 10, fontWeight: 700 }}>
-                          ✓ AUTO-DETECTED
+                          AUTO-DETECTED
                         </span>
                       )}
                     </div>
@@ -1098,7 +1098,7 @@ export const AddToStatsModal: React.FC<AddToStatsModalProps> = ({
                       <span>Thumbnails Folder:</span>
                       {Boolean(scannedDateResult?.dateStat?.thumbnailsMetrics?.exists) && (
                         <span style={{ color: 'var(--system-green)', fontSize: 10, fontWeight: 700 }}>
-                          ✓ AUTO-DETECTED
+                          AUTO-DETECTED
                         </span>
                       )}
                     </div>
@@ -1326,7 +1326,7 @@ export const AddToStatsModal: React.FC<AddToStatsModalProps> = ({
               }}
               title="Rescan folder tree from disk and save structure for future reference"
             >
-              🔄 Rescan & Save Structure
+              Rescan & Save Structure
             </StudioButton>
 
             <StudioButton
@@ -1343,7 +1343,7 @@ export const AddToStatsModal: React.FC<AddToStatsModalProps> = ({
                 fontWeight: 700,
               }}
             >
-              {isSaving ? 'Saving...' : '✓ Add to Stats'}
+              {isSaving ? 'Saving...' : 'Add to Stats'}
             </StudioButton>
           </div>
         </div>

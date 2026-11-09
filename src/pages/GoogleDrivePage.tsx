@@ -119,8 +119,8 @@ export const GoogleDrivePage: React.FC<GoogleDrivePageProps> = ({ onShowToast })
             }}
           >
             {activeTab === 'main'
-              ? '🔒 Account 1: Master Video & RAW Archives'
-              : '🔒 Account 2: Reference Photos & Previews'}
+              ? 'Account 1: Master Video & RAW Archives'
+              : 'Account 2: Reference Photos & Previews'}
           </div>
         </div>
 

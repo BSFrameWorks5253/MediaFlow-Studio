@@ -16,6 +16,10 @@ import {
 } from './components';
 
 import { PipelineProvider } from './context/PipelineContext';
+import { AutoRunProvider } from './context/AutoRunContext';
+import { TopBarAutoRun } from './components/TopBarAutoRun';
+import { AutoRunSetupModal } from './components/AutoRunSetupModal';
+import { AutoRunConflictModal } from './components/AutoRunConflictModal';
 
 import {
   OverviewPage,
@@ -244,6 +248,9 @@ const AppContent: React.FC = () => {
           zIndex: 1,
         }}
       >
+        {/* Top Navigation Bar with Auto Run Controller */}
+        <TopBarAutoRun activePage={activePage} onNavigate={setActivePage} />
+
         {/* Zoomed Page Viewport Container */}
         <main
           className="glass-panel"
@@ -314,6 +321,10 @@ const AppContent: React.FC = () => {
       />
       <ToastNotification toasts={toasts} onDismiss={dismissToast} />
 
+      {/* Auto Run Modals */}
+      <AutoRunSetupModal onShowToast={showToast} />
+      <AutoRunConflictModal onShowToast={showToast} />
+
       {/* Universal Auto-Update Notification / Progress Modal (Blueprint 01) */}
       <UpdateModal />
 
@@ -338,7 +349,9 @@ export const App: React.FC = () => {
   return (
     <ThemeProvider>
       <PipelineProvider>
-        <AppContent />
+        <AutoRunProvider>
+          <AppContent />
+        </AutoRunProvider>
       </PipelineProvider>
     </ThemeProvider>
   );

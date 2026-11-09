@@ -567,7 +567,7 @@ export const StandaloneToolsPage: React.FC<StandaloneToolsPageProps> = ({ onShow
               }}
             >
               <span>
-                📁 <strong>Output Target:</strong>{' '}
+                <strong>Output Target:</strong>{' '}
                 <span style={{ color: 'var(--system-cyan)' }}>
                   {irDestDir ? `${irDestDir}\\All Inventory Reports` : '[Selected Destination Folder]\\All Inventory Reports'}
                 </span>

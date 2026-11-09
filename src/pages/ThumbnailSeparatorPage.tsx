@@ -13,6 +13,8 @@ import {
   Layers,
   AlertCircle,
   FileQuestion,
+  Sparkles,
+  ArrowRight,
 } from 'lucide-react';
 import { StudioButton } from '../components/StudioButton';
 import { PageKey } from '../types/pipelineStages';
@@ -327,7 +329,8 @@ export const ThumbnailSeparatorPage: React.FC<ThumbnailSeparatorPageProps> = ({ 
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span>✨ Source Auto-Linked from Structure Creator (Main Data / {uploadStructure.safarName || 'Safar'}):</span>
+              <Sparkles size={12} color="#06B6D4" />
+              <span>Source Auto-Linked from Structure Creator (Main Data / {uploadStructure.safarName || 'Safar'}):</span>
               <strong style={{ fontFamily: 'var(--font-mono)' }}>{uploadStructure.mainDataPath}</strong>
             </div>
             {sourceDir !== uploadStructure.mainDataPath && (
@@ -364,7 +367,8 @@ export const ThumbnailSeparatorPage: React.FC<ThumbnailSeparatorPageProps> = ({ 
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span>✨ Upload Structure Output Active:</span>
+              <Sparkles size={12} color="#0D9488" />
+              <span>Upload Structure Output Active:</span>
               <strong style={{ fontFamily: 'var(--font-mono)' }}>{uploadStructure.thumbnailsPath}</strong>
             </div>
             {destDir !== uploadStructure.thumbnailsPath && (
@@ -528,7 +532,7 @@ export const ThumbnailSeparatorPage: React.FC<ThumbnailSeparatorPageProps> = ({ 
             </div>
             <div style={{ flex: 1, fontSize: 12 }}>
               <div style={{ fontWeight: 700, color: '#10B981', fontSize: 13, marginBottom: 2 }}>
-                ✓ All Thumbnails Verified Balanced: _P Count Equals _V Count
+                All Thumbnails Verified Balanced: _P Count Equals _V Count
               </div>
               <div style={{ color: 'var(--secondary-label)', lineHeight: 1.4 }}>
                 Every folder contains equal pairs of photo thumbnails (_P) and video thumbnails (_V). All{' '}
@@ -567,7 +571,7 @@ export const ThumbnailSeparatorPage: React.FC<ThumbnailSeparatorPageProps> = ({ 
               </div>
               <div style={{ fontSize: 12 }}>
                 <div style={{ fontWeight: 700, color: '#F59E0B', fontSize: 13, marginBottom: 2 }}>
-                  ⚠️ Thumbnail Count Mismatch Detected: _P Count ({scanResult.totalPhotos}) ≠ _V Count ({scanResult.totalVideos})
+                  Thumbnail Count Mismatch Detected: _P Count ({scanResult.totalPhotos}) ≠ _V Count ({scanResult.totalVideos})
                 </div>
                 <div style={{ color: 'var(--secondary-label)', lineHeight: 1.4 }}>
                   Found <strong style={{ color: '#F59E0B' }}>{scanResult.totalMismatches} missing thumbnail(s)</strong> across{' '}
@@ -579,6 +583,7 @@ export const ThumbnailSeparatorPage: React.FC<ThumbnailSeparatorPageProps> = ({ 
               variant="secondary"
               size="sm"
               onClick={() => setActiveTab('mismatches')}
+              icon={<ArrowRight size={13} />}
               style={{
                 borderColor: 'rgba(245, 158, 11, 0.45)',
                 color: '#F59E0B',
@@ -587,7 +592,7 @@ export const ThumbnailSeparatorPage: React.FC<ThumbnailSeparatorPageProps> = ({ 
                 fontWeight: 700,
               }}
             >
-              View Missing Files ({scanResult.folderMismatches.length} Folders) ➔
+              View Missing Files ({scanResult.folderMismatches.length} Folders)
             </StudioButton>
           </div>
         )

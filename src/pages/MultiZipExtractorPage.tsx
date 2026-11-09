@@ -555,7 +555,7 @@ export const MultiZipExtractorPage: React.FC<MultiZipExtractorPageProps> = ({ on
                   >
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--label)' }}>
-                        📦 {grp.groupName}
+                        {grp.groupName}
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--secondary-label)', marginTop: 2 }}>
                         {grp.count} parts ({grp.files.map((f: string) => f.split(/[\\/]/).pop()).slice(0, 3).join(', ')}...)
@@ -742,7 +742,7 @@ export const MultiZipExtractorPage: React.FC<MultiZipExtractorPageProps> = ({ on
           onClick={handleStartExtraction}
           style={{ height: 46, fontSize: 14, fontWeight: 800 }}
         >
-          {isExtracting ? 'Unifying Multi-Part Zips into One Folder...' : '⚡ Unzip & Merge All Zip Parts into 1 Folder'}
+          {isExtracting ? 'Unifying Multi-Part Zips into One Folder...' : 'Unzip & Merge All Zip Parts into 1 Folder'}
         </StudioButton>
       </div>
     </div>

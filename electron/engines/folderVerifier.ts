@@ -371,10 +371,10 @@ export class FolderVerifierEngine {
       execLines.push(customNote.trim());
       execLines.push('');
     }
-    execLines.push('📁 *FOLDER VERIFICATION REPORT*');
-    execLines.push(`📅 *Date:* ${summary.verifiedAt}`);
+    execLines.push('*FOLDER VERIFICATION REPORT*');
+    execLines.push(`*Date:* ${summary.verifiedAt}`);
     execLines.push('──────────────────────────────────────────');
-    execLines.push('📊 *OVERALL TOTALS:*');
+    execLines.push('*OVERALL TOTALS:*');
     execLines.push(`• *Folders Checked:* ${summary.totalFolders} (${summary.validFolders} verified)`);
     execLines.push(`• *Combined Size:* ${summary.totalSizeFormatted} (${formatNumber(summary.totalSizeBytes)} bytes)`);
     execLines.push(`• *Total Files:* ${formatNumber(summary.totalFiles)} files`);
@@ -382,28 +382,28 @@ export class FolderVerifierEngine {
 
     // Media type breakdown if media is present
     const types: string[] = [];
-    if (summary.fileTypes.photos > 0) types.push(`📸 ${formatNumber(summary.fileTypes.photos)} Photos`);
-    if (summary.fileTypes.videos > 0) types.push(`🎬 ${formatNumber(summary.fileTypes.videos)} Videos`);
-    if (summary.fileTypes.documents > 0) types.push(`📄 ${formatNumber(summary.fileTypes.documents)} Documents`);
-    if (summary.fileTypes.audio > 0) types.push(`🎵 ${formatNumber(summary.fileTypes.audio)} Audio`);
-    if (summary.fileTypes.others > 0) types.push(`📦 ${formatNumber(summary.fileTypes.others)} Others`);
+    if (summary.fileTypes.photos > 0) types.push(`${formatNumber(summary.fileTypes.photos)} Photos`);
+    if (summary.fileTypes.videos > 0) types.push(`${formatNumber(summary.fileTypes.videos)} Videos`);
+    if (summary.fileTypes.documents > 0) types.push(`${formatNumber(summary.fileTypes.documents)} Documents`);
+    if (summary.fileTypes.audio > 0) types.push(`${formatNumber(summary.fileTypes.audio)} Audio`);
+    if (summary.fileTypes.others > 0) types.push(`${formatNumber(summary.fileTypes.others)} Others`);
     if (types.length > 0) {
       execLines.push(`• *Content Mix:* ${types.join(' | ')}`);
     }
 
     execLines.push('──────────────────────────────────────────');
-    execLines.push('📂 *FOLDER-WISE DETAILS:*');
+    execLines.push('*FOLDER-WISE DETAILS:*');
 
     summary.items.forEach((it, index) => {
       execLines.push('');
       if (!it.exists || !it.accessible) {
-        execLines.push(`*${index + 1}. ❌ ${it.folderName}*`);
+        execLines.push(`*${index + 1}. [FAILED] ${it.folderName}*`);
         execLines.push(`   • Path: ${it.path}`);
         execLines.push(`   • Status: Error (${it.errorMessage || 'Inaccessible'})`);
         return;
       }
 
-      execLines.push(`*${index + 1}. 📁 ${it.folderName}*`);
+      execLines.push(`*${index + 1}. ${it.folderName}*`);
       execLines.push(`   • *Path:* ${it.path}`);
       execLines.push(`   • *Size:* ${it.totalSizeFormatted} (${formatNumber(it.totalSizeBytes)} bytes)`);
       execLines.push(`   • *Files:* ${formatNumber(it.totalFiles)} files`);
@@ -429,7 +429,7 @@ export class FolderVerifierEngine {
     });
 
     execLines.push('──────────────────────────────────────────');
-    execLines.push(`✅ *Verification Completed via MediaFlow Studio*`);
+    execLines.push(`*Verification Completed via MediaFlow Studio*`);
 
     // 2. Compact Format (One-line per folder)
     const compactLines: string[] = [];
@@ -489,7 +489,7 @@ export class FolderVerifierEngine {
 
     // 4. Markdown Table Format
     const mdLines: string[] = [];
-    mdLines.push(`### 📁 Folder Verification Report`);
+    mdLines.push(`### Folder Verification Report`);
     mdLines.push(`*Generated on ${summary.verifiedAt} via MediaFlow Studio*`);
     mdLines.push('');
     mdLines.push(`**Summary:** ${summary.validFolders} folders | **Total Size:** ${summary.totalSizeFormatted} | **Total Files:** ${formatNumber(summary.totalFiles)} | **Total Subfolders:** ${formatNumber(summary.totalSubfolders)}`);
@@ -497,7 +497,7 @@ export class FolderVerifierEngine {
     mdLines.push('| # | Folder Name | Path | Size | Files | Subfolders | Status |');
     mdLines.push('|---|-------------|------|------|-------|------------|--------|');
     summary.items.forEach((it, idx) => {
-      const statusIcon = it.status === 'verified' ? '✅ Verified' : it.status === 'empty' ? '⚠️ Empty' : '❌ Error';
+      const statusIcon = it.status === 'verified' ? '[Verified]' : it.status === 'empty' ? '[Empty]' : '[Error]';
       mdLines.push(
         `| ${idx + 1} | **${it.folderName}** | \`${it.path}\` | ${it.totalSizeFormatted} | ${formatNumber(it.totalFiles)} | ${formatNumber(it.totalSubfolders)} | ${statusIcon} |`
       );

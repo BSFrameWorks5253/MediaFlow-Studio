@@ -313,7 +313,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       borderRadius: 6,
                     }}
                   >
-                    ✓ Built-in Hardcoded (34 Event Codes)
+                    Built-in Hardcoded (34 Event Codes)
                   </span>
                 </div>
                 <div
@@ -663,8 +663,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontWeight: 700, color: updateResult.hasUpdate ? 'var(--accent)' : 'var(--system-green)' }}>
                       {updateResult.hasUpdate
-                        ? `🚀 Update v${updateResult.version} Ready!`
-                        : `✓ Up to date (v${updateResult.currentVersion || '6.0.0'})`}
+                        ? `Update v${updateResult.version} Ready!`
+                        : `Up to date (v${updateResult.currentVersion || '6.0.0'})`}
                     </span>
                     <span style={{ fontSize: 10, color: 'var(--secondary-label)', fontFamily: 'var(--font-mono)' }}>
                       Source: {updateResult.source === 'anything-local' ? 'Anything Local Hub' : updateResult.source === 'anything-catalog' ? 'Anything Catalog' : 'GitHub Releases'}
@@ -683,8 +683,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
                       <span style={{ fontSize: 10, color: 'var(--system-cyan)' }}>
                         {updateResult.localInstallerPath
-                          ? '⚡ Instant local installer detected in Anything (Zero download needed)'
-                          : `📦 Size: ${updateResult.sizeFormatted || '76.5 MB'}`}
+                          ? 'Instant local installer detected in Anything (Zero download needed)'
+                          : `Size: ${updateResult.sizeFormatted || '76.5 MB'}`}
                       </span>
                       <button
                         onClick={handleInstallUpdate}
@@ -753,7 +753,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 cursor: 'pointer',
               }}
             >
-              ⚙ Launch Setup Wizard
+              Launch Setup Wizard
             </button>
           )}
           <StudioButton variant="primary" onClick={onClose}>

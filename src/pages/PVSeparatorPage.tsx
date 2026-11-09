@@ -928,7 +928,7 @@ export const PVSeparatorPage: React.FC<PVSeparatorPageProps> = ({ onShowToast, o
             </div>
 
             <div style={{ fontSize: 11.5, color: 'var(--secondary-label)', lineHeight: 1.5 }}>
-              ⚠️ <strong>Warning:</strong> Selected files will be deleted directly from the master directory. They will NOT be moved to recycle bin. Please verify you have selected the correct files.
+              <strong>Warning:</strong> Selected files will be deleted directly from the master directory. They will NOT be moved to recycle bin. Please verify you have selected the correct files.
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 4 }}>

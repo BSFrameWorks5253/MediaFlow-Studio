@@ -345,7 +345,7 @@ export const StorageHeadroomBar: React.FC<StorageHeadroomBarProps> = ({
                     textTransform: 'uppercase',
                   }}
                 >
-                  ⚡ Fast In-Place Move
+                  Fast In-Place Move
                 </span>
               )}
             </div>

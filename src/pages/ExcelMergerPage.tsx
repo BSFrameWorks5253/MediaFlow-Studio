@@ -609,7 +609,7 @@ export const ExcelMergerPage: React.FC<ExcelMergerPageProps> = ({ onShowToast, o
             }}
           >
             {canMerge
-              ? '✓ Both inventory reports loaded — ready to consolidate'
+              ? 'Both inventory reports loaded — ready to consolidate'
               : 'Select both Photo Inventory and Video Inventory files to merge'}
           </div>
           <div style={{ fontSize: 11, color: 'var(--secondary-label)', marginTop: 2 }}>
@@ -667,7 +667,7 @@ export const ExcelMergerPage: React.FC<ExcelMergerPageProps> = ({ onShowToast, o
               </div>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: '#10E79D' }}>
-                  ✓ Consolidation Complete
+                  Consolidation Complete
                 </div>
                 <div
                   style={{
@@ -1101,7 +1101,7 @@ export const ExcelMergerPage: React.FC<ExcelMergerPageProps> = ({ onShowToast, o
               }}
             >
               <span>
-                📁 <strong>Output Target:</strong>{' '}
+                <strong>Output Target:</strong>{' '}
                 <span style={{ color: 'var(--system-cyan)' }}>
                   {collectorDestDir ? `${collectorDestDir}\\All Inventory Reports` : '[Selected Destination Folder]\\All Inventory Reports'}
                 </span>

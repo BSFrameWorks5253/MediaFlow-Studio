@@ -109,9 +109,9 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({ forcedUpdate, onClose 
             </h3>
             <p>
               {update.source === 'anything-local'
-                ? '⚡ Verified local update detected in Anything Ecosystem releases. Instant installation with zero download wait time.'
+                ? 'Verified local update detected in Anything Ecosystem releases. Instant installation with zero download wait time.'
                 : update.source === 'anything-catalog'
-                ? '📦 Verified release ready from Anything Ecosystem Hub. Seamless upgrade preserves your active configuration and workspace cache.'
+                ? 'Verified release ready from Anything Ecosystem Hub. Seamless upgrade preserves your active configuration and workspace cache.'
                 : 'A new high-performance verified release is ready for installation. Silent upgrade preserves your active configuration.'}
             </p>
           </div>

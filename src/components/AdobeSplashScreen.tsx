@@ -503,7 +503,7 @@ export const AdobeSplashScreen: React.FC<AdobeSplashScreenProps> = ({
                   e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.4)';
                 }}
               >
-                Skip ➔
+                Skip →
               </button>
             )}
           </div>

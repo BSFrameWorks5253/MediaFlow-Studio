@@ -179,7 +179,7 @@ export class WorkstationAutoUpdater {
           .slice(0, 8);
       }
       if (notes.length === 0) {
-        notes = ['🚀 Performance optimizations and engine stability updates.'];
+        notes = ['Performance optimizations and engine stability updates.'];
       }
 
       const updateInfo: UpdateInfo = {

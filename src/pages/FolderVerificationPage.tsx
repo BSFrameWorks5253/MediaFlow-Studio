@@ -21,6 +21,10 @@ import {
   ListPlus,
   FileSpreadsheet,
   X,
+  Camera,
+  Video,
+  Music,
+  Package,
 } from 'lucide-react';
 import { StudioButton } from '../components/StudioButton';
 import { PageKey } from '../types/pipelineStages';
@@ -159,19 +163,19 @@ export const FolderVerificationPage: React.FC<FolderVerificationPageProps> = ({ 
     // Pre-populate reports
     mockSummary.reports.executive = `Hi Sir, please find the verified folder sizes and file inventory for today's delivery package below:
 
-📁 *FOLDER VERIFICATION REPORT*
-📅 *Date:* ${mockSummary.verifiedAt}
+*FOLDER VERIFICATION REPORT*
+*Date:* ${mockSummary.verifiedAt}
 ──────────────────────────────────────────
-📊 *OVERALL TOTALS:*
+*OVERALL TOTALS:*
 • *Folders Checked:* 3 (3 verified)
 • *Combined Size:* 142.65 GB (153,168,230,192 bytes)
 • *Total Files:* 4,892 files
 • *Total Subfolders:* 36 directories
-• *Content Mix:* 📸 4,150 Photos | 🎬 552 Videos | 📄 40 Documents | 📦 150 Others
+• *Content Mix:* 4,150 Photos | 552 Videos | 40 Documents | 150 Others
 ──────────────────────────────────────────
-📂 *FOLDER-WISE DETAILS:*
+*FOLDER-WISE DETAILS:*
 
-*1. 📁 RAW_EXPORTS*
+*1. RAW_EXPORTS*
    • *Path:* D:\\2026_EVENTS\\ROYAL_WEDDING\\RAW_EXPORTS
    • *Size:* 78.40 GB (84,182,344,704 bytes)
    • *Files:* 2,450 files
@@ -179,7 +183,7 @@ export const FolderVerificationPage: React.FC<FolderVerificationPageProps> = ({ 
    • *Types:* 2,300 Photos, 150 Others
    • *Top Subfolders:* 02_SANGEET_RAW: 29.05 GB (920 files) | 01_HALDI_RAW: 27.40 GB (850 files) | 03_WEDDING_RAW: 21.95 GB (680 files)
 
-*2. 📁 EDITED_DELIVERY*
+*2. EDITED_DELIVERY*
    • *Path:* D:\\2026_EVENTS\\ROYAL_WEDDING\\EDITED_DELIVERY
    • *Size:* 52.10 GB (55,941,922,816 bytes)
    • *Files:* 1,890 files
@@ -187,7 +191,7 @@ export const FolderVerificationPage: React.FC<FolderVerificationPageProps> = ({ 
    • *Types:* 1,850 Photos, 40 Docs
    • *Top Subfolders:* CEREMONY_SELECTIONS: 29.28 GB (1,250 files) | HIGHLIGHTS_PRINT: 22.82 GB (600 files) | DOCUMENTS: 40.00 MB (40 files)
 
-*3. 📁 VIDEO_SELECTS*
+*3. VIDEO_SELECTS*
    • *Path:* D:\\2026_EVENTS\\ROYAL_WEDDING\\VIDEO_SELECTS
    • *Size:* 12.15 GB (13,043,962,672 bytes)
    • *Files:* 552 files
@@ -195,7 +199,7 @@ export const FolderVerificationPage: React.FC<FolderVerificationPageProps> = ({ 
    • *Types:* 552 Videos
    • *Top Subfolders:* 4K_TEASERS: 7.92 GB (320 files) | REELS_VERTICAL: 4.23 GB (232 files)
 ──────────────────────────────────────────
-✅ *Verification Completed via MediaFlow Studio*`;
+*Verification Completed via MediaFlow Studio*`;
 
     mockSummary.reports.compact = `FOLDER VERIFICATION (3/3 FOLDERS):
 1. RAW_EXPORTS: 78.40 GB | 2,450 files | 12 subfolders (D:\\2026_EVENTS\\ROYAL_WEDDING\\RAW_EXPORTS)
@@ -227,16 +231,16 @@ Total Files: 4,892 | Total Subfolders: 36
     - REELS_VERTICAL: 4.23 GB (232 files)
 ----------------------------------------------------------------`;
 
-    mockSummary.reports.markdown = `### 📁 Folder Verification Report
+    mockSummary.reports.markdown = `### Folder Verification Report
 *Generated on ${mockSummary.verifiedAt} via MediaFlow Studio*
 
 **Summary:** 3 folders | **Total Size:** 142.65 GB | **Total Files:** 4,892 | **Total Subfolders:** 36
 
 | # | Folder Name | Path | Size | Files | Subfolders | Status |
 |---|-------------|------|------|-------|------------|--------|
-| 1 | **RAW_EXPORTS** | \`D:\\2026_EVENTS\\ROYAL_WEDDING\\RAW_EXPORTS\` | 78.40 GB | 2,450 | 12 | ✅ Verified |
-| 2 | **EDITED_DELIVERY** | \`D:\\2026_EVENTS\\ROYAL_WEDDING\\EDITED_DELIVERY\` | 52.10 GB | 1,890 | 16 | ✅ Verified |
-| 3 | **VIDEO_SELECTS** | \`D:\\2026_EVENTS\\ROYAL_WEDDING\\VIDEO_SELECTS\` | 12.15 GB | 552 | 8 | ✅ Verified |`;
+| 1 | **RAW_EXPORTS** | \`D:\\2026_EVENTS\\ROYAL_WEDDING\\RAW_EXPORTS\` | 78.40 GB | 2,450 | 12 | [Verified] |
+| 2 | **EDITED_DELIVERY** | \`D:\\2026_EVENTS\\ROYAL_WEDDING\\EDITED_DELIVERY\` | 52.10 GB | 1,890 | 16 | [Verified] |
+| 3 | **VIDEO_SELECTS** | \`D:\\2026_EVENTS\\ROYAL_WEDDING\\VIDEO_SELECTS\` | 12.15 GB | 552 | 8 | [Verified] |`;
 
     setSummary(mockSummary);
     onShowToast('Loaded sample 3-folder verification dataset', 'info');
@@ -1015,28 +1019,28 @@ Total Files: 4,892 | Total Subfolders: 36
                   Content Breakdown:
                 </span>
                 {summary.fileTypes.photos > 0 && (
-                  <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, backgroundColor: 'rgba(139, 92, 246, 0.15)', color: '#A78BFA', fontWeight: 600 }}>
-                    📸 {summary.fileTypes.photos.toLocaleString()} Photos
+                  <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 4, backgroundColor: 'rgba(139, 92, 246, 0.15)', color: '#A78BFA', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <Camera size={12} /> {summary.fileTypes.photos.toLocaleString()} Photos
                   </span>
                 )}
                 {summary.fileTypes.videos > 0 && (
-                  <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#34D399', fontWeight: 600 }}>
-                    🎬 {summary.fileTypes.videos.toLocaleString()} Videos
+                  <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 4, backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#34D399', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <Video size={12} /> {summary.fileTypes.videos.toLocaleString()} Videos
                   </span>
                 )}
                 {summary.fileTypes.documents > 0 && (
-                  <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#FBBF24', fontWeight: 600 }}>
-                    📄 {summary.fileTypes.documents.toLocaleString()} Documents
+                  <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 4, backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#FBBF24', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <FileText size={12} /> {summary.fileTypes.documents.toLocaleString()} Documents
                   </span>
                 )}
                 {summary.fileTypes.audio > 0 && (
-                  <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, backgroundColor: 'rgba(0, 242, 254, 0.15)', color: '#38BDF8', fontWeight: 600 }}>
-                    🎵 {summary.fileTypes.audio.toLocaleString()} Audio
+                  <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 4, backgroundColor: 'rgba(0, 242, 254, 0.15)', color: '#38BDF8', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <Music size={12} /> {summary.fileTypes.audio.toLocaleString()} Audio
                   </span>
                 )}
                 {summary.fileTypes.others > 0 && (
-                  <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, backgroundColor: 'rgba(255, 255, 255, 0.08)', color: 'var(--secondary-label)', fontWeight: 600 }}>
-                    📦 {summary.fileTypes.others.toLocaleString()} Others
+                  <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 4, backgroundColor: 'rgba(255, 255, 255, 0.08)', color: 'var(--secondary-label)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <Package size={12} /> {summary.fileTypes.others.toLocaleString()} Others
                   </span>
                 )}
               </div>
@@ -1431,7 +1435,7 @@ Total Files: 4,892 | Total Subfolders: 36
                 letterSpacing: 0.4,
               }}
             >
-              {copiedKey === 'main' ? 'COPIED TO CLIPBOARD! ✓' : '📋 Copy Report to Clipboard for Main Head'}
+              {copiedKey === 'main' ? 'Copied to Clipboard!' : 'Copy Report to Clipboard for Main Head'}
             </StudioButton>
 
             {/* Live Textarea Preview */}

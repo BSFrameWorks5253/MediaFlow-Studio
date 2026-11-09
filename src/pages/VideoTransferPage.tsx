@@ -1151,7 +1151,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                     boxShadow: transferMode === 'move' ? '0 2px 8px rgba(16, 185, 129, 0.2)' : 'none',
                   }}
                 >
-                  🚀 MOVE (Default)
+                  Move (Default)
                 </button>
                 <button
                   type="button"
@@ -1169,7 +1169,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                     boxShadow: transferMode === 'copy' ? '0 2px 8px rgba(56, 189, 248, 0.2)' : 'none',
                   }}
                 >
-                  ⚡ COPY (Safe)
+                  Copy (Safe)
                 </button>
               </div>
             </div>
@@ -1599,7 +1599,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Sparkles size={14} color="#10B981" />
             <span style={{ fontWeight: 700, color: '#10B981' }}>
-              ⚡ Single-Session Direct Sync:
+              Single-Session Direct Sync:
             </span>
             <span style={{ color: 'var(--label)', fontWeight: 600 }}>
               "{availableDates[0]}" is loaded and ready for 1-click execution.
@@ -2476,7 +2476,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                           title="Open Side-by-Side Dual View in Anything File Manager (One side video, one side photo with Date & Slot header)"
                         >
                           <ArrowLeftRight size={11} color="#38BDF8" />
-                          <span>⚡ AFM Dual View</span>
+                          <span>AFM Dual View</span>
                         </button>
 
                         <button
@@ -3394,7 +3394,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                           title="Open Side-by-Side Dual View in Anything File Manager (One side video, one side photo with Date & Slot header)"
                         >
                           <ArrowLeftRight size={11} color="#38BDF8" />
-                          <span>⚡ AFM Dual View</span>
+                          <span>AFM Dual View</span>
                         </button>
                       </div>
                     </div>
@@ -3981,7 +3981,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                           border: '1px solid rgba(16, 185, 129, 0.4)',
                         }}
                       >
-                        ✓ _V THUMB READY
+                        _V THUMB READY
                       </span>
                     ) : (
                       <span style={{ fontSize: 10, color: 'var(--tertiary-label)', fontStyle: 'italic' }}>
@@ -4145,7 +4145,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                           border: '1px solid rgba(139, 92, 246, 0.4)',
                         }}
                       >
-                        ✓ _P THUMB READY
+                        _P THUMB READY
                       </span>
                     ) : (
                       <span style={{ fontSize: 10, color: 'var(--tertiary-label)', fontStyle: 'italic' }}>

@@ -168,7 +168,7 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
             if (data?.imagesDir) {
               setImagesDir(data.imagesDir);
               setSetupImagesPath(data.imagesDir);
-              onShowToast('🔗 Event Reference Images folder updated from Anything Hub!', 'info');
+              onShowToast('Event Reference Images folder updated from Anything Hub!', 'info');
               if (typeof (window.electronAPI as any).ecosystemInspectFolder === 'function') {
                 (window.electronAPI as any).ecosystemInspectFolder(data.imagesDir).then((insp: any) => {
                   setEcosystemStatus((prev: any) => ({
@@ -226,7 +226,7 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
     }
     setImagesDir(cleanPath);
     setIsPathSetupOpen(false);
-    onShowToast('✓ Master Event Images linked & broadcasted to Anything Ecosystem.', 'success');
+    onShowToast('Master Event Images linked & broadcasted to Anything Ecosystem.', 'success');
   };
 
   const handleSyncFromAnything = async () => {
@@ -241,7 +241,7 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
         setImagesDir(res.path);
         setSetupImagesPath(res.path);
         setEcosystemStatus(res);
-        onShowToast(`✓ Successfully fetched from Anything: ${res.totalImages} badges ready!`, 'success');
+        onShowToast(`Successfully fetched from Anything: ${res.totalImages} badges ready!`, 'success');
       } else if (res && res.path) {
         setImagesDir(res.path);
         setSetupImagesPath(res.path);
@@ -262,7 +262,7 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
     navigator.clipboard.writeText(imagesDir);
     setIsCopiedPath(true);
     setTimeout(() => setIsCopiedPath(false), 2000);
-    onShowToast('✓ Path copied to clipboard', 'info');
+    onShowToast('Path copied to clipboard', 'info');
   };
 
   const handleBrowseTarget = async () => {
@@ -612,7 +612,7 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
                         color: '#34D399',
                       }}
                     >
-                      ✓ {ecosystemStatus?.totalImages || 'Live'} Images Ready
+                      {ecosystemStatus?.totalImages || 'Live'} Images Ready
                     </span>
                   )}
                 </div>
@@ -630,7 +630,7 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
                   }}
                   title={imagesDir || 'Not configured'}
                 >
-                  {imagesDir || '⚠️ No path linked — Click "Link Folder" or fetch from Anything.'}
+                  {imagesDir || 'No path linked — Click "Link Folder" or fetch from Anything.'}
                 </div>
               </div>
             </div>
@@ -725,7 +725,7 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
                   boxShadow: imagesDir ? 'none' : '0 2px 10px rgba(99, 102, 241, 0.3)',
                 }}
               >
-                {imagesDir ? '⚙ Change Link' : 'Link Folder →'}
+                {imagesDir ? 'Change Link' : 'Link Folder'}
               </button>
             </div>
           </div>
@@ -1061,7 +1061,7 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
                         {item.matchedImages.length === 0 ? (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                             <span style={{ color: 'var(--system-orange)', fontSize: 11, fontWeight: 600 }}>
-                              ⚠️ Missing in Reference Folder
+                              Missing in Reference Folder
                             </span>
                             {item.expectedPlacardFile && (
                               <span style={{ color: 'var(--secondary-label)', fontSize: 10.5, fontFamily: 'var(--font-mono)' }}>
@@ -1077,11 +1077,11 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
                                 <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 500 }}>{img.fileName}</span>
                                 {img.alreadyExists ? (
                                   <span style={{ fontSize: 10, color: 'var(--system-green)', fontWeight: 600 }}>
-                                    ✓ Already present
+                                    Already present
                                   </span>
                                 ) : (
                                   <span style={{ fontSize: 10, color: '#818CF8', fontWeight: 600 }}>
-                                    ➔ Will copy
+                                    Will copy
                                   </span>
                                 )}
                               </div>
@@ -1279,7 +1279,7 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
                     cursor: 'pointer',
                   }}
                 >
-                  ⚡ Preset: D:\APP_DATA\EVENT_BADGES
+                  Preset: D:\APP_DATA\EVENT_BADGES
                 </button>
                 {ecosystemStatus?.path && ecosystemStatus.path !== setupImagesPath && (
                   <button
@@ -1296,7 +1296,7 @@ export const EventDistributorPage: React.FC<EventDistributorPageProps> = ({ onSh
                       cursor: 'pointer',
                     }}
                   >
-                    🔗 Use Anything Linked Path
+                    Use Anything Linked Path
                   </button>
                 )}
               </div>

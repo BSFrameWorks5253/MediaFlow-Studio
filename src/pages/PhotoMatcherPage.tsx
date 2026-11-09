@@ -623,7 +623,7 @@ export const PhotoMatcherPage: React.FC<PhotoMatcherPageProps> = ({ onShowToast,
                 }}
               >
                 <span>
-                  ⚠️ {p.label}{' '}
+                  {p.label}{' '}
                   {missingFirst ? '(Missing in Selected Photos)' : '(Missing in All Photos)'}
                 </span>
               </div>

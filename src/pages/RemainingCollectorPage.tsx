@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Folder, Layers, RefreshCw, Play, RotateCcw } from 'lucide-react';
+import { Folder, Layers, RefreshCw, Play, RotateCcw, Sparkles } from 'lucide-react';
 import { StudioButton } from '../components/StudioButton';
 import { StorageHeadroomBar } from '../components/StorageHeadroomBar';
 import { PageKey } from '../types/pipelineStages';
@@ -220,7 +220,8 @@ export const RemainingCollectorPage: React.FC<RemainingCollectorPageProps> = ({ 
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span>✨ Source Auto-Linked from Structure Creator (Main Data / {uploadStructure.safarName || 'Safar'}):</span>
+              <Sparkles size={12} color="#06B6D4" />
+              <span>Source Auto-Linked from Structure Creator (Main Data / {uploadStructure.safarName || 'Safar'}):</span>
               <strong style={{ fontFamily: 'var(--font-mono)' }}>{uploadStructure.mainDataPath}</strong>
             </div>
             {sourceDir !== uploadStructure.mainDataPath && (
@@ -257,7 +258,8 @@ export const RemainingCollectorPage: React.FC<RemainingCollectorPageProps> = ({ 
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span>✨ Upload Structure Output Active:</span>
+              <Sparkles size={12} color="#EC4899" />
+              <span>Upload Structure Output Active:</span>
               <strong style={{ fontFamily: 'var(--font-mono)' }}>{uploadStructure.remainingPath}</strong>
             </div>
             {destDir !== uploadStructure.remainingPath && (
