@@ -11,6 +11,7 @@ import { RemainingCollectorEngine } from './engines/remainingCollector';
 import { ExcelMergerEngine } from './engines/excelMerger';
 import { ProductionToolsEngine } from './engines/productionTools';
 import { FolderVerifierEngine } from './engines/folderVerifier';
+import { MultiZipExtractorEngine } from './engines/multiZipExtractor';
 import { GoogleDriveManager } from './engines/../managers/googleDriveManager';
 import { ActivityReportsManager } from './engines/../managers/activityReportsManager';
 import { EventImageDistributorEngine } from './engines/eventImageDistributor';
@@ -18,7 +19,7 @@ import { StatsManager } from './managers/statsManager';
 import { EcosystemManager } from './managers/ecosystemManager';
 import { resolveChildAppLoaderConfig, showChildAppSplash, closeChildAppSplash, ChildAppLoaderConfig } from './splash';
 import { WorkstationAutoUpdater, UpdateInfo } from './managers/autoUpdater';
-import { openInEcosystemExplorer, showItemInEcosystemExplorer } from './utils/ecosystemExplorer';
+import { openInEcosystemExplorer, showItemInEcosystemExplorer, openInAfmDualSync } from './utils/ecosystemExplorer';
 import { sanitizeBackendError } from './utils/errorSanitizer';
 
 // Windows Taskbar & Action Center Model ID for dedicated window grouping
@@ -158,6 +159,7 @@ const remainingEngine = new RemainingCollectorEngine();
 const excelEngine = new ExcelMergerEngine();
 const toolsEngine = new ProductionToolsEngine();
 const folderVerifierEngine = new FolderVerifierEngine();
+const multiZipEngine = new MultiZipExtractorEngine();
 const driveManager = new GoogleDriveManager();
 const activityManager = new ActivityReportsManager();
 const eventDistributorEngine = new EventImageDistributorEngine();
@@ -1079,6 +1081,48 @@ function setupIpcHandlers() {
       return true;
     }
     return false;
+  });
+
+  // 7c. Multi-Part Zip & Google Drive Archive Extractor
+  ipcMain.handle('zip:scan-multipart-dir', async (_, dirPath: string) => {
+    try {
+      return await multiZipEngine.scanDirectoryForZipSets(dirPath || '');
+    } catch (err: any) {
+      console.error('[MultiZip] Directory scan failed:', err);
+      throw new Error(sanitizeBackendError(err, 'Failed to scan directory for multi-part archives.'));
+    }
+  });
+
+  ipcMain.handle('zip:scan-multipart-files', async (_, zipFiles: string[]) => {
+    try {
+      return await multiZipEngine.scanZipFiles(zipFiles || []);
+    } catch (err: any) {
+      console.error('[MultiZip] Zip files scan failed:', err);
+      throw new Error(sanitizeBackendError(err, 'Failed to inspect multi-part archives.'));
+    }
+  });
+
+  ipcMain.handle('zip:extract-multipart', async (event, options: { zipPaths: string[]; outputDir: string; flattenOuter?: boolean }) => {
+    try {
+      return await multiZipEngine.extractMultiPart(
+        options.zipPaths || [],
+        options.outputDir || '',
+        options.flattenOuter !== false,
+        (progress) => {
+          try {
+            event.sender.send('zip:progress', progress);
+          } catch {}
+        }
+      );
+    } catch (err: any) {
+      console.error('[MultiZip] Extraction failed:', err);
+      throw new Error(sanitizeBackendError(err, 'Failed to extract multi-part zip archives.'));
+    }
+  });
+
+  // 7d. Anything Ecosystem Dual Sync Launch
+  ipcMain.handle('ecosystem:open-dual-sync', async (_, options) => {
+    return await openInAfmDualSync(options || {});
   });
 
   // 8. Google Drive

@@ -15,6 +15,7 @@ import {
   Cloud,
   BarChart3,
   FolderCheck,
+  FolderSync,
 } from 'lucide-react';
 
 export type PageKey =
@@ -31,7 +32,8 @@ export type PageKey =
   | 'googleDrive'
   | 'activity'
   | 'tools'
-  | 'folderVerification';
+  | 'folderVerification'
+  | 'multiZipExtractor';
 
 /**
  * Canonical Linear Pipeline Order
@@ -54,6 +56,7 @@ export const SYSTEM_NAV_ORDER: PageKey[] = [
   'activity',             // Activity & Audit Log
   'tools',                // Automation Utilities
   'folderVerification',   // Folder Verification & Size Audit
+  'multiZipExtractor',    // Multi-Zip & Drive Consolidator
 ];
 
 export interface StageMeta {
@@ -157,6 +160,13 @@ export const STAGE_METADATA_MAP: Record<PageKey, Omit<StageMeta, 'key'>> = {
     color: '#10B981',
     icon: FolderCheck,
   },
+  multiZipExtractor: {
+    label: 'Multi-Zip Consolidator',
+    shortTitle: 'Drive Unzipper',
+    desc: 'Unpack & Merge 001/002/003 Zips into 1 Folder',
+    color: '#0284C7',
+    icon: FolderSync,
+  },
   googleDrive: {
     label: 'Cloud Sync',
     shortTitle: 'Google Drive',
@@ -184,6 +194,8 @@ export function getStageNumber(key: PageKey): string {
       return 'UTIL';
     case 'folderVerification':
       return 'VERIFY';
+    case 'multiZipExtractor':
+      return 'UNZIP';
     case 'googleDrive':
       return 'CLOUD';
     default:

@@ -170,6 +170,23 @@ export const electronAPI = {
   copyToClipboard: (text: string): Promise<boolean> =>
     ipcRenderer.invoke('clipboard:write-text', text),
 
+  // 7c. Multi-Part Zip & Google Drive Archive Extractor
+  scanZipDirectory: (dirPath: string) => ipcRenderer.invoke('zip:scan-multipart-dir', dirPath),
+  scanZipFiles: (zipFiles: string[]) => ipcRenderer.invoke('zip:scan-multipart-files', zipFiles),
+  extractMultiPartZips: (options: { zipPaths: string[]; outputDir: string; flattenOuter?: boolean }) =>
+    ipcRenderer.invoke('zip:extract-multipart', options),
+  onZipProgress: (callback: (data: any) => void) => {
+    const handler = (_: any, data: any) => callback(data);
+    ipcRenderer.on('zip:progress', handler);
+    return () => {
+      ipcRenderer.removeListener('zip:progress', handler);
+    };
+  },
+
+  // 7d. Anything Ecosystem Dual Sync Launch
+  openAfmDualSync: (options: { videoPath?: string; photoPath?: string; folderName?: string; date?: string; slot?: string }) =>
+    ipcRenderer.invoke('ecosystem:open-dual-sync', options),
+
   // 8. Google Drive
   getDriveConfig: () => ipcRenderer.invoke('drive:get-config'),
   setDriveUrl: (type: 'main' | 'thumbnails', url: string) =>

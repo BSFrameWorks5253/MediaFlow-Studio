@@ -31,6 +31,7 @@ import {
   ActivityPage,
   StandaloneToolsPage,
   FolderVerificationPage,
+  MultiZipExtractorPage,
 } from './pages';
 
 const AppContent: React.FC = () => {
@@ -204,6 +205,8 @@ const AppContent: React.FC = () => {
         return <StandaloneToolsPage onShowToast={showToast} />;
       case 'folderVerification':
         return <FolderVerificationPage onShowToast={showToast} onNavigate={setActivePage} />;
+      case 'multiZipExtractor':
+        return <MultiZipExtractorPage onShowToast={showToast} onNavigate={setActivePage} />;
       default:
         return <OverviewPage onNavigate={setActivePage} />;
     }

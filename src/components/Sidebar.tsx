@@ -4,6 +4,11 @@ import {
   Settings as SettingsIcon,
   Sun,
   Moon,
+  Sparkles,
+  Split,
+  Tags,
+  Clapperboard,
+  FileSpreadsheet,
 } from 'lucide-react';
 import {
   PageKey,
@@ -84,6 +89,63 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
     return PIPELINE_NAV_ORDER;
   }, []);
 
+  const [isSimpleMode, setIsSimpleMode] = React.useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('mediaflow_simple_ui');
+      return saved !== 'false';
+    } catch {
+      return true;
+    }
+  });
+
+  const toggleSimpleMode = () => {
+    const next = !isSimpleMode;
+    setIsSimpleMode(next);
+    try {
+      localStorage.setItem('mediaflow_simple_ui', String(next));
+    } catch {}
+  };
+
+  const simpleSteps = useMemo(() => [
+    {
+      key: 'pvSeparator' as PageKey,
+      label: '1. Ingest & Split',
+      shortTitle: 'Ingest RAW',
+      desc: 'Separate RAW Photo & Video',
+      color: '#06B6D4',
+      icon: Split,
+      activeKeys: ['pvSeparator', 'uploadStructure'],
+    },
+    {
+      key: 'photoMatcher' as PageKey,
+      label: '2. Tag & Match',
+      shortTitle: 'Photo Tagger',
+      desc: 'Apply Status & Shift Dates',
+      color: '#8B5CF6',
+      icon: Tags,
+      activeKeys: ['photoMatcher', 'remainingCollector'],
+    },
+    {
+      key: 'videoTransfer' as PageKey,
+      label: '3. Sync Video & Photo',
+      shortTitle: 'Sync Video & Photo',
+      desc: 'Camera Alignment & AFM Dual',
+      color: '#10B981',
+      icon: Clapperboard,
+      activeKeys: ['videoTransfer', 'thumbnailSeparator'],
+    },
+    {
+      key: 'excelMerger' as PageKey,
+      label: '4. Delivery Report',
+      shortTitle: 'Report Merger',
+      desc: 'Master Delivery Workbook',
+      color: '#F59E0B',
+      icon: FileSpreadsheet,
+      activeKeys: ['excelMerger', 'doNotUpload', 'eventDistributor'],
+    },
+  ], []);
+
+  
   return (
     <aside
       className="glass-panel"
@@ -187,6 +249,69 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
           gap: 2,
         }}
       >
+        {/* MODE SWITCHER PILL */}
+        <div style={{ padding: '4px 6px 10px 6px' }}>
+          <div
+            style={{
+              display: 'flex',
+              padding: 2,
+              borderRadius: 8,
+              backgroundColor: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid var(--border-subtle)',
+              gap: 2,
+            }}
+          >
+            <button
+              onClick={() => { if (!isSimpleMode) toggleSimpleMode(); }}
+              className="btn-tactile"
+              style={{
+                flex: 1,
+                padding: '5px 4px',
+                borderRadius: 6,
+                border: 'none',
+                background: isSimpleMode ? 'linear-gradient(135deg, rgba(0, 242, 254, 0.25) 0%, rgba(139, 92, 246, 0.25) 100%)' : 'transparent',
+                color: isSimpleMode ? 'var(--label)' : 'var(--secondary-label)',
+                fontSize: 10.5,
+                fontWeight: isSimpleMode ? 700 : 500,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 4,
+                transition: 'all 0.15s ease',
+              }}
+              title="Clean 4-step streamlined workflow"
+            >
+              <Sparkles size={11} color={isSimpleMode ? '#00F2FE' : 'var(--secondary-label)'} />
+              Simple
+            </button>
+            <button
+              onClick={() => { if (isSimpleMode) toggleSimpleMode(); }}
+              className="btn-tactile"
+              style={{
+                flex: 1,
+                padding: '5px 4px',
+                borderRadius: 6,
+                border: 'none',
+                background: !isSimpleMode ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.25) 0%, rgba(245, 158, 11, 0.25) 100%)' : 'transparent',
+                color: !isSimpleMode ? 'var(--label)' : 'var(--secondary-label)',
+                fontSize: 10.5,
+                fontWeight: !isSimpleMode ? 700 : 500,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 4,
+                transition: 'all 0.15s ease',
+              }}
+              title="Advanced 10-stage studio pipeline"
+            >
+              <SettingsIcon size={11} color={!isSimpleMode ? '#8B5CF6' : 'var(--secondary-label)'} />
+              Studio Pro
+            </button>
+          </div>
+        </div>
+
         {/* SECTION: PIPELINE */}
         <div
           style={{
@@ -205,7 +330,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
               fontFamily: 'var(--font-mono)',
             }}
           >
-            PIPELINE
+            {isSimpleMode ? 'CORE WORKFLOW' : 'STUDIO PIPELINE'}
           </span>
           <span
             style={{
@@ -219,107 +344,180 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
               fontFamily: 'var(--font-mono)',
             }}
           >
-            {isStatsPageUnlocked ? '10 STAGES' : '9 STAGES'}
+            {isSimpleMode ? '4 STEPS' : (isStatsPageUnlocked ? '10 STAGES' : '9 STAGES')}
           </span>
         </div>
 
         {/* Dynamic Pipeline Stages Render */}
-        {pipelineNavItems.map((key, index) => {
-          const meta = getStageMeta(key);
-          const stageNum = getStageNumber(key);
-          const isActive =
-            activePage === key;
-          const Icon = meta.icon;
-          const shortcutKey = index < 9 ? `Alt+${index + 1}` : null;
-
-          return (
-            <button
-              key={key}
-              onClick={() => onNavigate(key)}
-              className="btn-tactile"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 9,
-                height: 40,
-                padding: '0 8px',
-                borderRadius: 10,
-                border: isActive ? `1.5px solid ${meta.color}75` : '1px solid transparent',
-                background: isActive
-                  ? `linear-gradient(90deg, ${meta.color}22 0%, ${meta.color}08 100%)`
-                  : 'transparent',
-                cursor: 'pointer',
-                textAlign: 'left',
-                transition: 'all 0.15s ease',
-                position: 'relative',
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.backgroundColor = `${meta.color}12`;
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }
-              }}
-              title={shortcutKey ? `${meta.label} (${shortcutKey})` : meta.label}
-            >
-              {/* Vibrant Colored Icon Container */}
-              <div
+        {isSimpleMode ? (
+          simpleSteps.map((step) => {
+            const isActive = activePage === step.key || (step.activeKeys && step.activeKeys.includes(activePage));
+            const Icon = step.icon;
+            return (
+              <button
+                key={step.key}
+                onClick={() => onNavigate(step.key)}
+                className="btn-tactile"
                 style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 8,
-                  backgroundColor: isActive ? `${meta.color}28` : `${meta.color}16`,
-                  border: `1px solid ${isActive ? meta.color : meta.color + '35'}`,
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  color: meta.color,
-                  boxShadow: isActive ? `0 0 10px ${meta.color}40` : 'none',
-                  flexShrink: 0,
+                  gap: 10,
+                  minHeight: 46,
+                  padding: '6px 9px',
+                  borderRadius: 10,
+                  border: isActive ? `1.5px solid ${step.color}80` : '1px solid transparent',
+                  background: isActive
+                    ? `linear-gradient(90deg, ${step.color}24 0%, ${step.color}0a 100%)`
+                    : 'transparent',
+                  cursor: 'pointer',
+                  textAlign: 'left',
                   transition: 'all 0.15s ease',
+                  position: 'relative',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) e.currentTarget.style.backgroundColor = `${step.color}12`;
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
                 }}
               >
-                <Icon size={15} />
-              </div>
+                <div
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 8,
+                    backgroundColor: isActive ? `${step.color}30` : `${step.color}18`,
+                    border: `1px solid ${isActive ? step.color : step.color + '40'}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: step.color,
+                    boxShadow: isActive ? `0 0 10px ${step.color}40` : 'none',
+                    flexShrink: 0,
+                  }}
+                >
+                  <Icon size={16} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                  <span
+                    style={{
+                      fontSize: 12.5,
+                      fontWeight: isActive ? 700 : 600,
+                      color: 'var(--label)',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {step.label}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 10,
+                      color: 'var(--secondary-label)',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {step.desc}
+                  </span>
+                </div>
+              </button>
+            );
+          })
+        ) : (
+          pipelineNavItems.map((key, index) => {
+            const meta = getStageMeta(key);
+            const stageNum = getStageNumber(key);
+            const isActive = activePage === key;
+            const Icon = meta.icon;
+            const shortcutKey = index < 9 ? `Alt+${index + 1}` : null;
 
-              {/* Title */}
-              <span
+            return (
+              <button
+                key={key}
+                onClick={() => onNavigate(key)}
+                className="btn-tactile"
                 style={{
-                  flex: 1,
-                  minWidth: 0,
-                  fontSize: 12.5,
-                  fontWeight: isActive ? 700 : 500,
-                  color: 'var(--label)',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 9,
+                  height: 40,
+                  padding: '0 8px',
+                  borderRadius: 10,
+                  border: isActive ? `1.5px solid ${meta.color}75` : '1px solid transparent',
+                  background: isActive
+                    ? `linear-gradient(90deg, ${meta.color}22 0%, ${meta.color}08 100%)`
+                    : 'transparent',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'all 0.15s ease',
+                  position: 'relative',
                 }}
-              >
-                {meta.label}
-              </span>
-
-              {/* Vibrant Stage Number Badge */}
-              <span
-                style={{
-                  fontSize: 9.5,
-                  fontWeight: 800,
-                  fontFamily: 'var(--font-mono)',
-                  color: meta.color,
-                  padding: '2px 6px',
-                  borderRadius: 5,
-                  backgroundColor: isActive ? `${meta.color}25` : `${meta.color}14`,
-                  border: `1px solid ${isActive ? meta.color + '55' : meta.color + '30'}`,
-                  flexShrink: 0,
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.backgroundColor = `${meta.color}12`;
+                  }
                 }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }
+                }}
+                title={shortcutKey ? `${meta.label} (${shortcutKey})` : meta.label}
               >
-                {stageNum}
-              </span>
-            </button>
-          );
-        })}
+                <div
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 8,
+                    backgroundColor: isActive ? `${meta.color}28` : `${meta.color}16`,
+                    border: `1px solid ${isActive ? meta.color : meta.color + '35'}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: meta.color,
+                    boxShadow: isActive ? `0 0 10px ${meta.color}40` : 'none',
+                    flexShrink: 0,
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <Icon size={15} />
+                </div>
+                <span
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    fontSize: 12.5,
+                    fontWeight: isActive ? 700 : 500,
+                    color: 'var(--label)',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {meta.label}
+                </span>
+                <span
+                  style={{
+                    fontSize: 9.5,
+                    fontWeight: 800,
+                    fontFamily: 'var(--font-mono)',
+                    color: meta.color,
+                    padding: '2px 6px',
+                    borderRadius: 5,
+                    backgroundColor: isActive ? `${meta.color}25` : `${meta.color}14`,
+                    border: `1px solid ${isActive ? meta.color + '55' : meta.color + '30'}`,
+                    flexShrink: 0,
+                  }}
+                >
+                  {stageNum}
+                </span>
+              </button>
+            );
+          })
+        )}
 
         {/* SECTION: UTILITIES */}
         <div

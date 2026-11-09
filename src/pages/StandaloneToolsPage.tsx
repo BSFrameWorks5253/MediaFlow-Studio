@@ -15,18 +15,20 @@ import {
   Copy,
   CheckCircle2,
   FolderCheck,
+  FolderSync,
 } from 'lucide-react';
 import { StudioButton } from '../components/StudioButton';
 import { DoNotUploadItem, InventoryReportItem } from '../../electron/engines/productionTools';
 import { toUserErrorMessage } from '../utils/errorSanitizer';
 import { FolderVerificationPage } from './FolderVerificationPage';
+import { MultiZipExtractorPage } from './MultiZipExtractorPage';
 
 interface StandaloneToolsPageProps {
   onShowToast: (text: string, type: 'success' | 'danger' | 'warning' | 'info') => void;
 }
 
 export const StandaloneToolsPage: React.FC<StandaloneToolsPageProps> = ({ onShowToast }) => {
-  const [activeTab, setActiveTab] = useState<'folderVerification' | 'collector' | 'doNotUpload' | 'normalizer' | 'taggerP' | 'taggerV'>('folderVerification');
+  const [activeTab, setActiveTab] = useState<'folderVerification' | 'multiZipExtractor' | 'collector' | 'doNotUpload' | 'normalizer' | 'taggerP' | 'taggerV'>('folderVerification');
 
   // Inventory Report Collector State
   const [irSourceDir, setIrSourceDir] = useState('');
@@ -334,6 +336,26 @@ export const StandaloneToolsPage: React.FC<StandaloneToolsPageProps> = ({ onShow
         </button>
 
         <button
+          onClick={() => setActiveTab('multiZipExtractor')}
+          style={{
+            padding: '6px 16px',
+            borderRadius: 8,
+            border: activeTab === 'multiZipExtractor' ? '1px solid #0284C7' : '1px solid var(--border)',
+            backgroundColor: activeTab === 'multiZipExtractor' ? 'rgba(2, 132, 199, 0.15)' : 'transparent',
+            color: activeTab === 'multiZipExtractor' ? '#38BDF8' : 'var(--secondary-label)',
+            fontSize: 12,
+            fontWeight: 700,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+          }}
+        >
+          <FolderSync size={14} />
+          <span>Multi-Zip & Drive Consolidator</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('collector')}
           style={{
             padding: '6px 16px',
@@ -424,6 +446,8 @@ export const StandaloneToolsPage: React.FC<StandaloneToolsPageProps> = ({ onShow
 
       {activeTab === 'folderVerification' ? (
         <FolderVerificationPage onShowToast={onShowToast} />
+      ) : activeTab === 'multiZipExtractor' ? (
+        <MultiZipExtractorPage onShowToast={onShowToast} />
       ) : activeTab === 'collector' ? (
         /* ── INVENTORY REPORT COLLECTOR PANEL ── */
         <div

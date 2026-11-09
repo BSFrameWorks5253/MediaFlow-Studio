@@ -88,6 +88,89 @@ export async function openInEcosystemExplorer(folderOrFilePath: string): Promise
   }
 }
 
+export interface AfmDualSyncLaunchOptions {
+  videoPath?: string;
+  photoPath?: string;
+  folderName?: string;
+  date?: string;
+  slot?: string;
+}
+
+export function launchAfmWithArgs(cliArgs: string[]): boolean {
+  const installedAfm = getInstalledAfmPath();
+  if (installedAfm && installedAfm.endsWith('.exe')) {
+    try {
+      const child = spawn(installedAfm, cliArgs, { detached: true, stdio: 'ignore' });
+      child.unref();
+      return true;
+    } catch (e) {
+      console.warn('[EcosystemExplorer] AFM exe launch failed:', e);
+    }
+  }
+
+  // Check dev workspace candidate
+  const devCandidates = [
+    {
+      electronExe: path.join(process.cwd(), '..', 'Media Viewer', 'node_modules', '.bin', 'electron.cmd'),
+      entryScript: path.join(process.cwd(), '..', 'Media Viewer', 'dist-electron', 'main.js'),
+      cwd: path.join(process.cwd(), '..', 'Media Viewer'),
+    },
+    {
+      electronExe: 'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Anything\\Anything Apps\\Media Viewer\\node_modules\\.bin\\electron.cmd',
+      entryScript: 'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Anything\\Anything Apps\\Media Viewer\\dist-electron\\main.js',
+      cwd: 'C:\\Users\\Burhanuddin\\OneDrive\\Desktop\\Anything\\Anything Apps\\Media Viewer',
+    },
+  ];
+
+  for (const cand of devCandidates) {
+    if (fs.existsSync(cand.electronExe) && fs.existsSync(cand.entryScript)) {
+      try {
+        const child = spawn(cand.electronExe, [cand.entryScript, ...cliArgs], {
+          detached: true,
+          stdio: 'ignore',
+          cwd: cand.cwd,
+          shell: true,
+        });
+        child.unref();
+        return true;
+      } catch (e) {
+        console.warn('[EcosystemExplorer] Dev AFM launch failed:', e);
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Opens Anything File Manager in Synchronized Dual View:
+ * Left side Video folder, Right side Photo folder,
+ * with Folder Name, Date, and Slot displayed at the top.
+ * Falls back gracefully to opening folders in Windows Explorer if AFM is absent.
+ */
+export async function openInAfmDualSync(options: AfmDualSyncLaunchOptions): Promise<boolean> {
+  const cliArgs = [
+    '--dual-sync',
+    `--video=${options.videoPath || ''}`,
+    `--photo=${options.photoPath || ''}`,
+    `--folder=${options.folderName || ''}`,
+    `--date=${options.date || ''}`,
+    `--slot=${options.slot || ''}`,
+  ];
+
+  const launched = launchAfmWithArgs(cliArgs);
+  if (launched) return true;
+
+  // Fallback: If AFM cannot be launched, open both folders in Windows Explorer
+  if (options.videoPath && fs.existsSync(options.videoPath)) {
+    shell.openPath(options.videoPath);
+  }
+  if (options.photoPath && fs.existsSync(options.photoPath)) {
+    shell.openPath(options.photoPath);
+  }
+  return false;
+}
+
 /**
  * Shows an item highlighted in its containing folder.
  * If AFM is installed, opens the file in AFM (which locates & selects it).
@@ -123,4 +206,3 @@ export async function showItemInEcosystemExplorer(filePath: string): Promise<boo
     return false;
   }
 }
-

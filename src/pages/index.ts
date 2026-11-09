@@ -4,6 +4,7 @@ export { ActivityPage } from './ActivityPage';
 export { GoogleDrivePage } from './GoogleDrivePage';
 export { StandaloneToolsPage } from './StandaloneToolsPage';
 export { FolderVerificationPage } from './FolderVerificationPage';
+export { MultiZipExtractorPage } from './MultiZipExtractorPage';
 
 // Pipeline Stages (00 to 08)
 export { PVSeparatorPage } from './PVSeparatorPage';               // Stage 00

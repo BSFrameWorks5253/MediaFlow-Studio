@@ -34,6 +34,7 @@ import {
   Camera,
   Images,
   ArrowUp,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { StudioButton } from '../components/StudioButton';
 import { StorageHeadroomBar } from '../components/StorageHeadroomBar';
@@ -353,6 +354,35 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
     } catch (e: any) {
       console.error('Failed to locate item:', e);
       onShowToast(toUserErrorMessage(e, 'Failed to locate file. Please check if it still exists.'), 'danger');
+    }
+  };
+
+  const handleOpenAfmDualSync = async (params: {
+    videoPath?: string;
+    photoPath?: string;
+    folderName?: string;
+    date?: string;
+    slot?: string;
+  }) => {
+    try {
+      if (window.electronAPI?.openAfmDualSync) {
+        const opened = await window.electronAPI.openAfmDualSync({
+          videoPath: params.videoPath || videoDir,
+          photoPath: params.photoPath || photoDir,
+          folderName: params.folderName || uploadStructure.safarName || (params.photoPath ? params.photoPath.split(/[\\/]/).pop() : undefined),
+          date: params.date || uploadStructure.dateFolderName || 'Current Date',
+          slot: params.slot || 'All Slots',
+        });
+        if (opened) {
+          onShowToast('Opened Dual Synchronized Video & Photo Inspector in Anything File Manager!', 'success');
+          return;
+        }
+      }
+      if (params.videoPath) handleOpenPath(params.videoPath, 'Video Folder');
+      if (params.photoPath) handleOpenPath(params.photoPath, 'Photo Folder');
+    } catch (e: any) {
+      console.error('Failed to open dual sync:', e);
+      onShowToast(toUserErrorMessage(e, 'Could not open dual folder inspector.'), 'danger');
     }
   };
 
@@ -2423,6 +2453,33 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                         </button>
 
                         <button
+                          onClick={() => handleOpenAfmDualSync({
+                            videoPath: item.videoPath ? item.videoPath.substring(0, Math.max(item.videoPath.lastIndexOf('/'), item.videoPath.lastIndexOf('\\'))) : videoDir,
+                            photoPath: item.photoFolderPath,
+                            folderName: item.photoFolder,
+                            date: item.dateFolder,
+                            slot: item.shotCode || 'Pair',
+                          })}
+                          style={{
+                            background: 'rgba(56, 189, 248, 0.15)',
+                            border: '1px solid rgba(56, 189, 248, 0.45)',
+                            borderRadius: 6,
+                            padding: '3px 9px',
+                            color: '#38BDF8',
+                            fontSize: 10.5,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            fontWeight: 700,
+                          }}
+                          title="Open Side-by-Side Dual View in Anything File Manager (One side video, one side photo with Date & Slot header)"
+                        >
+                          <ArrowLeftRight size={11} color="#38BDF8" />
+                          <span>⚡ AFM Dual View</span>
+                        </button>
+
+                        <button
                           onClick={() => setViewingPhotoFolder({ path: item.photoFolderPath, name: item.photoFolder })}
                           style={{
                             background: 'rgba(168, 85, 247, 0.12)',
@@ -3308,6 +3365,36 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                         >
                           <FolderOpen size={11} color="#38BDF8" />
                           <span>Open Photo Folder</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            const targetPhotoPath = item.suggestedFolder?.path || (photoDir ? `${photoDir}\\${item.dateFolder}` : '');
+                            handleOpenAfmDualSync({
+                              videoPath: item.videoDir || (item.videoPath ? item.videoPath.substring(0, Math.max(item.videoPath.lastIndexOf('/'), item.videoPath.lastIndexOf('\\'))) : videoDir),
+                              photoPath: targetPhotoPath,
+                              folderName: item.suggestedFolder?.name || item.dateFolder || 'Unmatched',
+                              date: item.dateFolder || '',
+                              slot: item.shotCode || 'Unmatched',
+                            });
+                          }}
+                          style={{
+                            background: 'rgba(56, 189, 248, 0.15)',
+                            border: '1px solid rgba(56, 189, 248, 0.45)',
+                            borderRadius: 6,
+                            padding: '3px 9px',
+                            color: '#38BDF8',
+                            fontSize: 10.5,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            fontWeight: 700,
+                          }}
+                          title="Open Side-by-Side Dual View in Anything File Manager (One side video, one side photo with Date & Slot header)"
+                        >
+                          <ArrowLeftRight size={11} color="#38BDF8" />
+                          <span>⚡ AFM Dual View</span>
                         </button>
                       </div>
                     </div>
