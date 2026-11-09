@@ -15,10 +15,16 @@ interface RemainingCollectorPageProps {
 
 export const RemainingCollectorPage: React.FC<RemainingCollectorPageProps> = ({ onShowToast, onNavigate }) => {
   const { uploadStructure } = usePipeline();
-  const [sourceDir, setSourceDir] = useState('');
+  const [sourceDir, setSourceDir] = useState(uploadStructure.mainDataPath || '');
   const [destDir, setDestDir] = useState(uploadStructure.remainingPath || '');
 
-  // Auto-update destDir when uploadStructure changes
+  // Auto-update sourceDir & destDir when uploadStructure changes
+  React.useEffect(() => {
+    if (uploadStructure.mainDataPath && !sourceDir) {
+      setSourceDir(uploadStructure.mainDataPath);
+    }
+  }, [uploadStructure.mainDataPath]);
+
   React.useEffect(() => {
     if (uploadStructure.remainingPath && !destDir) {
       setDestDir(uploadStructure.remainingPath);
@@ -198,6 +204,43 @@ export const RemainingCollectorPage: React.FC<RemainingCollectorPageProps> = ({ 
             </StudioButton>
           </div>
         </div>
+
+        {uploadStructure.mainDataPath && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '6px 12px',
+              borderRadius: 8,
+              backgroundColor: 'rgba(6, 182, 212, 0.1)',
+              border: '1px solid rgba(6, 182, 212, 0.25)',
+              fontSize: 11,
+              color: '#06B6D4',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>✨ Source Auto-Linked from Structure Creator (Main Data / {uploadStructure.safarName || 'Safar'}):</span>
+              <strong style={{ fontFamily: 'var(--font-mono)' }}>{uploadStructure.mainDataPath}</strong>
+            </div>
+            {sourceDir !== uploadStructure.mainDataPath && (
+              <button
+                onClick={() => setSourceDir(uploadStructure.mainDataPath)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#06B6D4',
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  fontSize: 11,
+                  textDecoration: 'underline',
+                }}
+              >
+                Reset to Main Data
+              </button>
+            )}
+          </div>
+        )}
 
         {uploadStructure.remainingPath && (
           <div

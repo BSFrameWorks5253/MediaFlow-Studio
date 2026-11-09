@@ -126,6 +126,37 @@ function isCategoryContainer(name: string): boolean {
   );
 }
 
+/**
+ * Case-sensitive event abbreviation resolver per studio directives:
+ * When one letter is small and other is big, the engine extracts the big letter(s).
+ * Examples:
+ * - 'aQ' => 'Q' (NOT 'AQ') -> Qadam
+ * - 'AQ' => 'AQ' -> Aqiqa
+ * - 'aZ' => 'Z' -> Ziyafat
+ * - 'bZ' => 'Z' -> Ziyafat
+ * - 'BZ' => 'BZ' -> Bethak Ziyafat
+ * - 'aM' => 'M' -> Majlis
+ * - 'bQMZ' => 'QMZ' -> Bethak QMZ / Qadam Majlis Ziyafat
+ */
+export function resolveEventAbbreviation(token: string): string {
+  if (!token) return '';
+  const clean = token.trim();
+
+  const hasLower = /[a-z]/.test(clean);
+  const hasUpper = /[A-Z]/.test(clean);
+
+  if (hasLower && hasUpper) {
+    // Mixed case detected: extract ONLY the uppercase letter(s)
+    const upperOnly = clean.replace(/[^A-Z]/g, '');
+    if (upperOnly.length > 0) {
+      return upperOnly;
+    }
+  }
+
+  // Pure uppercase or pure lowercase: standardize to uppercase
+  return clean.toUpperCase();
+}
+
 export class EventImageDistributorEngine {
   /**
    * Parse folder name into tokens.
@@ -167,8 +198,11 @@ export class EventImageDistributorEngine {
       const its = fullMatch[4] || '';
 
       const evtMatch = rawEventToken.match(/^(\d+)?([a-zA-Z]+)$/);
-      const stickerNumber = evtMatch && evtMatch[1] ? evtMatch[1] : '';
-      const abbreviation = evtMatch && evtMatch[2] ? evtMatch[2].toUpperCase() : rawEventToken.toUpperCase();
+      const stickerMatch = rawEventToken.match(/\d+/);
+      const stickerNumber = evtMatch && evtMatch[1] ? evtMatch[1] : (stickerMatch ? stickerMatch[0] : '');
+      const letterMatch = rawEventToken.match(/[a-zA-Z]+/);
+      const letterPart = evtMatch && evtMatch[2] ? evtMatch[2] : (letterMatch ? letterMatch[0] : rawEventToken);
+      const abbreviation = resolveEventAbbreviation(letterPart);
 
       return {
         dateSlot,
@@ -180,7 +214,7 @@ export class EventImageDistributorEngine {
       };
     }
 
-    // 2. Local pattern: e.g. 27-12Q-40905764, 01-01Q-50427546, 04-04Z-20389834, 01-Q
+    // 2. Local pattern: e.g. 27-12Q-40905764, 01-01Q-50427546, 04-04Z-20389834, 01-Q, 01-01aQ, 04-04aZ, 04-04bZ
     const localMatch = clean.match(/^(\d+[a-zA-Z]?)[\-_]([a-zA-Z0-9]+)(?:[\-_](\d*))?[\-_]?$/i);
     if (localMatch) {
       const seq = localMatch[1];
@@ -188,8 +222,11 @@ export class EventImageDistributorEngine {
       const its = localMatch[3] || '';
 
       const evtMatch = rawEventToken.match(/^(\d+)?([a-zA-Z]+)$/);
-      const stickerNumber = evtMatch && evtMatch[1] ? evtMatch[1] : '';
-      const abbreviation = evtMatch && evtMatch[2] ? evtMatch[2].toUpperCase() : rawEventToken.toUpperCase();
+      const stickerMatch = rawEventToken.match(/\d+/);
+      const stickerNumber = evtMatch && evtMatch[1] ? evtMatch[1] : (stickerMatch ? stickerMatch[0] : '');
+      const letterMatch = rawEventToken.match(/[a-zA-Z]+/);
+      const letterPart = evtMatch && evtMatch[2] ? evtMatch[2] : (letterMatch ? letterMatch[0] : rawEventToken);
+      const abbreviation = resolveEventAbbreviation(letterPart);
 
       return {
         dateSlot: '',
@@ -210,7 +247,7 @@ export class EventImageDistributorEngine {
       const tok = tokens[i];
       const subM = tok.match(/^(\d+)?([a-zA-Z]+)$/);
       if (subM && subM[2]) {
-        const candidateAbbr = subM[2].toUpperCase();
+        const candidateAbbr = resolveEventAbbreviation(subM[2]);
         const isKnown = BUILTIN_EVENT_MAPPINGS.some(
           (m) => m.abbreviation.toUpperCase() === candidateAbbr || m.eventName.toUpperCase() === candidateAbbr
         );
