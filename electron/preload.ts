@@ -183,7 +183,10 @@ export const electronAPI = {
     };
   },
 
-  // 7d. Anything Ecosystem Dual Sync Launch
+  // 7d. Anything Ecosystem Dual Sync Launch & Inspection
+  checkAfmInstalled: () => ipcRenderer.invoke('ecosystem:check-afm'),
+  inspectDualSync: (options: { videoPath?: string; photoPath?: string; folderName?: string; date?: string; slot?: string }) =>
+    ipcRenderer.invoke('ecosystem:inspect-dual-sync', options),
   openAfmDualSync: (options: { videoPath?: string; photoPath?: string; folderName?: string; date?: string; slot?: string }) =>
     ipcRenderer.invoke('ecosystem:open-dual-sync', options),
 

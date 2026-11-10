@@ -19,7 +19,8 @@ import { StatsManager } from './managers/statsManager';
 import { EcosystemManager } from './managers/ecosystemManager';
 import { resolveChildAppLoaderConfig, showChildAppSplash, closeChildAppSplash, ChildAppLoaderConfig } from './splash';
 import { WorkstationAutoUpdater, UpdateInfo } from './managers/autoUpdater';
-import { openInEcosystemExplorer, showItemInEcosystemExplorer, openInAfmDualSync } from './utils/ecosystemExplorer';
+import { openInEcosystemExplorer, showItemInEcosystemExplorer, openInAfmDualSync, getInstalledAfmPath } from './utils/ecosystemExplorer';
+import { inspectDualSync } from './engines/dualSyncInspector';
 import { sanitizeBackendError } from './utils/errorSanitizer';
 
 // Windows Taskbar & Action Center Model ID for dedicated window grouping
@@ -1120,7 +1121,16 @@ function setupIpcHandlers() {
     }
   });
 
-  // 7d. Anything Ecosystem Dual Sync Launch
+  // 7d. Anything Ecosystem Dual Sync Launch & Inspection
+  ipcMain.handle('ecosystem:check-afm', () => {
+    const afmPath = getInstalledAfmPath();
+    return { installed: !!afmPath, path: afmPath };
+  });
+
+  ipcMain.handle('ecosystem:inspect-dual-sync', async (_, options) => {
+    return await inspectDualSync(options || {});
+  });
+
   ipcMain.handle('ecosystem:open-dual-sync', async (_, options) => {
     return await openInAfmDualSync(options || {});
   });

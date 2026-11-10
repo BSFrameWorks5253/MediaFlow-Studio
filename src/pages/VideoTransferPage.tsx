@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import { StudioButton } from '../components/StudioButton';
 import { StorageHeadroomBar } from '../components/StorageHeadroomBar';
+import { InternalDualSyncModal } from '../components/InternalDualSyncModal';
 import {
   VideoScanResult,
   VideoMatchedPair,
@@ -158,6 +159,13 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
   const [isTransferring, setIsTransferring] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
   const [lastManifest, setLastManifest] = useState('');
+  const [dualSyncModalParams, setDualSyncModalParams] = useState<{
+    videoPath?: string;
+    photoPath?: string;
+    folderName?: string;
+    date?: string;
+    slot?: string;
+  } | null>(null);
 
   // Transfer Progress Telemetry
   const [transferProgress, setTransferProgress] = useState<{
@@ -365,24 +373,36 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
     slot?: string;
   }) => {
     try {
-      if (window.electronAPI?.openAfmDualSync) {
-        const opened = await window.electronAPI.openAfmDualSync({
-          videoPath: params.videoPath || videoDir,
-          photoPath: params.photoPath || photoDir,
-          folderName: params.folderName || uploadStructure.safarName || (params.photoPath ? params.photoPath.split(/[\\/]/).pop() : undefined),
-          date: params.date || uploadStructure.dateFolderName || 'Current Date',
-          slot: params.slot || 'All Slots',
-        });
+      const fullParams = {
+        videoPath: params.videoPath || videoDir,
+        photoPath: params.photoPath || photoDir,
+        folderName: params.folderName || uploadStructure.safarName || (params.photoPath ? params.photoPath.split(/[\\/]/).pop() : undefined),
+        date: params.date || uploadStructure.dateFolderName || 'Current Date',
+        slot: params.slot || 'All Slots',
+      };
+
+      // 1. Check if Anything File Manager is installed on this PC
+      const afmCheck = window.electronAPI?.checkAfmInstalled ? await window.electronAPI.checkAfmInstalled() : { installed: false };
+      if (afmCheck?.installed && window.electronAPI?.openAfmDualSync) {
+        const opened = await window.electronAPI.openAfmDualSync(fullParams);
         if (opened) {
           onShowToast('Opened Dual Synchronized Video & Photo Inspector in Anything File Manager!', 'success');
           return;
         }
       }
-      if (params.videoPath) handleOpenPath(params.videoPath, 'Video Folder');
-      if (params.photoPath) handleOpenPath(params.photoPath, 'Photo Folder');
+
+      // 2. Built-in Fallback: Open internal side-by-side Dual Sync viewer directly in MediaFlow Studio
+      setDualSyncModalParams(fullParams);
     } catch (e: any) {
       console.error('Failed to open dual sync:', e);
-      onShowToast(toUserErrorMessage(e, 'Could not open dual folder inspector.'), 'danger');
+      // Fallback to internal modal
+      setDualSyncModalParams({
+        videoPath: params.videoPath || videoDir,
+        photoPath: params.photoPath || photoDir,
+        folderName: params.folderName || uploadStructure.safarName,
+        date: params.date,
+        slot: params.slot,
+      });
     }
   };
 
@@ -396,6 +416,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
     const dir = await window.electronAPI.selectDirectory('Select Master Video Clips Directory', videoDir);
     if (dir) {
       setVideoDir(dir);
+      setScanResult(null);
       setPathErrors((prev) => (prev ? { ...prev, video: undefined } : null));
     }
   };
@@ -405,6 +426,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
     const dir = await window.electronAPI.selectDirectory('Select Clean Photo Subfolders Directory', photoDir);
     if (dir) {
       setPhotoDir(dir);
+      setScanResult(null);
       setPathErrors((prev) => (prev ? { ...prev, photo: undefined } : null));
     }
   };
@@ -969,57 +991,73 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                 loading={isUndoing}
                 icon={<RotateCcw size={13} />}
                 onClick={handleUndo}
-                style={{ fontSize: 11.5, height: 34 }}
+                style={{ fontSize: 11.5, height: 36 }}
               >
                 Undo Last Sync
               </StudioButton>
             )}
 
-            <StudioButton
-              variant="secondary"
-              loading={isScanning}
-              icon={<RefreshCw size={13} />}
-              onClick={handleRefreshScan}
-              title="Reload folders from disk to pick up newly rendered or copied videos"
-              style={{ fontSize: 11.5, height: 34 }}
-            >
-              Refresh Module
-            </StudioButton>
+            {/* Re-scan button appears once scanned to refresh the folder */}
+            {scanResult && (
+              <StudioButton
+                variant="secondary"
+                loading={isScanning}
+                icon={<RefreshCw size={13} />}
+                onClick={handleRefreshScan}
+                title="Reload folders from disk to pick up newly added or rendered videos"
+                style={{ fontSize: 11.5, height: 36 }}
+              >
+                Re-scan
+              </StudioButton>
+            )}
 
-            <StudioButton
-              variant="secondary"
-              loading={isScanning}
-              icon={<Play size={13} />}
-              onClick={handleScan}
-              style={{ fontSize: 11.5, height: 34 }}
-            >
-              Scan Sequence Pairs
-            </StudioButton>
-
-            <StudioButton
-              variant="primary"
-              className={isActionHighlighted ? 'action-highlight-pulse' : ''}
-              loading={isTransferring}
-              icon={<Play size={13} />}
-              onClick={handleTransfer}
-              disabled={!scanResult || scanResult.matched.length === 0 || !canProceedTransfer}
-              title={!canProceedTransfer ? 'Transfer blocked: Insufficient space on target drive' : undefined}
-              style={{
-                fontSize: 11.5,
-                height: 34,
-                background: 'linear-gradient(135deg, #10B981, #059669)',
-                boxShadow: isActionHighlighted
-                  ? '0 0 25px #00F2FE, 0 0 10px #10B981'
-                  : '0 4px 14px rgba(16, 185, 129, 0.3)',
-                transform: isActionHighlighted ? 'scale(1.08)' : 'scale(1)',
-                border: isActionHighlighted ? '2px solid #00F2FE' : undefined,
-                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-              }}
-            >
-              {selectedDateFilter === 'ALL'
-                ? `Start ${transferMode === 'move' ? 'Move' : 'Copy'} (${scanResult?.matched.length || 0})`
-                : `Start ${transferMode === 'move' ? 'Move' : 'Copy'} ${selectedDateFilter} (${scanResult?.matched.filter((m) => m.dateFolder === selectedDateFilter).length || 0})`}
-            </StudioButton>
+            {/* UNIFIED DYNAMIC ACTION BUTTON: Automatically transforms from Scan to Transfer */}
+            {!scanResult ? (
+              <StudioButton
+                variant="primary"
+                loading={isScanning}
+                icon={<Play size={13} />}
+                onClick={handleScan}
+                disabled={!videoDir || !photoDir}
+                style={{
+                  fontSize: 12,
+                  height: 36,
+                  minWidth: 175,
+                  background: 'linear-gradient(135deg, #6366F1, #4F46E5)',
+                  boxShadow: '0 4px 14px rgba(99, 102, 241, 0.35)',
+                }}
+              >
+                {isScanning ? 'Scanning Pairs...' : 'Scan Sequence Pairs'}
+              </StudioButton>
+            ) : (
+              <StudioButton
+                variant="primary"
+                className={isActionHighlighted ? 'action-highlight-pulse' : ''}
+                loading={isTransferring}
+                icon={<Play size={13} />}
+                onClick={handleTransfer}
+                disabled={scanResult.matched.length === 0 || !canProceedTransfer}
+                title={!canProceedTransfer ? 'Transfer blocked: Insufficient space on target drive' : undefined}
+                style={{
+                  fontSize: 12,
+                  height: 36,
+                  minWidth: 185,
+                  background: 'linear-gradient(135deg, #10B981, #059669)',
+                  boxShadow: isActionHighlighted
+                    ? '0 0 25px #00F2FE, 0 0 10px #10B981'
+                    : '0 4px 14px rgba(16, 185, 129, 0.35)',
+                  transform: isActionHighlighted ? 'scale(1.05)' : 'scale(1)',
+                  border: isActionHighlighted ? '2px solid #00F2FE' : undefined,
+                  transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                }}
+              >
+                {isTransferring
+                  ? 'Transferring...'
+                  : selectedDateFilter === 'ALL'
+                  ? `Start ${transferMode === 'move' ? 'Move' : 'Copy'} (${scanResult.matched.length})`
+                  : `Start ${transferMode === 'move' ? 'Move' : 'Copy'} [${selectedDateFilter}] (${scanResult.matched.filter((m) => m.dateFolder === selectedDateFilter).length})`}
+              </StudioButton>
+            )}
           </div>
         </div>
 
@@ -1040,6 +1078,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
               value={videoDir}
               onChange={(val) => {
                 setVideoDir(val);
+                setScanResult(null);
                 if (pathErrors?.video) setPathErrors((p) => (p ? { ...p, video: undefined } : null));
               }}
               onBrowse={handleBrowseVideo}
@@ -1063,6 +1102,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
               value={photoDir}
               onChange={(val) => {
                 setPhotoDir(val);
+                setScanResult(null);
                 if (pathErrors?.photo) setPathErrors((p) => (p ? { ...p, photo: undefined } : null));
               }}
               onBrowse={handleBrowsePhoto}
@@ -4864,6 +4904,14 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
             : 'Moving merged event folders into Main Data upload structure...'
         }
         accentColor="#10B981"
+      />
+
+      {/* 9. Built-in Internal Dual-Pane Sync Inspector Modal (Fallback & In-App Viewer) */}
+      <InternalDualSyncModal
+        isOpen={!!dualSyncModalParams}
+        onClose={() => setDualSyncModalParams(null)}
+        params={dualSyncModalParams}
+        onShowToast={onShowToast}
       />
     </div>
   );

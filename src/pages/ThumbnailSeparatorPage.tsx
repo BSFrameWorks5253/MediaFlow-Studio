@@ -419,19 +419,40 @@ export const ThumbnailSeparatorPage: React.FC<ThumbnailSeparatorPageProps> = ({ 
             </select>
           </div>
 
-          <div style={{ display: 'flex', gap: 10 }}>
-            <StudioButton variant="secondary" loading={isScanning} icon={<RefreshCw size={14} />} onClick={handleScan}>
-              Scan Thumbnails
-            </StudioButton>
-            <StudioButton
-              variant="primary"
-              loading={isProcessing}
-              icon={<Play size={14} />}
-              onClick={handleExecute}
-              disabled={!scanResult || scanResult.items.length === 0}
-            >
-              Execute Separation
-            </StudioButton>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            {scanResult && (
+              <StudioButton variant="secondary" loading={isScanning} icon={<RefreshCw size={14} />} onClick={handleScan}>
+                Re-scan
+              </StudioButton>
+            )}
+
+            {!scanResult ? (
+              <StudioButton
+                variant="primary"
+                loading={isScanning}
+                icon={<Play size={14} />}
+                onClick={handleScan}
+                disabled={!sourceDir || !destDir}
+                style={{ minWidth: 160 }}
+              >
+                {isScanning ? 'Scanning...' : 'Scan Thumbnails'}
+              </StudioButton>
+            ) : (
+              <StudioButton
+                variant="primary"
+                loading={isProcessing}
+                icon={<Play size={14} />}
+                onClick={handleExecute}
+                disabled={scanResult.items.length === 0}
+                style={{
+                  minWidth: 180,
+                  background: 'linear-gradient(135deg, #10B981, #059669)',
+                  boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
+                }}
+              >
+                {isProcessing ? 'Separating...' : `Separate ${scanResult.items.length} Thumbnails`}
+              </StudioButton>
+            )}
           </div>
         </div>
       </div>

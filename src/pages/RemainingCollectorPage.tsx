@@ -310,20 +310,40 @@ export const RemainingCollectorPage: React.FC<RemainingCollectorPageProps> = ({ 
             </StudioButton>
           )}
 
-          <StudioButton variant="secondary" loading={isScanning} icon={<RefreshCw size={14} />} onClick={handleScan}>
-            Scan Remaining Folders
-          </StudioButton>
+          {scanResult && (
+            <StudioButton variant="secondary" loading={isScanning} icon={<RefreshCw size={14} />} onClick={handleScan}>
+              Re-scan
+            </StudioButton>
+          )}
 
-          <StudioButton
-            variant="primary"
-            loading={isShifting}
-            icon={<Play size={14} />}
-            onClick={handleExecute}
-            disabled={!scanResult || scanResult.items.length === 0 || !canProceedShift}
-            title={!canProceedShift ? 'Consolidation blocked: Insufficient space on target drive' : undefined}
-          >
-            Consolidate Folders
-          </StudioButton>
+          {!scanResult ? (
+            <StudioButton
+              variant="primary"
+              loading={isScanning}
+              icon={<Play size={14} />}
+              onClick={handleScan}
+              disabled={!sourceDir || !destDir}
+              style={{ minWidth: 170 }}
+            >
+              {isScanning ? 'Scanning...' : 'Scan Remaining Folders'}
+            </StudioButton>
+          ) : (
+            <StudioButton
+              variant="primary"
+              loading={isShifting}
+              icon={<Play size={14} />}
+              onClick={handleExecute}
+              disabled={scanResult.items.length === 0 || !canProceedShift}
+              title={!canProceedShift ? 'Consolidation blocked: Insufficient space on target drive' : undefined}
+              style={{
+                minWidth: 180,
+                background: 'linear-gradient(135deg, #10B981, #059669)',
+                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
+              }}
+            >
+              {isShifting ? 'Consolidating...' : `Consolidate ${scanResult.totalFolders} Folders`}
+            </StudioButton>
+          )}
         </div>
       </div>
 

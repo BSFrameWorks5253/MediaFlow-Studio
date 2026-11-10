@@ -27,6 +27,10 @@ export { SetupWizard } from './SetupWizard';
 export { UpdateModal } from './UpdateModal';
 export { AddToStatsModal } from './AddToStatsModal';
 export { SafarStatsModal } from './SafarStatsModal';
+export { InternalDualSyncModal } from './InternalDualSyncModal';
+export { AutoRunSetupModal } from './AutoRunSetupModal';
+export { AutoRunConflictModal } from './AutoRunConflictModal';
+export { TopBarAutoRun } from './TopBarAutoRun';
 
 // Adobe Splash Screen & Settings
 export { AdobeSplashScreen } from './AdobeSplashScreen';

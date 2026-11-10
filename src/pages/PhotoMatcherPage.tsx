@@ -13,6 +13,7 @@ import {
   Layers,
   Eye,
   EyeOff,
+  Play,
 } from 'lucide-react';
 import { StudioButton } from '../components/StudioButton';
 import { PhotoMatchItem, PhotoMatchScanResult } from '../../electron/engines/photoMatcher';
@@ -433,7 +434,10 @@ export const PhotoMatcherPage: React.FC<PhotoMatcherPageProps> = ({ onShowToast,
             <Folder size={15} color={targetDir ? '#BF5AF2' : 'var(--tertiary-label)'} />
             <input
               value={targetDir}
-              onChange={(e) => setTargetDir(e.target.value)}
+              onChange={(e) => {
+                setTargetDir(e.target.value);
+                setScanResult(null);
+              }}
               placeholder="No production folder selected — click Select Directory to scan..."
               style={{
                 flex: 1,
@@ -448,21 +452,51 @@ export const PhotoMatcherPage: React.FC<PhotoMatcherPageProps> = ({ onShowToast,
             {targetDir && <CheckCircle2 size={14} color="#BF5AF2" />}
           </div>
 
-          <StudioButton
-            variant="primary"
-            loading={isScanning}
-            icon={<RefreshCw size={14} />}
-            onClick={handleScan}
-            style={{
-              background: targetDir
-                ? 'linear-gradient(135deg, #BF5AF2, #9B59F5)'
-                : undefined,
-              boxShadow: targetDir ? '0 4px 16px rgba(191, 90, 242, 0.35)' : undefined,
-              minWidth: 140,
-            }}
-          >
-            {isScanning ? 'Scanning...' : 'Scan & Compare'}
-          </StudioButton>
+          {scanResult && (
+            <StudioButton
+              variant="secondary"
+              loading={isScanning}
+              icon={<RefreshCw size={14} />}
+              onClick={handleScan}
+              style={{ minWidth: 100 }}
+            >
+              Re-scan
+            </StudioButton>
+          )}
+
+          {!scanResult ? (
+            <StudioButton
+              variant="primary"
+              loading={isScanning}
+              icon={<Play size={14} />}
+              onClick={handleScan}
+              disabled={!targetDir}
+              style={{
+                background: targetDir
+                  ? 'linear-gradient(135deg, #BF5AF2, #9B59F5)'
+                  : undefined,
+                boxShadow: targetDir ? '0 4px 16px rgba(191, 90, 242, 0.35)' : undefined,
+                minWidth: 140,
+              }}
+            >
+              {isScanning ? 'Scanning...' : 'Scan & Compare'}
+            </StudioButton>
+          ) : (
+            <StudioButton
+              variant="success"
+              loading={isRenaming}
+              icon={<Check size={14} />}
+              onClick={handleExecuteRename}
+              disabled={scanResult.all_items.length === 0}
+              style={{
+                background: 'linear-gradient(135deg, #10E79D, #0BC47C)',
+                boxShadow: '0 4px 16px rgba(16, 231, 157, 0.35)',
+                minWidth: 160,
+              }}
+            >
+              {isRenaming ? 'Applying Tags...' : `Apply Tags (${scanResult.all_items.filter((i) => i.willRename).length})`}
+            </StudioButton>
+          )}
         </div>
 
         {/* Auto-ignore pill */}
