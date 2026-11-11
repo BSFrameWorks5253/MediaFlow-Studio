@@ -10,6 +10,7 @@ import {
   FolderArchive,
   HardDrive,
   Sparkles,
+  RotateCcw,
 } from 'lucide-react';
 import { StudioButton } from '../components/StudioButton';
 import { usePipeline } from '../context/PipelineContext';
@@ -26,7 +27,7 @@ export const UploadStructurePage: React.FC<UploadStructurePageProps> = ({
   onNavigate,
   onShowToast,
 }) => {
-  const { uploadStructure, setUploadStructure } = usePipeline();
+  const { uploadStructure, setUploadStructure, clearUploadStructure } = usePipeline();
 
   const [baseDir, setBaseDir] = useState(uploadStructure.baseDir || '');
   const [projectName, setProjectName] = useState(uploadStructure.projectName || '');
@@ -39,6 +40,16 @@ export const UploadStructurePage: React.FC<UploadStructurePageProps> = ({
     thumbnailsPath: string;
     remainingPath: string;
   } | null>(uploadStructure.safarRoot ? uploadStructure : null);
+
+  const handleClearStructure = () => {
+    clearUploadStructure();
+    setCreatedResult(null);
+    setBaseDir('');
+    setSafarName('');
+    setDateFolderName('');
+    setProjectName('');
+    onShowToast('Active Upload Structure cleared. Pipeline stages will operate independently.', 'info');
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -199,6 +210,31 @@ export const UploadStructurePage: React.FC<UploadStructurePageProps> = ({
             </div>
           </div>
         </div>
+
+        {(uploadStructure.safarRoot || uploadStructure.baseDir || createdResult) && (
+          <button
+            type="button"
+            onClick={handleClearStructure}
+            style={{
+              padding: '6px 12px',
+              borderRadius: 6,
+              border: '1px solid var(--border)',
+              backgroundColor: 'var(--surface-elevated)',
+              color: 'var(--secondary-label)',
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              transition: 'all 0.15s ease',
+            }}
+            title="Clear the active upload structure so stages operate independently"
+          >
+            <RotateCcw size={12} />
+            <span>Reset Active Structure</span>
+          </button>
+        )}
       </div>
 
       {/* Input Configuration Card */}

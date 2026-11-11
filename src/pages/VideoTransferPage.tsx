@@ -213,9 +213,6 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
   // Manual Re-assignment / Pairing State
   const [reassigningItem, setReassigningItem] = useState<string | null>(null);
 
-  const [autoMoveToMainData, setAutoMoveToMainData] = useState(true);
-  const [isMovingFolder, setIsMovingFolder] = useState(false);
-  const [movedResult, setMovedResult] = useState<{ count: number; path: string } | null>(null);
   const [canProceedTransfer, setCanProceedTransfer] = useState(true);
 
   // Subscribe to Live Transfer Progress IPC
@@ -573,38 +570,6 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
     onShowToast(`Unpaired "${item.videoFile}"`, 'info');
   };
 
-  const handleMoveMergedFolder = async (customTarget?: string, silent = false) => {
-    const target = customTarget || uploadStructure.mainDataPath;
-    if (!photoDir.trim()) {
-      if (!silent) onShowToast('No photo/video directory selected to move.', 'warning');
-      return;
-    }
-    if (!target) {
-      if (!silent) onShowToast('Please set up an Upload Structure (Stage 01) first to define the Main Data destination path.', 'warning');
-      return;
-    }
-
-    setIsMovingFolder(true);
-    try {
-      const res = await window.electronAPI.moveMergedFolder(photoDir, target);
-      if (res && res.success) {
-        setMovedResult({ count: res.movedCount, path: res.targetPath });
-        if (!silent) {
-          onShowToast(
-            `Merged media moved to Main Data successfully (${res.movedCount} subfolders preserved)!`,
-            'success'
-          );
-        }
-        setPhotoDir(res.targetPath);
-      }
-    } catch (e: any) {
-      console.error('Failed to move merged folder:', e);
-      if (!silent) onShowToast(toUserErrorMessage(e, 'Failed to move merged folder. Please check drive permissions and available space.'), 'danger');
-    } finally {
-      setIsMovingFolder(false);
-    }
-  };
-
   const handleRefreshScan = async () => {
     const key = Date.now();
     setRefreshKey(key);
@@ -648,19 +613,11 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
       setLastManifest(res.manifestPath);
       playSuccessSound();
 
-      if (autoMoveToMainData && uploadStructure.mainDataPath && photoDir) {
-        await handleMoveMergedFolder(uploadStructure.mainDataPath, true);
-        onShowToast(
-          `Transfer complete: ${res.transferred} video clip${res.transferred === 1 ? '' : 's'} ${transferMode === 'move' ? 'moved' : 'copied'} to Main Data.`,
-          'success'
-        );
-      } else {
-        onShowToast(
-          `Transfer complete: ${res.transferred} video clip${res.transferred === 1 ? '' : 's'} ${transferMode === 'move' ? 'moved' : 'copied'} successfully.`,
-          'success'
-        );
-        await handleScan(true);
-      }
+      onShowToast(
+        `Transfer complete: ${res.transferred} video clip${res.transferred === 1 ? '' : 's'} ${transferMode === 'move' ? 'moved' : 'copied'} into photo folders successfully.`,
+        'success'
+      );
+      await handleScan(true);
     } catch (e: any) {
       console.error('Video transfer failed:', e);
       onShowToast(toUserErrorMessage(e, 'Video transfer operation failed. Please check drive permissions and free space.'), 'danger');
@@ -1105,6 +1062,48 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
               transition: 'border-color 0.2s ease',
             }}
           >
+            {uploadStructure.mainDataPath && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '6px 12px',
+                  marginBottom: 10,
+                  borderRadius: 8,
+                  backgroundColor: 'rgba(6, 182, 212, 0.08)',
+                  border: '1px solid rgba(6, 182, 212, 0.25)',
+                  fontSize: 11.5,
+                  color: 'var(--label)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Sparkles size={12} color="#06B6D4" />
+                  <span>Structure Creator Main Data ({uploadStructure.safarName || 'Safar'}):</span>
+                  <strong style={{ fontFamily: 'var(--font-mono)' }}>{uploadStructure.mainDataPath}</strong>
+                </div>
+                {photoDir !== uploadStructure.mainDataPath && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPhotoDir(uploadStructure.mainDataPath);
+                      setScanResult(null);
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#06B6D4',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontSize: 11,
+                      textDecoration: 'underline',
+                    }}
+                  >
+                    Use this path
+                  </button>
+                )}
+              </div>
+            )}
             <StudioFolderInput
               label="2. Clean Photo Subfolders Directory (_P)"
               description="Target event photo subfolders where videos will be placed"
@@ -1272,26 +1271,6 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
                 </button>
               </div>
             </div>
-
-            {uploadStructure.mainDataPath && (
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  cursor: 'pointer',
-                  color: '#38BDF8',
-                  fontWeight: 600,
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={autoMoveToMainData}
-                  onChange={(e) => setAutoMoveToMainData(e.target.checked)}
-                />
-                <span>Auto-move to Main Data ({uploadStructure.safarName}) on complete</span>
-              </label>
-            )}
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--tertiary-label)', fontSize: 11 }}>
@@ -4901,17 +4880,9 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
 
       {/* 8. Operation Overlay */}
       <OperationLoadingOverlay
-        isOpen={isScanning || isMovingFolder}
-        title={
-          isScanning
-            ? 'Scanning & Pairing Video Sequences...'
-            : 'Relocating Merged Media to Upload Structure...'
-        }
-        subtitle={
-          isScanning
-            ? 'Inspecting multi-pass camera tokens, shot codes, and companion thumbnails...'
-            : 'Moving merged event folders into Main Data upload structure...'
-        }
+        isOpen={isScanning}
+        title="Scanning & Pairing Video Sequences..."
+        subtitle="Inspecting multi-pass camera tokens, shot codes, and companion thumbnails..."
         accentColor="#10B981"
       />
 
