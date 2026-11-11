@@ -188,20 +188,23 @@ async function publishViaGitHubApi() {
   } else {
     console.log(`✨ Creating new release ${tagName} on GitHub...`);
     const releaseBody = `## 🚀 MediaFlow Studio ${tagName}
-Professional Media Ingestion, Synchronization and Report Fusion Desktop Suite.
+**Professional Media Ingestion, Synchronization and Report Fusion Desktop Suite**
 
-### ✨ What's Included:
-- **Standalone Frameless Adobe Splash Window**: Instant transparent zero-backdrop boot screen with live telemetry.
-- **1:1 Anything Ecosystem Synchronization**: Native loader configuration and cross-app launcher integration.
-- **PV Separation Engine**: High-performance photo and video grouping and verification.
-- **Automated Windows Installer**: Clean NSIS desktop and start menu shortcuts with auto-updater support.
+### 🌟 Release Highlights
+- **High-Density Studio Pro Architecture**: Locked exclusively into full Studio Pro mode with a high-density 33px sidebar, 40px top bar, 10px glass card curvature, and 100% clean professional SVG iconography (zero emoji clutter).
+- **Safe Photo Sync & Non-Relocating Transfer**: Guaranteed that video files are transferred strictly into target matched photo subfolders without relocating or cut/pasting the photo directory into previous Safar structures.
+- **Single Active Notification Policy**: Replaced multi-toast stacking with a single active notification slot, 2.5s message debounce, and silent background rescans (1 action = 1 clear notification).
+- **Stage 2–6 Auto Run Pipeline**: Automated multi-stage runner with real-time progress indicators and integrated manual conflict resolution modal.
+- **Internal Dual-Pane Sync Inspector**: Built-in side-by-side photo & video comparator modal with zero external dependencies, serving as a reliable fallback for workstations without Anything File Manager.
+- **Structure Creator Auto-Linking**: Automated path suggestions for Remaining Shifter and Thumbnail Shifter directly wired from Structure Creator, plus a new "Reset Active Structure" button for standalone runs.
 
-### 📥 Download & Install:
+### 📥 Download & Install
 - **[Mediaflow_studio_${version}_Setup.exe](${setupDownloadUrl})** (Recommended Windows 10/11 Installer)
-- **[Mediaflow_studio_${version}.exe](https://github.com/${repoOwner}/${repoName}/releases/download/${tagName}/Mediaflow_studio_${version}.exe)** (Standalone Portable Binary)
+- **[Mediaflow_studio_${version}.exe](https://github.com/${repoOwner}/${repoName}/releases/download/${tagName}/Mediaflow_studio_${version}.exe)** (Standalone Portable Executable)
+- **[Mediaflow_studio_${version}.zip](https://github.com/${repoOwner}/${repoName}/releases/download/${tagName}/Mediaflow_studio_${version}.zip)** (Portable ZIP Archive)
 
 ---
-*Published automatically via MediaFlow Studio Release Pipeline.*`;
+*Built & published automatically via MediaFlow Studio Release Pipeline.*`;
 
     const createRes = await makeGitHubRequest(
       {

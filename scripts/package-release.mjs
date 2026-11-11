@@ -53,7 +53,7 @@ const appManifest = {
   version: targetVersion,
   category: "Media & Video",
   description: "Professional Media Ingestion, Synchronization and Report Fusion Desktop Suite.",
-  executableName: "Mediaflow_studio_6.0.0.exe",
+  executableName: `Mediaflow_studio_${targetVersion}.exe`,
   setupExecutableName: `Mediaflow_studio_${targetVersion}_Setup.exe`,
   iconType: "image",
   iconValue: logoPngBase64,
@@ -73,29 +73,32 @@ const releaseManifest = {
   appId: "mediaflow-studio",
   appName: "MediaFlow Studio",
   version: targetVersion,
-  executableName: "MediaFlow Studio.exe",
+  executableName: `Mediaflow_studio_${targetVersion}.exe`,
   setupExecutableName: `Mediaflow_studio_${targetVersion}_Setup.exe`,
   releaseDate: new Date().toISOString().slice(0, 10),
   releaseType: "minor",
-  tagline: "Flat Adobe CC-Style Ms Monogram & Anything Child App Ecosystem",
-  summary: `MediaFlow Studio v${targetVersion} introduces a clean flat Adobe-style Ms squircle insignia, native Anything ecosystem loader sync, interactive Action Center toast notifications, and automated GitHub release publishing.`,
+  tagline: "High-Density Studio Pro Architecture, Safe Photo Sync & Noise-Free Notifications",
+  summary: `MediaFlow Studio v${targetVersion} delivers streamlined Studio Pro workstation layouts, single active non-spamming notifications, safe non-relocating video sync, Stage 2-6 Auto Run pipeline, and built-in Internal Dual-Pane sync inspector.`,
   newFeatures: [
-    "Integrated into Anything Ecosystem with customized startup loader and diagnostic telemetry",
-    "Apple WWDC26 Liquid Glass UI with dynamic chromatic ambient lighting and squircle insignia",
-    "Automated release packaging generating version-wise Mediaflow_studio_<version> binaries",
-    "Seamless auto-sync directly into the Anything releases catalog"
+    "Stage 2-6 Automated Pipeline runner with multi-stage sequential execution and conflict pause/resolution modal",
+    "Built-in Internal Dual-Pane Photo & Video Sync Inspector modal directly inside the app with zero external dependencies",
+    "Auto-linking for Remaining Shifter and Thumbnail Shifter destination paths from Structure Creator",
+    "Reset Active Structure action to decouple pipeline stages for completely independent folder processing",
+    "Case-sensitive multi-character event placard matching engine (e.g. aQ -> Q, aZ -> Z, bZ -> Z)"
   ],
   improvements: [
-    "Crisp vector Mf monogram insignia with specular rim matching Anything & Tap Studio",
-    "Enhanced multi-camera PV separation pipeline and thumbnail memory management",
-    "Native Action Center interactive toast banners for background ingestions and updates"
+    "Exclusively locked into Studio Pro mode: removed simple mode switcher to guarantee full 9-stage workstation access",
+    "High-density desktop styling: streamlined 33px sidebar items, 40px top bar, 10px glass cards, and zero emoji clutter",
+    "Single active toast architecture: eliminates multi-notification stacking with 2.5s debounce and silent rescans",
+    "Faster toast dismissal: 2.8s auto-dismiss on success/info alerts to keep workspace clean"
   ],
   fixes: [
-    "Resolved premature window maximize flicker during startup via splash handoff",
-    "Unified storage headroom verification and clean process termination"
+    "Prevented accidental cut/pasting or relocation of photo folders during Video Transfer into older Safar structures",
+    "Eliminated 3-toast notification storm when executing video transfers, photo renames, and file separations",
+    "Fixed MouseEventHandler parameter incompatibility on silent scan action buttons across pipeline pages"
   ],
   emailNotification: {
-    subject: `🚀 MediaFlow Studio v${targetVersion}: Apple WWDC26 Liquid Glass UI & Anything Ecosystem!`,
+    subject: `🚀 MediaFlow Studio v${targetVersion}: Studio Pro High-Density UI & Safe Photo Sync!`,
     preview: `Discover all the new features, performance boosts, and fixes in v${targetVersion}.`,
     ctaText: "Open in Anything",
     heroGradient: "from-cyan-500 via-blue-600 to-indigo-700"
