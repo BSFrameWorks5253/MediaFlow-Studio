@@ -1,14 +1,8 @@
 import React, { useMemo } from 'react';
 import {
-  ChevronRight,
   Settings as SettingsIcon,
   Sun,
   Moon,
-  Sparkles,
-  Split,
-  Tags,
-  Clapperboard,
-  FileSpreadsheet,
 } from 'lucide-react';
 import {
   PageKey,
@@ -18,7 +12,6 @@ import {
   getStageMeta,
 } from '../types/pipelineStages';
 import { useTheme } from '../context/ThemeContext';
-import { usePipeline } from '../context/PipelineContext';
 import { MediaFlowLogo } from './MediaFlowLogo';
 
 export type { PageKey };
@@ -70,82 +63,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
     };
 
     loadProfile();
-    const pollInterval = setInterval(loadProfile, 3000);
     window.addEventListener('storage', loadProfile);
     window.addEventListener('anything:ecosystem-auth-change', loadProfile);
     window.addEventListener('focus', loadProfile);
 
     return () => {
-      clearInterval(pollInterval);
       window.removeEventListener('storage', loadProfile);
       window.removeEventListener('anything:ecosystem-auth-change', loadProfile);
       window.removeEventListener('focus', loadProfile);
     };
   }, []);
+
   const { theme, toggleTheme } = useTheme();
-  const { isStatsPageUnlocked } = usePipeline();
 
   const pipelineNavItems = useMemo(() => {
     return PIPELINE_NAV_ORDER;
   }, []);
 
-  const [isSimpleMode, setIsSimpleMode] = React.useState<boolean>(() => {
-    try {
-      const saved = localStorage.getItem('mediaflow_simple_ui');
-      return saved !== 'false';
-    } catch {
-      return true;
-    }
-  });
-
-  const toggleSimpleMode = () => {
-    const next = !isSimpleMode;
-    setIsSimpleMode(next);
-    try {
-      localStorage.setItem('mediaflow_simple_ui', String(next));
-    } catch {}
-  };
-
-  const simpleSteps = useMemo(() => [
-    {
-      key: 'pvSeparator' as PageKey,
-      label: '1. Ingest & Split',
-      shortTitle: 'Ingest RAW',
-      desc: 'Separate RAW Photo & Video',
-      color: '#06B6D4',
-      icon: Split,
-      activeKeys: ['pvSeparator', 'uploadStructure'],
-    },
-    {
-      key: 'photoMatcher' as PageKey,
-      label: '2. Tag & Match',
-      shortTitle: 'Photo Tagger',
-      desc: 'Apply Status & Shift Dates',
-      color: '#8B5CF6',
-      icon: Tags,
-      activeKeys: ['photoMatcher', 'remainingCollector'],
-    },
-    {
-      key: 'videoTransfer' as PageKey,
-      label: '3. Sync Video & Photo',
-      shortTitle: 'Sync Video & Photo',
-      desc: 'Camera Alignment & AFM Dual',
-      color: '#10B981',
-      icon: Clapperboard,
-      activeKeys: ['videoTransfer', 'thumbnailSeparator'],
-    },
-    {
-      key: 'excelMerger' as PageKey,
-      label: '4. Delivery Report',
-      shortTitle: 'Report Merger',
-      desc: 'Master Delivery Workbook',
-      color: '#F59E0B',
-      icon: FileSpreadsheet,
-      activeKeys: ['excelMerger', 'doNotUpload', 'eventDistributor'],
-    },
-  ], []);
-
-  
   return (
     <aside
       className="glass-panel glass-persistent-menu"
@@ -170,20 +104,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
       {/* Brand Header */}
       <div
         style={{
-          height: 60,
-          padding: '0 16px',
+          height: 48,
+          padding: '0 14px',
           display: 'flex',
           alignItems: 'center',
-          gap: 10,
+          gap: 9,
           borderBottom: '1px solid var(--border-subtle)',
           flexShrink: 0,
         }}
       >
         <div
           style={{
-            width: 34,
-            height: 34,
-            borderRadius: 10,
+            width: 28,
+            height: 28,
+            borderRadius: 8,
             background: 'linear-gradient(135deg, #00F2FE 0%, #8B5CF6 100%)',
             padding: 1.5,
             display: 'flex',
@@ -197,7 +131,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
             style={{
               width: '100%',
               height: '100%',
-              borderRadius: 8.5,
+              borderRadius: 6.5,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -205,40 +139,35 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
               background: '#0f172a',
             }}
           >
-            <MediaFlowLogo size={28} />
+            <MediaFlowLogo size={22} />
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 140, overflow: 'hidden' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontWeight: 800,
-                fontSize: 13,
-                letterSpacing: 1.1,
-                color: 'var(--label)',
-              }}
-            >
-              MEDIAFLOW
-            </span>
-            <span
-              style={{
-                padding: '1px 5px',
-                borderRadius: 4,
-                fontSize: 8.5,
-                fontFamily: 'var(--font-mono)',
-                fontWeight: 800,
-                color: '#00F2FE',
-                background: 'rgba(0, 242, 254, 0.12)',
-                border: '1px solid rgba(0, 242, 254, 0.3)',
-              }}
-            >
-              v26.11.07
-            </span>
-          </div>
-          <span style={{ fontSize: 10, color: 'var(--secondary-label)', fontFamily: 'var(--font-mono)' }}>
-            CREATIVE PRODUCTION
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 800,
+              fontSize: 12.5,
+              letterSpacing: 0.8,
+              color: 'var(--label)',
+            }}
+          >
+            MEDIAFLOW
+          </span>
+          <span
+            style={{
+              padding: '1px 5px',
+              borderRadius: 4,
+              fontSize: 8.5,
+              fontFamily: 'var(--font-mono)',
+              fontWeight: 800,
+              color: '#00F2FE',
+              background: 'rgba(0, 242, 254, 0.1)',
+              border: '1px solid rgba(0, 242, 254, 0.25)',
+            }}
+          >
+            STUDIO PRO
           </span>
         </div>
       </div>
@@ -248,290 +177,143 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
         style={{
           flex: 1,
           overflowY: 'auto',
-          padding: '10px 8px',
+          padding: '6px',
           display: 'flex',
           flexDirection: 'column',
           gap: 2,
         }}
       >
-        {/* MODE SWITCHER PILL */}
-        <div style={{ padding: '4px 6px 10px 6px' }}>
-          <div
-            style={{
-              display: 'flex',
-              padding: 2,
-              borderRadius: 8,
-              backgroundColor: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid var(--border-subtle)',
-              gap: 2,
-            }}
-          >
-            <button
-              onClick={() => { if (!isSimpleMode) toggleSimpleMode(); }}
-              className="btn-tactile"
-              style={{
-                flex: 1,
-                padding: '5px 4px',
-                borderRadius: 6,
-                border: 'none',
-                background: isSimpleMode ? 'linear-gradient(135deg, rgba(0, 242, 254, 0.25) 0%, rgba(139, 92, 246, 0.25) 100%)' : 'transparent',
-                color: isSimpleMode ? 'var(--label)' : 'var(--secondary-label)',
-                fontSize: 10.5,
-                fontWeight: isSimpleMode ? 700 : 500,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 4,
-                transition: 'all 0.15s ease',
-              }}
-              title="Clean 4-step streamlined workflow"
-            >
-              <Sparkles size={11} color={isSimpleMode ? '#00F2FE' : 'var(--secondary-label)'} />
-              Simple
-            </button>
-            <button
-              onClick={() => { if (isSimpleMode) toggleSimpleMode(); }}
-              className="btn-tactile"
-              style={{
-                flex: 1,
-                padding: '5px 4px',
-                borderRadius: 6,
-                border: 'none',
-                background: !isSimpleMode ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.25) 0%, rgba(245, 158, 11, 0.25) 100%)' : 'transparent',
-                color: !isSimpleMode ? 'var(--label)' : 'var(--secondary-label)',
-                fontSize: 10.5,
-                fontWeight: !isSimpleMode ? 700 : 500,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 4,
-                transition: 'all 0.15s ease',
-              }}
-              title="Advanced 10-stage studio pipeline"
-            >
-              <SettingsIcon size={11} color={!isSimpleMode ? '#8B5CF6' : 'var(--secondary-label)'} />
-              Studio Pro
-            </button>
-          </div>
-        </div>
-
         {/* SECTION: PIPELINE */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '4px 8px 6px',
+            padding: '4px 6px 4px',
           }}
         >
           <span
             style={{
-              fontSize: 9.5,
+              fontSize: 9,
               fontWeight: 700,
               color: 'var(--tertiary-label)',
-              letterSpacing: 1.2,
+              letterSpacing: 1.1,
               fontFamily: 'var(--font-mono)',
             }}
           >
-            {isSimpleMode ? 'CORE WORKFLOW' : 'STUDIO PIPELINE'}
+            STUDIO PIPELINE
           </span>
           <span
             style={{
-              fontSize: 9,
+              fontSize: 8.5,
               fontWeight: 800,
               color: '#00F2FE',
-              backgroundColor: 'rgba(0, 242, 254, 0.12)',
-              border: '1px solid rgba(0, 242, 254, 0.25)',
-              padding: '1.5px 6px',
+              backgroundColor: 'rgba(0, 242, 254, 0.1)',
+              border: '1px solid rgba(0, 242, 254, 0.2)',
+              padding: '1px 5px',
               borderRadius: 999,
               fontFamily: 'var(--font-mono)',
             }}
           >
-            {isSimpleMode ? '4 STEPS' : (isStatsPageUnlocked ? '10 STAGES' : '9 STAGES')}
+            6 STAGES
           </span>
         </div>
 
-        {/* Dynamic Pipeline Stages Render */}
-        {isSimpleMode ? (
-          simpleSteps.map((step) => {
-            const isActive = activePage === step.key || (step.activeKeys && step.activeKeys.includes(activePage));
-            const Icon = step.icon;
-            return (
-              <button
-                key={step.key}
-                onClick={() => onNavigate(step.key)}
-                className="btn-tactile"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  minHeight: 46,
-                  padding: '6px 9px',
-                  borderRadius: 10,
-                  border: isActive ? `1.5px solid ${step.color}80` : '1px solid transparent',
-                  background: isActive
-                    ? `linear-gradient(90deg, ${step.color}24 0%, ${step.color}0a 100%)`
-                    : 'transparent',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  transition: 'all 0.15s ease',
-                  position: 'relative',
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) e.currentTarget.style.backgroundColor = `${step.color}12`;
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
-                }}
-              >
-                <div
-                  style={{
-                    width: 30,
-                    height: 30,
-                    borderRadius: 8,
-                    backgroundColor: isActive ? `${step.color}30` : `${step.color}18`,
-                    border: `1px solid ${isActive ? step.color : step.color + '40'}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: step.color,
-                    boxShadow: isActive ? `0 0 10px ${step.color}40` : 'none',
-                    flexShrink: 0,
-                  }}
-                >
-                  <Icon size={16} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                  <span
-                    style={{
-                      fontSize: 12.5,
-                      fontWeight: isActive ? 700 : 600,
-                      color: 'var(--label)',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {step.label}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 10,
-                      color: 'var(--secondary-label)',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {step.desc}
-                  </span>
-                </div>
-              </button>
-            );
-          })
-        ) : (
-          pipelineNavItems.map((key, index) => {
-            const meta = getStageMeta(key);
-            const stageNum = getStageNumber(key);
-            const isActive = activePage === key;
-            const Icon = meta.icon;
-            const shortcutKey = index < 9 ? `Alt+${index + 1}` : null;
+        {/* Studio Pipeline Stages Render */}
+        {pipelineNavItems.map((key, index) => {
+          const meta = getStageMeta(key);
+          const stageNum = getStageNumber(key);
+          const isActive = activePage === key;
+          const Icon = meta.icon;
+          const shortcutKey = index < 9 ? `Alt+${index + 1}` : null;
 
-            return (
-              <button
-                key={key}
-                onClick={() => onNavigate(key)}
-                className="btn-tactile"
+          return (
+            <button
+              key={key}
+              onClick={() => onNavigate(key)}
+              className="btn-tactile"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                height: 34,
+                padding: '0 8px',
+                borderRadius: 8,
+                border: isActive ? `1px solid ${meta.color}80` : '1px solid transparent',
+                background: isActive
+                  ? `linear-gradient(90deg, ${meta.color}20 0%, ${meta.color}06 100%)`
+                  : 'transparent',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.12s ease',
+                position: 'relative',
+              }}
+              onMouseEnter={(e) => {
+                if (!isActive) e.currentTarget.style.backgroundColor = `${meta.color}10`;
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+              title={shortcutKey ? `${meta.label} (${shortcutKey})` : meta.label}
+            >
+              <div
                 style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 6,
+                  backgroundColor: isActive ? `${meta.color}25` : `${meta.color}14`,
+                  border: `1px solid ${isActive ? meta.color : meta.color + '30'}`,
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 9,
-                  height: 40,
-                  padding: '0 8px',
-                  borderRadius: 10,
-                  border: isActive ? `1.5px solid ${meta.color}75` : '1px solid transparent',
-                  background: isActive
-                    ? `linear-gradient(90deg, ${meta.color}22 0%, ${meta.color}08 100%)`
-                    : 'transparent',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  transition: 'all 0.15s ease',
-                  position: 'relative',
+                  justifyContent: 'center',
+                  color: meta.color,
+                  boxShadow: isActive ? `0 0 8px ${meta.color}35` : 'none',
+                  flexShrink: 0,
                 }}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.backgroundColor = `${meta.color}12`;
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }
-                }}
-                title={shortcutKey ? `${meta.label} (${shortcutKey})` : meta.label}
               >
-                <div
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: 8,
-                    backgroundColor: isActive ? `${meta.color}28` : `${meta.color}16`,
-                    border: `1px solid ${isActive ? meta.color : meta.color + '35'}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: meta.color,
-                    boxShadow: isActive ? `0 0 10px ${meta.color}40` : 'none',
-                    flexShrink: 0,
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  <Icon size={15} />
-                </div>
-                <span
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    fontSize: 12.5,
-                    fontWeight: isActive ? 700 : 500,
-                    color: 'var(--label)',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {meta.label}
-                </span>
-                <span
-                  style={{
-                    fontSize: 9.5,
-                    fontWeight: 800,
-                    fontFamily: 'var(--font-mono)',
-                    color: meta.color,
-                    padding: '2px 6px',
-                    borderRadius: 5,
-                    backgroundColor: isActive ? `${meta.color}25` : `${meta.color}14`,
-                    border: `1px solid ${isActive ? meta.color + '55' : meta.color + '30'}`,
-                    flexShrink: 0,
-                  }}
-                >
-                  {stageNum}
-                </span>
-              </button>
-            );
-          })
-        )}
+                <Icon size={13} />
+              </div>
+              <span
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  fontSize: 11.5,
+                  fontWeight: isActive ? 700 : 500,
+                  color: 'var(--label)',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {meta.label}
+              </span>
+              <span
+                style={{
+                  fontSize: 8.5,
+                  fontWeight: 800,
+                  fontFamily: 'var(--font-mono)',
+                  color: meta.color,
+                  padding: '1.5px 5px',
+                  borderRadius: 4,
+                  backgroundColor: isActive ? `${meta.color}22` : `${meta.color}10`,
+                  border: `1px solid ${isActive ? meta.color + '50' : meta.color + '25'}`,
+                  flexShrink: 0,
+                }}
+              >
+                {stageNum}
+              </span>
+            </button>
+          );
+        })}
 
         {/* SECTION: UTILITIES */}
         <div
           style={{
-            fontSize: 9.5,
+            fontSize: 9,
             fontWeight: 700,
             color: 'var(--tertiary-label)',
-            letterSpacing: 1.2,
-            padding: '14px 8px 4px',
+            letterSpacing: 1.1,
+            padding: '10px 6px 4px',
             fontFamily: 'var(--font-mono)',
           }}
         >
@@ -541,8 +323,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
         {/* Dynamic System & Workspace Nav Buttons */}
         {SYSTEM_NAV_ORDER.map((key) => {
           const meta = getStageMeta(key);
-          const isActive =
-            activePage === key;
+          const isActive = activePage === key;
           const Icon = meta.icon;
           return (
             <button
@@ -552,19 +333,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 9,
-                height: 38,
+                gap: 8,
+                height: 32,
                 padding: '0 8px',
-                borderRadius: 9,
-                border: isActive ? `1.5px solid ${meta.color}70` : '1px solid transparent',
-                backgroundColor: isActive ? `${meta.color}18` : 'transparent',
+                borderRadius: 7,
+                border: isActive ? `1px solid ${meta.color}70` : '1px solid transparent',
+                backgroundColor: isActive ? `${meta.color}16` : 'transparent',
                 color: 'var(--label)',
                 cursor: 'pointer',
                 textAlign: 'left',
-                transition: 'all 0.15s ease',
+                transition: 'all 0.12s ease',
               }}
               onMouseEnter={(e) => {
-                if (!isActive) e.currentTarget.style.backgroundColor = `${meta.color}12`;
+                if (!isActive) e.currentTarget.style.backgroundColor = `${meta.color}10`;
               }}
               onMouseLeave={(e) => {
                 if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
@@ -572,11 +353,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
             >
               <div
                 style={{
-                  width: 26,
-                  height: 26,
-                  borderRadius: 7,
-                  backgroundColor: isActive ? `${meta.color}25` : `${meta.color}15`,
-                  border: `1px solid ${isActive ? meta.color : meta.color + '30'}`,
+                  width: 22,
+                  height: 22,
+                  borderRadius: 6,
+                  backgroundColor: isActive ? `${meta.color}22` : `${meta.color}12`,
+                  border: `1px solid ${isActive ? meta.color : meta.color + '25'}`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -584,9 +365,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
                   flexShrink: 0,
                 }}
               >
-                <Icon size={14} />
+                <Icon size={12} />
               </div>
-              <span style={{ fontSize: 12, fontWeight: isActive ? 700 : 500, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 11.5, fontWeight: isActive ? 700 : 500, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {meta.label}
               </span>
             </button>
@@ -594,34 +375,32 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
         })}
       </div>
 
-      {/* Permanent Dedicated User Profile Card */}
+      {/* Sleek User Profile Chip */}
       <div
         style={{
-          padding: '10px 12px',
-          margin: '8px 10px 6px 10px',
-          borderRadius: 12,
-          background: 'linear-gradient(135deg, rgba(0, 242, 254, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%)',
-          border: '1px solid rgba(0, 242, 254, 0.25)',
+          padding: '6px 8px',
+          margin: '4px 6px',
+          borderRadius: 8,
+          background: 'rgba(255, 255, 255, 0.03)',
+          border: '1px solid rgba(255, 255, 255, 0.06)',
           display: 'flex',
           alignItems: 'center',
-          gap: 10,
-          boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)',
+          gap: 8,
           flexShrink: 0,
         }}
       >
         <div
           style={{
-            width: 36,
-            height: 36,
+            width: 24,
+            height: 24,
             borderRadius: '50%',
-            padding: 1.5,
+            padding: 1,
             background: 'linear-gradient(135deg, #00F2FE 0%, #8B5CF6 100%)',
             flexShrink: 0,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             overflow: 'hidden',
-            boxShadow: '0 0 10px rgba(0, 242, 254, 0.35)',
           }}
         >
           {userProfile?.avatar ? (
@@ -641,7 +420,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: 12,
+                fontSize: 9,
                 fontWeight: 800,
                 fontFamily: 'var(--font-mono)',
               }}
@@ -651,40 +430,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
           )}
         </div>
 
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span
-              style={{
-                fontSize: 12,
-                fontWeight: 700,
-                color: 'var(--label)',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-              title={userProfile?.name}
-            >
-              {userProfile?.name || 'Master Architect'}
-            </span>
-            <span
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: '50%',
-                backgroundColor: '#10B981',
-                boxShadow: '0 0 6px #10B981',
-                flexShrink: 0,
-              }}
-              title="Anything Ecosystem Synced"
-            />
-          </div>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
           <span
             style={{
-              fontSize: 10,
+              fontSize: 11,
+              fontWeight: 700,
+              color: 'var(--label)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+            title={userProfile?.name}
+          >
+            {userProfile?.name || 'Master Architect'}
+          </span>
+          <span
+            style={{
+              fontSize: 9,
               fontFamily: 'var(--font-mono)',
-              fontWeight: 600,
-              color: '#00F2FE',
-              opacity: 0.9,
+              color: 'var(--secondary-label)',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
@@ -698,7 +462,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
       {/* Footer System Dock: Settings & Theme Toggle */}
       <div
         style={{
-          padding: '8px 10px',
+          padding: '6px 8px',
           borderTop: '1px solid var(--border-subtle)',
           display: 'flex',
           alignItems: 'center',
@@ -711,28 +475,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
           className="btn-tactile"
           style={{
             flex: 1,
-            height: 34,
-            borderRadius: 8,
-            border: '1px solid var(--border)',
-            backgroundColor: 'var(--surface-card)',
+            height: 28,
+            borderRadius: 6,
+            border: '1px solid var(--border-subtle)',
+            backgroundColor: 'rgba(255, 255, 255, 0.03)',
             color: 'var(--label)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 6,
-            fontSize: 11.5,
+            gap: 5,
+            fontSize: 11,
             fontWeight: 600,
             cursor: 'pointer',
             transition: 'all var(--transition-fast)',
           }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--surface-card-hover)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--surface-card)';
-          }}
         >
-          <SettingsIcon size={14} style={{ color: 'var(--secondary-label)' }} />
+          <SettingsIcon size={12} style={{ color: 'var(--secondary-label)' }} />
           Preferences
         </button>
 
@@ -740,21 +498,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
           onClick={toggleTheme}
           className="btn-tactile"
           style={{
-            width: 34,
-            height: 34,
-            borderRadius: 8,
-            border: '1px solid var(--border)',
-            backgroundColor: 'var(--surface-card)',
+            width: 28,
+            height: 28,
+            borderRadius: 6,
+            border: '1px solid var(--border-subtle)',
+            backgroundColor: 'rgba(255, 255, 255, 0.03)',
             color: 'var(--label)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            flexShrink: 0,
+            transition: 'all var(--transition-fast)',
           }}
           title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
         >
-          {theme === 'dark' ? <Sun size={14} color="#FF9F0A" /> : <Moon size={14} color="#007AFF" />}
+          {theme === 'dark' ? <Sun size={12} color="#FBBF24" /> : <Moon size={12} color="#818CF8" />}
         </button>
       </div>
     </aside>
