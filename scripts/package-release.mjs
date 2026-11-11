@@ -106,27 +106,35 @@ const releaseManifest = {
 };
 
 // 4. Run clean build (Installer assets + Vite bundle + Electron TypeScript)
-console.log('--- Step 1: Building presentation assets, Vite client & Electron main process ---');
-try {
-  execSync('npm run build', { stdio: 'inherit', cwd: ROOT_DIR });
-  console.log('✓ Build completed successfully.');
-} catch (err) {
-  console.error('✗ Build failed:', err.message);
-  process.exit(1);
-}
+const distReleaseDir = path.join(ROOT_DIR, 'dist-release');
+const existingSetup = path.join(distReleaseDir, `Mediaflow_studio_${targetVersion}_Setup.exe`);
+const shouldBuild = !args.includes('--skip-build') && !fs.existsSync(existingSetup);
 
-// 5. Package Windows Binaries using electron-builder (Portable, NSIS setup, and ZIP)
-console.log('\n--- Step 2: Packaging Windows Binaries (Portable, NSIS Setup & ZIP) ---');
-try {
-  execSync('npx electron-builder --win portable nsis zip --x64', {
-    stdio: 'inherit',
-    cwd: ROOT_DIR,
-    env: { ...process.env, VITE_CONFIG_NATIVE_IGNORE_WARNING: 'true' }
-  });
-  console.log('✓ Electron packaging completed.');
-} catch (err) {
-  console.error('✗ Packaging failed:', err.message);
-  process.exit(1);
+if (shouldBuild) {
+  console.log('--- Step 1: Building presentation assets, Vite client & Electron main process ---');
+  try {
+    execSync('npm run build', { stdio: 'inherit', cwd: ROOT_DIR });
+    console.log('✓ Build completed successfully.');
+  } catch (err) {
+    console.error('✗ Build failed:', err.message);
+    process.exit(1);
+  }
+
+  // 5. Package Windows Binaries using electron-builder (Portable, NSIS setup, and ZIP)
+  console.log('\n--- Step 2: Packaging Windows Binaries (Portable, NSIS Setup & ZIP) ---');
+  try {
+    execSync('npx electron-builder --win nsis zip --x64', {
+      stdio: 'inherit',
+      cwd: ROOT_DIR,
+      env: { ...process.env, VITE_CONFIG_NATIVE_IGNORE_WARNING: 'true' }
+    });
+    console.log('✓ Electron packaging completed.');
+  } catch (err) {
+    console.error('✗ Packaging failed:', err.message);
+    process.exit(1);
+  }
+} else {
+  console.log(`✓ Target binaries for v${targetVersion} already built in dist-release. Skipping build step.`);
 }
 
 // 6. Create Version-Wise Output Directory inside MediaFlow Studio
@@ -160,7 +168,6 @@ if (fs.existsSync(loaderConfigPath)) {
 
 console.log(`✓ Created app.json, release.json, logo assets & loader-config.json in releases/v${targetVersion}/`);
 
-const distReleaseDir = path.join(ROOT_DIR, 'dist-release');
 console.log(`\n--- Step 3: Organizing artifacts into ${versionOutputDir} ---`);
 
 let namedExePath = null;
@@ -175,19 +182,19 @@ if (fs.existsSync(distReleaseDir)) {
     const stat = fs.statSync(srcPath);
 
     if (stat.isFile()) {
-      if (file.toLowerCase().includes('setup') && file.endsWith('.exe')) {
+      if (file.toLowerCase().includes('setup') && file.endsWith('.exe') && file.includes(targetVersion)) {
         const destFileName = `Mediaflow_studio_${targetVersion}_Setup.exe`;
         const destPath = path.join(versionOutputDir, destFileName);
         fs.copyFileSync(srcPath, destPath);
         namedSetupPath = destPath;
         console.log(`✓ Organized Setup Installer: releases/v${targetVersion}/${destFileName}`);
-      } else if (file.endsWith('.exe')) {
+      } else if (file.endsWith('.exe') && file.includes(targetVersion) && !file.toLowerCase().includes('setup')) {
         const destFileName = `Mediaflow_studio_${targetVersion}.exe`;
         const destPath = path.join(versionOutputDir, destFileName);
         fs.copyFileSync(srcPath, destPath);
         namedExePath = destPath;
         console.log(`✓ Organized Portable Exe: releases/v${targetVersion}/${destFileName}`);
-      } else if (file.endsWith('.zip')) {
+      } else if (file.endsWith('.zip') && file.includes(targetVersion)) {
         const destFileName = `Mediaflow_studio_${targetVersion}.zip`;
         const destPath = path.join(versionOutputDir, destFileName);
         fs.copyFileSync(srcPath, destPath);

@@ -85,7 +85,10 @@ for (const dir of candidateDirs) {
     const isYml = lower === 'latest.yml';
     const isBlockmap = lower.endsWith('.blockmap');
 
-    if (isSetupExe || isAppExe || isZip || isYml || isBlockmap) {
+    // Only upload binaries for the active target version or general latest.yml
+    const isTargetVersion = f.includes(version) || isYml || dir === versionDir;
+
+    if (isTargetVersion && (isSetupExe || isAppExe || isZip || isYml || isBlockmap)) {
       if (!assetsToUpload.some((a) => a.name === f)) {
         assetsToUpload.push({ name: f, path: fullPath, size: stat.size });
       }
