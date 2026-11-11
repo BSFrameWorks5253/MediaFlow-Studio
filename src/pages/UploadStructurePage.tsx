@@ -168,19 +168,19 @@ export const UploadStructurePage: React.FC<UploadStructurePageProps> = ({
       <div
         className="glass-card"
         style={{
-          padding: '16px 20px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderLeft: '4px solid #38BDF8',
+          borderLeft: '3px solid #38BDF8',
+          padding: '10px 14px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div
             style={{
-              width: 42,
-              height: 42,
-              borderRadius: 12,
+              width: 32,
+              height: 32,
+              borderRadius: 8,
               backgroundColor: 'rgba(56, 189, 248, 0.15)',
               border: '1px solid rgba(56, 189, 248, 0.35)',
               display: 'flex',
@@ -188,13 +188,13 @@ export const UploadStructurePage: React.FC<UploadStructurePageProps> = ({
               justifyContent: 'center',
             }}
           >
-            <FolderPlus size={22} color="#38BDF8" />
+            <FolderPlus size={18} color="#38BDF8" />
           </div>
           <div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--label)', letterSpacing: 0.3 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--label)', letterSpacing: 0.2 }}>
               Upload Folder Structure Generator
             </div>
-            <div style={{ fontSize: 12, color: 'var(--secondary-label)' }}>
+            <div style={{ fontSize: 11, color: 'var(--secondary-label)' }}>
               Creates the 3 standardized upload folders and automatically wires outputs to Thumbnail Shifter & Remaining Shifter.
             </div>
           </div>
@@ -205,13 +205,13 @@ export const UploadStructurePage: React.FC<UploadStructurePageProps> = ({
       <div
         className="glass-card"
         style={{
-          padding: '18px 22px',
+          padding: '14px 18px',
           display: 'flex',
           flexDirection: 'column',
-          gap: 16,
+          gap: 12,
         }}
       >
-        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--label)' }}>
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--label)' }}>
           Destination & Project Settings
         </div>
 

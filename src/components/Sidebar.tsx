@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import {
   Settings as SettingsIcon,
   Sun,
@@ -12,6 +12,7 @@ import {
   getStageMeta,
 } from '../types/pipelineStages';
 import { useTheme } from '../context/ThemeContext';
+import { usePipeline } from '../context/PipelineContext';
 import { MediaFlowLogo } from './MediaFlowLogo';
 
 export type { PageKey };
@@ -34,7 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
           return {
             name: user.name || 'Master Architect',
             username: user.username || (user.email ? user.email.split('@')[0] : 'admin'),
-            avatar: user.avatar || user.avatarBase64 || null
+            avatar: user.avatar || user.avatarBase64 || null,
           };
         }
       }
@@ -42,7 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
     return {
       name: 'Master Architect',
       username: 'admin',
-      avatar: null
+      avatar: null,
     };
   });
 
@@ -50,24 +51,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
     const loadProfile = () => {
       const api = (window as any).electronAPI || (window as any).api;
       if (api?.userProfile?.load) {
-        api.userProfile.load().then((p: any) => {
-          if (p && (p.name || p.username || p.email)) {
-            setUserProfile({
-              name: p.name || 'Creator',
-              username: p.username || (p.email ? p.email.split('@')[0] : 'creator'),
-              avatar: p.avatar || p.avatarBase64 || null
-            });
-          }
-        }).catch(() => {});
+        api.userProfile
+          .load()
+          .then((p: any) => {
+            if (p && (p.name || p.username || p.email)) {
+              setUserProfile({
+                name: p.name || 'Creator',
+                username: p.username || (p.email ? p.email.split('@')[0] : 'creator'),
+                avatar: p.avatar || p.avatarBase64 || null,
+              });
+            }
+          })
+          .catch(() => {});
       }
     };
 
     loadProfile();
+    const pollInterval = setInterval(loadProfile, 4000);
     window.addEventListener('storage', loadProfile);
     window.addEventListener('anything:ecosystem-auth-change', loadProfile);
     window.addEventListener('focus', loadProfile);
-
     return () => {
+      clearInterval(pollInterval);
       window.removeEventListener('storage', loadProfile);
       window.removeEventListener('anything:ecosystem-auth-change', loadProfile);
       window.removeEventListener('focus', loadProfile);
@@ -75,37 +80,32 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
   }, []);
 
   const { theme, toggleTheme } = useTheme();
+  const { isStatsPageUnlocked } = usePipeline();
 
-  const pipelineNavItems = useMemo(() => {
-    return PIPELINE_NAV_ORDER;
-  }, []);
+  // Clean, dedicated Studio Pro pipeline list
+  const pipelineNavItems = PIPELINE_NAV_ORDER;
 
   return (
     <aside
-      className="glass-panel glass-persistent-menu"
+      className="glass-panel"
       style={{
-        width: 240,
-        minWidth: 240,
-        maxWidth: 240,
+        width: 230,
+        minWidth: 230,
+        maxWidth: 230,
         height: '100%',
-        borderRadius: 16,
+        borderRadius: 12,
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
         zIndex: 2,
-        border: '0.5px solid rgba(255, 255, 255, 0.08)',
-        background: 'rgba(16, 16, 16, 0.45)',
-        backdropFilter: 'blur(24px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-        boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.45)',
-        transition: 'all 450ms var(--ease-cinematic)',
+        boxShadow: 'var(--shadow-card)',
       }}
     >
-      {/* Brand Header */}
+      {/* ── Sleek Compact Brand Header ───────────────────────────────── */}
       <div
         style={{
           height: 48,
-          padding: '0 14px',
+          padding: '0 12px',
           display: 'flex',
           alignItems: 'center',
           gap: 9,
@@ -117,7 +117,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
           style={{
             width: 28,
             height: 28,
-            borderRadius: 8,
+            borderRadius: 7,
             background: 'linear-gradient(135deg, #00F2FE 0%, #8B5CF6 100%)',
             padding: 1.5,
             display: 'flex',
@@ -131,48 +131,60 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
             style={{
               width: '100%',
               height: '100%',
-              borderRadius: 6.5,
+              borderRadius: 6,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               overflow: 'hidden',
-              background: '#0f172a',
+              background: '#0B0F1C',
             }}
           >
-            <MediaFlowLogo size={22} />
+            <MediaFlowLogo size={20} />
           </div>
         </div>
 
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 0, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontWeight: 800,
+                fontSize: 12,
+                letterSpacing: 0.8,
+                color: 'var(--label)',
+              }}
+            >
+              MEDIAFLOW
+            </span>
+            <span
+              style={{
+                padding: '1px 4px',
+                borderRadius: 3,
+                fontSize: 8,
+                fontFamily: 'var(--font-mono)',
+                fontWeight: 800,
+                color: '#00F2FE',
+                background: 'rgba(0, 242, 254, 0.12)',
+                border: '1px solid rgba(0, 242, 254, 0.25)',
+              }}
+            >
+              STUDIO PRO
+            </span>
+          </div>
           <span
             style={{
-              fontFamily: 'var(--font-display)',
-              fontWeight: 800,
-              fontSize: 12.5,
-              letterSpacing: 0.8,
-              color: 'var(--label)',
-            }}
-          >
-            MEDIAFLOW
-          </span>
-          <span
-            style={{
-              padding: '1px 5px',
-              borderRadius: 4,
-              fontSize: 8.5,
+              fontSize: 9,
+              color: 'var(--secondary-label)',
               fontFamily: 'var(--font-mono)',
-              fontWeight: 800,
-              color: '#00F2FE',
-              background: 'rgba(0, 242, 254, 0.1)',
-              border: '1px solid rgba(0, 242, 254, 0.25)',
+              letterSpacing: 0.2,
             }}
           >
-            STUDIO PRO
+            STUDIO WORKSTATION
           </span>
         </div>
       </div>
 
-      {/* Navigation Links Scroll Container */}
+      {/* ── Navigation Items Scroll Container ────────────────────────── */}
       <div
         style={{
           flex: 1,
@@ -180,16 +192,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
           padding: '6px',
           display: 'flex',
           flexDirection: 'column',
-          gap: 2,
+          gap: 1.5,
         }}
       >
-        {/* SECTION: PIPELINE */}
+        {/* SECTION: PIPELINE HEADER */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '4px 6px 4px',
+            padding: '4px 6px 3px',
           }}
         >
           <span
@@ -197,7 +209,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
               fontSize: 9,
               fontWeight: 700,
               color: 'var(--tertiary-label)',
-              letterSpacing: 1.1,
+              letterSpacing: 1,
               fontFamily: 'var(--font-mono)',
             }}
           >
@@ -211,21 +223,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
               backgroundColor: 'rgba(0, 242, 254, 0.1)',
               border: '1px solid rgba(0, 242, 254, 0.2)',
               padding: '1px 5px',
-              borderRadius: 999,
+              borderRadius: 4,
               fontFamily: 'var(--font-mono)',
             }}
           >
-            6 STAGES
+            {isStatsPageUnlocked ? '10 STAGES' : '9 STAGES'}
           </span>
         </div>
 
-        {/* Studio Pipeline Stages Render */}
-        {pipelineNavItems.map((key, index) => {
+        {/* Studio Pro Pipeline Stages */}
+        {pipelineNavItems.map((key) => {
           const meta = getStageMeta(key);
           const stageNum = getStageNumber(key);
           const isActive = activePage === key;
           const Icon = meta.icon;
-          const shortcutKey = index < 9 ? `Alt+${index + 1}` : null;
 
           return (
             <button
@@ -235,11 +246,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8,
-                height: 34,
-                padding: '0 8px',
-                borderRadius: 8,
-                border: isActive ? `1px solid ${meta.color}80` : '1px solid transparent',
+                gap: 7,
+                height: 33,
+                padding: '0 7px',
+                borderRadius: 7,
+                border: isActive ? `1px solid ${meta.color}65` : '1px solid transparent',
                 background: isActive
                   ? `linear-gradient(90deg, ${meta.color}20 0%, ${meta.color}06 100%)`
                   : 'transparent',
@@ -254,13 +265,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
               onMouseLeave={(e) => {
                 if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
               }}
-              title={shortcutKey ? `${meta.label} (${shortcutKey})` : meta.label}
+              title={meta.label}
             >
               <div
                 style={{
                   width: 22,
                   height: 22,
-                  borderRadius: 6,
+                  borderRadius: 5,
                   backgroundColor: isActive ? `${meta.color}25` : `${meta.color}14`,
                   border: `1px solid ${isActive ? meta.color : meta.color + '30'}`,
                   display: 'flex',
@@ -271,32 +282,35 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
                   flexShrink: 0,
                 }}
               >
-                <Icon size={13} />
+                <Icon size={12.5} />
               </div>
+
               <span
                 style={{
                   flex: 1,
                   minWidth: 0,
                   fontSize: 11.5,
                   fontWeight: isActive ? 700 : 500,
-                  color: 'var(--label)',
+                  color: isActive ? 'var(--label)' : 'var(--secondary-label)',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
+                  letterSpacing: -0.1,
                 }}
               >
                 {meta.label}
               </span>
+
               <span
                 style={{
                   fontSize: 8.5,
                   fontWeight: 800,
                   fontFamily: 'var(--font-mono)',
                   color: meta.color,
-                  padding: '1.5px 5px',
+                  padding: '1px 5px',
                   borderRadius: 4,
-                  backgroundColor: isActive ? `${meta.color}22` : `${meta.color}10`,
-                  border: `1px solid ${isActive ? meta.color + '50' : meta.color + '25'}`,
+                  backgroundColor: isActive ? `${meta.color}20` : 'rgba(255, 255, 255, 0.04)',
+                  border: `1px solid ${isActive ? meta.color + '45' : 'rgba(255, 255, 255, 0.08)'}`,
                   flexShrink: 0,
                 }}
               >
@@ -306,25 +320,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
           );
         })}
 
-        {/* SECTION: UTILITIES */}
+        {/* SECTION: UTILITIES HEADER */}
         <div
           style={{
             fontSize: 9,
             fontWeight: 700,
             color: 'var(--tertiary-label)',
-            letterSpacing: 1.1,
-            padding: '10px 6px 4px',
+            letterSpacing: 1,
+            padding: '8px 6px 3px',
             fontFamily: 'var(--font-mono)',
           }}
         >
           UTILITIES
         </div>
 
-        {/* Dynamic System & Workspace Nav Buttons */}
+        {/* Utilities Nav Items */}
         {SYSTEM_NAV_ORDER.map((key) => {
           const meta = getStageMeta(key);
           const isActive = activePage === key;
           const Icon = meta.icon;
+
           return (
             <button
               key={key}
@@ -333,13 +348,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8,
-                height: 32,
-                padding: '0 8px',
+                gap: 7,
+                height: 31,
+                padding: '0 7px',
                 borderRadius: 7,
-                border: isActive ? `1px solid ${meta.color}70` : '1px solid transparent',
-                backgroundColor: isActive ? `${meta.color}16` : 'transparent',
-                color: 'var(--label)',
+                border: isActive ? `1px solid ${meta.color}60` : '1px solid transparent',
+                backgroundColor: isActive ? `${meta.color}15` : 'transparent',
+                color: isActive ? 'var(--label)' : 'var(--secondary-label)',
                 cursor: 'pointer',
                 textAlign: 'left',
                 transition: 'all 0.12s ease',
@@ -350,12 +365,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
               onMouseLeave={(e) => {
                 if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
               }}
+              title={meta.label}
             >
               <div
                 style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: 6,
+                  width: 20,
+                  height: 20,
+                  borderRadius: 5,
                   backgroundColor: isActive ? `${meta.color}22` : `${meta.color}12`,
                   border: `1px solid ${isActive ? meta.color : meta.color + '25'}`,
                   display: 'flex',
@@ -367,7 +383,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
               >
                 <Icon size={12} />
               </div>
-              <span style={{ fontSize: 11.5, fontWeight: isActive ? 700 : 500, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+
+              <span
+                style={{
+                  fontSize: 11.5,
+                  fontWeight: isActive ? 700 : 500,
+                  flex: 1,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  letterSpacing: -0.1,
+                }}
+              >
                 {meta.label}
               </span>
             </button>
@@ -375,14 +402,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
         })}
       </div>
 
-      {/* Sleek User Profile Chip */}
+      {/* ── Compact Profile Strip ────────────────────────────────────── */}
       <div
         style={{
           padding: '6px 8px',
           margin: '4px 6px',
           borderRadius: 8,
-          background: 'rgba(255, 255, 255, 0.03)',
-          border: '1px solid rgba(255, 255, 255, 0.06)',
+          backgroundColor: 'rgba(255, 255, 255, 0.03)',
+          border: '1px solid var(--border-subtle)',
           display: 'flex',
           alignItems: 'center',
           gap: 8,
@@ -394,8 +421,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
             width: 24,
             height: 24,
             borderRadius: '50%',
-            padding: 1,
             background: 'linear-gradient(135deg, #00F2FE 0%, #8B5CF6 100%)',
+            padding: 1,
             flexShrink: 0,
             display: 'flex',
             alignItems: 'center',
@@ -415,12 +442,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
                 width: '100%',
                 height: '100%',
                 borderRadius: '50%',
-                background: '#0f172a',
+                background: '#0B0F1C',
                 color: '#00F2FE',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: 9,
+                fontSize: 9.5,
                 fontWeight: 800,
                 fontFamily: 'var(--font-mono)',
               }}
@@ -430,20 +457,32 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
           )}
         </div>
 
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: 'var(--label)',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-            title={userProfile?.name}
-          >
-            {userProfile?.name || 'Master Architect'}
-          </span>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: 'var(--label)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+              title={userProfile?.name}
+            >
+              {userProfile?.name || 'Master Architect'}
+            </span>
+            <span
+              style={{
+                width: 5,
+                height: 5,
+                borderRadius: '50%',
+                backgroundColor: '#10B981',
+                flexShrink: 0,
+              }}
+              title="Anything Ecosystem Synced"
+            />
+          </div>
           <span
             style={{
               fontSize: 9,
@@ -459,14 +498,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
         </div>
       </div>
 
-      {/* Footer System Dock: Settings & Theme Toggle */}
+      {/* ── Footer System Dock: Settings & Theme Toggle ──────────────── */}
       <div
         style={{
           padding: '6px 8px',
           borderTop: '1px solid var(--border-subtle)',
           display: 'flex',
           alignItems: 'center',
-          gap: 6,
+          gap: 5,
           flexShrink: 0,
         }}
       >
@@ -475,10 +514,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
           className="btn-tactile"
           style={{
             flex: 1,
-            height: 28,
+            height: 30,
             borderRadius: 6,
-            border: '1px solid var(--border-subtle)',
-            backgroundColor: 'rgba(255, 255, 255, 0.03)',
+            border: '1px solid var(--border)',
+            backgroundColor: 'var(--surface-card)',
             color: 'var(--label)',
             display: 'flex',
             alignItems: 'center',
@@ -489,8 +528,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
             cursor: 'pointer',
             transition: 'all var(--transition-fast)',
           }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--surface-card-hover)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--surface-card)';
+          }}
         >
-          <SettingsIcon size={12} style={{ color: 'var(--secondary-label)' }} />
+          <SettingsIcon size={12.5} style={{ color: 'var(--secondary-label)' }} />
           Preferences
         </button>
 
@@ -498,21 +543,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
           onClick={toggleTheme}
           className="btn-tactile"
           style={{
-            width: 28,
-            height: 28,
+            width: 30,
+            height: 30,
             borderRadius: 6,
-            border: '1px solid var(--border-subtle)',
-            backgroundColor: 'rgba(255, 255, 255, 0.03)',
+            border: '1px solid var(--border)',
+            backgroundColor: 'var(--surface-card)',
             color: 'var(--label)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            transition: 'all var(--transition-fast)',
+            flexShrink: 0,
           }}
           title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
         >
-          {theme === 'dark' ? <Sun size={12} color="#FBBF24" /> : <Moon size={12} color="#818CF8" />}
+          {theme === 'dark' ? <Sun size={12.5} color="#FF9F0A" /> : <Moon size={12.5} color="#007AFF" />}
         </button>
       </div>
     </aside>

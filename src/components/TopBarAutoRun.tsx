@@ -36,32 +36,30 @@ export const TopBarAutoRun: React.FC<TopBarAutoRunProps> = ({ activePage, onNavi
 
   return (
     <header
-      className="glass-panel drag-header-zone window-drag-region"
+      className="glass-panel"
       style={{
-        height: 48,
-        minHeight: 48,
-        borderRadius: 14,
-        padding: '0 16px',
+        height: 40,
+        minHeight: 40,
+        borderRadius: 10,
+        padding: '0 12px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: 12,
-        marginBottom: 8,
-        border: '0.5px solid rgba(255, 255, 255, 0.08)',
-        background: 'rgba(16, 16, 16, 0.45)',
-        backdropFilter: 'blur(24px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+        gap: 10,
+        marginBottom: 6,
+        border: '1px solid var(--border-subtle)',
+        background: 'var(--surface-card)',
         zIndex: 5,
-        boxShadow: '0 4px 18px -2px rgba(0, 0, 0, 0.35)',
+        boxShadow: 'var(--shadow-card)',
       }}
     >
       {/* Left: Active Section Breadcrumb */}
-      <div className="window-no-drag interactive-no-drag" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <div
           style={{
-            width: 24,
-            height: 24,
-            borderRadius: 7,
+            width: 22,
+            height: 22,
+            borderRadius: 6,
             backgroundColor: `${currentMeta.color}15`,
             border: `1px solid ${currentMeta.color}35`,
             display: 'flex',
@@ -70,11 +68,11 @@ export const TopBarAutoRun: React.FC<TopBarAutoRunProps> = ({ activePage, onNavi
             color: currentMeta.color,
           }}
         >
-          {React.createElement(currentMeta.icon, { size: 13 })}
+          {React.createElement(currentMeta.icon, { size: 12 })}
         </div>
         <span
           style={{
-            fontSize: 12.5,
+            fontSize: 12,
             fontWeight: 700,
             color: 'var(--label)',
             letterSpacing: '-0.01em',
@@ -82,38 +80,38 @@ export const TopBarAutoRun: React.FC<TopBarAutoRunProps> = ({ activePage, onNavi
         >
           {currentMeta.label}
         </span>
-        <span style={{ fontSize: 11, color: 'var(--tertiary-label)' }}>•</span>
-        <span style={{ fontSize: 11, color: 'var(--secondary-label)' }}>
+        <span style={{ fontSize: 10, color: 'var(--tertiary-label)' }}>•</span>
+        <span style={{ fontSize: 10.5, color: 'var(--secondary-label)' }}>
           {currentMeta.desc}
         </span>
       </div>
 
       {/* Right: Dynamic Auto Run Pipeline Controller */}
-      <div className="window-no-drag interactive-no-drag" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         {/* State 1: IDLE */}
         {status === 'IDLE' && (
           <button
             onClick={openSetup}
             className="btn-tactile"
             style={{
-              height: 32,
-              padding: '0 14px',
-              borderRadius: 8,
+              height: 28,
+              padding: '0 11px',
+              borderRadius: 6,
               border: '1px solid rgba(0, 242, 254, 0.4)',
               background: 'linear-gradient(135deg, rgba(0, 242, 254, 0.18) 0%, rgba(139, 92, 246, 0.14) 100%)',
               color: 'var(--label)',
-              fontSize: 11.5,
+              fontSize: 11,
               fontWeight: 700,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
-              boxShadow: '0 2px 10px rgba(0, 242, 254, 0.15)',
+              gap: 5,
+              boxShadow: '0 2px 8px rgba(0, 242, 254, 0.15)',
               transition: 'all 0.15s ease',
             }}
             title="Launch automated execution for Stages 2 to 6"
           >
-            <Zap size={13} color="#00F2FE" />
+            <Zap size={12} color="#00F2FE" />
             <span>Auto Run (Stages 2–6)</span>
           </button>
         )}
@@ -122,20 +120,20 @@ export const TopBarAutoRun: React.FC<TopBarAutoRunProps> = ({ activePage, onNavi
         {status === 'CONFIGURING' && (
           <div
             style={{
-              height: 32,
-              padding: '0 12px',
-              borderRadius: 8,
+              height: 28,
+              padding: '0 10px',
+              borderRadius: 6,
               border: '1px solid rgba(0, 242, 254, 0.35)',
               backgroundColor: 'rgba(0, 242, 254, 0.1)',
               color: '#00F2FE',
-              fontSize: 11.5,
+              fontSize: 11,
               fontWeight: 700,
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
+              gap: 5,
             }}
           >
-            <Zap size={13} />
+            <Zap size={12} />
             <span>Configuring Pipeline...</span>
           </div>
         )}
