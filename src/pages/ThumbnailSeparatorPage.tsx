@@ -72,31 +72,36 @@ export const ThumbnailSeparatorPage: React.FC<ThumbnailSeparatorPageProps> = ({ 
     if (dir) setDestDir(dir);
   };
 
-  const handleScan = async () => {
+  const handleScan = async (opts?: boolean | React.MouseEvent<any>) => {
+    const isSilent = opts === true;
     if (!sourceDir.trim()) {
-      onShowToast('Please select a source folder', 'warning');
+      if (!isSilent) onShowToast('Please select a source folder', 'warning');
       return;
     }
     setIsScanning(true);
     try {
       const res: ThumbnailScanResult = await window.electronAPI.scanThumbnailSeparator(sourceDir, destDir);
       setScanResult(res);
-      if (res.isBalanced) {
-        onShowToast(
-          `Scanned ${res.items.length} thumbnails. Perfect balance (_P = _V, ${res.totalPhotos} pairs)!`,
-          'success'
-        );
-        setActiveTab('all');
-      } else {
-        onShowToast(
-          `Found ${res.items.length} thumbnails with ${res.folderMismatches.length} folder mismatch(es) (_P: ${res.totalPhotos} ≠ _V: ${res.totalVideos})`,
-          'warning'
-        );
-        setActiveTab('mismatches');
+      if (!isSilent) {
+        if (res.isBalanced) {
+          onShowToast(
+            `Scanned ${res.items.length} thumbnails. Perfect balance (_P = _V, ${res.totalPhotos} pairs)!`,
+            'success'
+          );
+          setActiveTab('all');
+        } else {
+          onShowToast(
+            `Found ${res.items.length} thumbnails with ${res.folderMismatches.length} folder mismatch(es) (_P: ${res.totalPhotos} ≠ _V: ${res.totalVideos})`,
+            'warning'
+          );
+          setActiveTab('mismatches');
+        }
       }
     } catch (e: any) {
       console.error('Thumbnail scan failed:', e);
-      onShowToast(toUserErrorMessage(e, 'Failed to scan thumbnails. Please check permissions and try again.'), 'danger');
+      if (!isSilent) {
+        onShowToast(toUserErrorMessage(e, 'Failed to scan thumbnails. Please check permissions and try again.'), 'danger');
+      }
     } finally {
       setIsScanning(false);
     }
@@ -116,7 +121,7 @@ export const ThumbnailSeparatorPage: React.FC<ThumbnailSeparatorPageProps> = ({ 
     try {
       const summary = await window.electronAPI.executeThumbnailSeparation(scanResult.items, destDir, mode);
       onShowToast(`Separation complete: ${summary.success_count} thumbnails mirrored!`, 'success');
-      handleScan();
+      await handleScan(true);
     } catch (e: any) {
       console.error('Thumbnail separation failed:', e);
       onShowToast(toUserErrorMessage(e, 'Failed to separate thumbnails. Please check file permissions and disk space.'), 'danger');

@@ -50,19 +50,20 @@ export const RemainingCollectorPage: React.FC<RemainingCollectorPageProps> = ({ 
     if (dir) setDestDir(dir);
   };
 
-  const handleScan = async () => {
+  const handleScan = async (opts?: boolean | React.MouseEvent<any>) => {
+    const isSilent = opts === true;
     if (!sourceDir.trim()) {
-      onShowToast('Please select a valid source folder', 'warning');
+      if (!isSilent) onShowToast('Please select a valid source folder', 'warning');
       return;
     }
     setIsScanning(true);
     try {
       const res: RemainingScanResult = await window.electronAPI.scanRemaining(sourceDir, destDir);
       setScanResult(res);
-      onShowToast(`Scan complete: Found ${res.totalFolders} remaining folders (${res.totalPhotos} photos)`, 'success');
+      if (!isSilent) onShowToast(`Scan complete: Found ${res.totalFolders} remaining folders (${res.totalPhotos} photos)`, 'success');
     } catch (e: any) {
       console.error('Remaining scan error:', e);
-      onShowToast(toUserErrorMessage(e, 'Failed to scan remaining folders. Please check folder permissions and try again.'), 'danger');
+      if (!isSilent) onShowToast(toUserErrorMessage(e, 'Failed to scan remaining folders. Please check folder permissions and try again.'), 'danger');
     } finally {
       setIsScanning(false);
     }
@@ -83,7 +84,7 @@ export const RemainingCollectorPage: React.FC<RemainingCollectorPageProps> = ({ 
       const summary = await window.electronAPI.executeRemainingShift(scanResult.items, destDir);
       setLastManifest(summary.manifestPath);
       onShowToast(`Shift complete: ${summary.success_count} folders relocated successfully!`, 'success');
-      handleScan();
+      await handleScan(true);
     } catch (e: any) {
       console.error('Remaining shift error:', e);
       onShowToast(toUserErrorMessage(e, 'Failed to relocate remaining folders. Please check disk space and file permissions.'), 'danger');
@@ -101,7 +102,7 @@ export const RemainingCollectorPage: React.FC<RemainingCollectorPageProps> = ({ 
     try {
       const res = await window.electronAPI.undoRemainingShift(lastManifest);
       onShowToast(`Undo complete: Restored ${res.restored} folders to their original trees.`, 'success');
-      handleScan();
+      await handleScan(true);
     } catch (e: any) {
       console.error('Remaining undo error:', e);
       onShowToast(toUserErrorMessage(e, 'Failed to restore folders to their original locations.'), 'danger');

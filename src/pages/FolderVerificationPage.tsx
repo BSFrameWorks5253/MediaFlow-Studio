@@ -393,7 +393,7 @@ Total Files: 4,892 | Total Subfolders: 36
   };
 
   // Copy to clipboard
-  const handleCopyToClipboard = async (textToCopy: string, key = 'main') => {
+  const handleCopyToClipboard = async (textToCopy: string, key = 'main', silent = false) => {
     if (!textToCopy) return;
 
     let copied = false;
@@ -416,10 +416,14 @@ Total Files: 4,892 | Total Subfolders: 36
       try {
         playSuccessSound();
       } catch {}
-      onShowToast('Copied formatted report to clipboard! Ready to send to Main Head.', 'success');
+      if (!silent) {
+        onShowToast('Copied formatted report to clipboard! Ready to send to Main Head.', 'success');
+      }
       setTimeout(() => setCopiedKey(null), 2500);
     } else {
-      onShowToast('Could not access clipboard automatically. Please copy text manually from preview.', 'warning');
+      if (!silent) {
+        onShowToast('Could not access clipboard automatically. Please copy text manually from preview.', 'warning');
+      }
     }
   };
 
@@ -444,8 +448,7 @@ Total Files: 4,892 | Total Subfolders: 36
       ]);
 
       if (savePath) {
-        // If electronAPI can write file or show toast
-        await handleCopyToClipboard(activeText, 'save');
+        await handleCopyToClipboard(activeText, 'save', true);
         onShowToast(`Report text ready. Clipboard primed for save at ${savePath}`, 'success');
       }
     } catch (e: any) {

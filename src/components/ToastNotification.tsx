@@ -42,8 +42,8 @@ const ToastItem: React.FC<{ toast: ToastMessage; onDismiss: (id: string) => void
   onDismiss,
 }) => {
   useEffect(() => {
-    // Increase duration slightly for danger/warning so user can read numerical diagnostics
-    const duration = toast.type === 'danger' ? 7000 : toast.type === 'warning' ? 5500 : 4000;
+    // Non-intrusive durations: quick 2.8s for success/info, 4s for warning, 5s for error
+    const duration = toast.type === 'danger' ? 5000 : toast.type === 'warning' ? 4000 : 2800;
     const timer = setTimeout(() => {
       onDismiss(toast.id);
     }, duration);
@@ -104,24 +104,24 @@ const ToastItem: React.FC<{ toast: ToastMessage; onDismiss: (id: string) => void
       className="glass-card"
       style={{
         pointerEvents: 'auto',
-        minWidth: 320,
-        maxWidth: 460,
-        padding: '12px 14px',
+        minWidth: 260,
+        maxWidth: 380,
+        padding: '8px 11px',
         display: 'flex',
-        alignItems: 'flex-start',
-        gap: 12,
+        alignItems: 'center',
+        gap: 9,
         border: `1px solid ${border}`,
         backgroundColor: 'var(--surface-elevated)',
-        boxShadow: `0 12px 32px rgba(0, 0, 0, 0.25), 0 0 16px ${glow}`,
-        borderRadius: 12,
-        animation: 'beaconPulse 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+        boxShadow: `0 8px 24px rgba(0, 0, 0, 0.35), 0 0 12px ${glow}`,
+        borderRadius: 8,
+        animation: 'beaconPulse 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
       }}
     >
       <div
         style={{
-          width: 32,
-          height: 32,
-          borderRadius: 8,
+          width: 24,
+          height: 24,
+          borderRadius: 6,
           backgroundColor: bg,
           display: 'flex',
           alignItems: 'center',
@@ -130,18 +130,18 @@ const ToastItem: React.FC<{ toast: ToastMessage; onDismiss: (id: string) => void
           border: `1px solid ${color}40`,
         }}
       >
-        <Icon size={17} color={color} />
+        <Icon size={13} color={color} />
       </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <span
             style={{
-              fontSize: 9.5,
+              fontSize: 8.5,
               fontWeight: 800,
-              letterSpacing: 0.8,
-              padding: '1px 5px',
-              borderRadius: 4,
+              letterSpacing: 0.6,
+              padding: '1px 4px',
+              borderRadius: 3,
               backgroundColor: bg,
               color: color,
               border: `1px solid ${color}50`,
@@ -152,9 +152,9 @@ const ToastItem: React.FC<{ toast: ToastMessage; onDismiss: (id: string) => void
         </div>
         <span
           style={{
-            fontSize: 12.5,
+            fontSize: 11.5,
             fontWeight: 500,
-            lineHeight: 1.45,
+            lineHeight: 1.35,
             color: 'var(--label)',
             wordBreak: 'break-word',
           }}

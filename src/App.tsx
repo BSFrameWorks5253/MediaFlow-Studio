@@ -68,6 +68,7 @@ const AppContent: React.FC = () => {
   });
 
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const lastToastRef = React.useRef<{ text: string; time: number }>({ text: '', time: 0 });
   const { zoomLevel, toggleTheme } = useTheme();
 
   const [telemetry, setTelemetry] = useState<GlobalTelemetry>({
@@ -103,9 +104,19 @@ const AppContent: React.FC = () => {
     }
   }, []);
 
+  // Unified Smart Toast Manager:
+  // - Max 1 single active toast on screen (replaces instead of 3-toast stack!)
+  // - Debounces identical duplicate messages within 2.5s
   const showToast = (text: string, type: ToastMessage['type'] = 'info') => {
-    const id = `${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
-    setToasts((prev) => [...prev, { id, text, type }]);
+    if (!text || !text.trim()) return;
+    const now = Date.now();
+    if (lastToastRef.current.text === text && now - lastToastRef.current.time < 2500) {
+      return;
+    }
+    lastToastRef.current = { text, time: now };
+
+    const id = `${now}-${Math.random().toString(36).substr(2, 6)}`;
+    setToasts([{ id, text, type }]);
   };
 
   const dismissToast = (id: string) => {

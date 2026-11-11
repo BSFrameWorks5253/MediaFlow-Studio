@@ -431,10 +431,11 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
     }
   };
 
-  const handleScan = async () => {
+  const handleScan = async (opts?: boolean | React.MouseEvent<any>) => {
+    const isSilent = opts === true;
     setPathErrors(null);
     if (!videoDir.trim() || !photoDir.trim()) {
-      onShowToast('Please select both Video and Photo directories', 'warning');
+      if (!isSilent) onShowToast('Please select both Video and Photo directories', 'warning');
       return;
     }
 
@@ -455,7 +456,7 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
       if (errs.video || errs.photo) {
         setPathErrors(errs);
         const msg = [errs.video, errs.photo].filter(Boolean).join(' | ');
-        onShowToast(`Folder Problem: ${msg}`, 'danger');
+        if (!isSilent) onShowToast(`Folder Problem: ${msg}`, 'danger');
         setIsScanning(false);
         return;
       }
@@ -467,26 +468,28 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
       setEmptyFolders(foundEmpty);
       setDismissedEmptyBanner(false);
 
-      if (res.unmatched.length === 0 && res.matched.length > 0) {
-        onShowToast(
-          `Perfect Synchronization! 100% of clips (${res.matched.length} / ${res.matched.length}) paired successfully!`,
-          'success'
-        );
-      } else if (res.matched.length > 0) {
-        onShowToast(
-          `Scan complete: ${res.matched.length} clips paired, ${res.unmatched.length} unmatched clips pending review.`,
-          'info'
-        );
-      } else {
-        onShowToast(
-          `Scan completed: 0 clips automatically paired. Please check your folder structure.`,
-          'warning'
-        );
-        setActiveTab('unmatched');
+      if (!isSilent) {
+        if (res.unmatched.length === 0 && res.matched.length > 0) {
+          onShowToast(
+            `Synchronized: ${res.matched.length} clips paired successfully.`,
+            'success'
+          );
+        } else if (res.matched.length > 0) {
+          onShowToast(
+            `Scan complete: ${res.matched.length} clips paired, ${res.unmatched.length} unmatched pending review.`,
+            'info'
+          );
+        } else {
+          onShowToast(
+            `Scan completed: 0 clips automatically paired. Please check your folder structure.`,
+            'warning'
+          );
+          setActiveTab('unmatched');
+        }
       }
     } catch (e: any) {
       console.error('Video transfer scan failed:', e);
-      onShowToast(toUserErrorMessage(e, 'Failed to scan video and photo directories. Please check permissions and try again.'), 'danger');
+      if (!isSilent) onShowToast(toUserErrorMessage(e, 'Failed to scan video and photo directories. Please check permissions and try again.'), 'danger');
     } finally {
       setIsScanning(false);
     }
@@ -570,14 +573,14 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
     onShowToast(`Unpaired "${item.videoFile}"`, 'info');
   };
 
-  const handleMoveMergedFolder = async (customTarget?: string) => {
+  const handleMoveMergedFolder = async (customTarget?: string, silent = false) => {
     const target = customTarget || uploadStructure.mainDataPath;
     if (!photoDir.trim()) {
-      onShowToast('No photo/video directory selected to move.', 'warning');
+      if (!silent) onShowToast('No photo/video directory selected to move.', 'warning');
       return;
     }
     if (!target) {
-      onShowToast('Please set up an Upload Structure (Stage 01) first to define the Main Data destination path.', 'warning');
+      if (!silent) onShowToast('Please set up an Upload Structure (Stage 01) first to define the Main Data destination path.', 'warning');
       return;
     }
 
@@ -586,15 +589,17 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
       const res = await window.electronAPI.moveMergedFolder(photoDir, target);
       if (res && res.success) {
         setMovedResult({ count: res.movedCount, path: res.targetPath });
-        onShowToast(
-          `Merged media moved to Main Data successfully (${res.movedCount} subfolders preserved without renaming)!`,
-          'success'
-        );
+        if (!silent) {
+          onShowToast(
+            `Merged media moved to Main Data successfully (${res.movedCount} subfolders preserved)!`,
+            'success'
+          );
+        }
         setPhotoDir(res.targetPath);
       }
     } catch (e: any) {
       console.error('Failed to move merged folder:', e);
-      onShowToast(toUserErrorMessage(e, 'Failed to move merged folder. Please check drive permissions and available space.'), 'danger');
+      if (!silent) onShowToast(toUserErrorMessage(e, 'Failed to move merged folder. Please check drive permissions and available space.'), 'danger');
     } finally {
       setIsMovingFolder(false);
     }
@@ -604,10 +609,10 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
     const key = Date.now();
     setRefreshKey(key);
     playRefreshSound();
-    await handleScan();
+    await handleScan(true);
     const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     setLastRefreshedTime(nowStr);
-    onShowToast(`Refreshed! Folders and video clips re-scanned from disk at ${nowStr}`, 'info');
+    onShowToast(`Refreshed folders from disk (${nowStr})`, 'info');
   };
 
   const handleTransfer = async () => {
@@ -642,15 +647,19 @@ export const VideoTransferPage: React.FC<VideoTransferPageProps> = ({ onShowToas
       );
       setLastManifest(res.manifestPath);
       playSuccessSound();
-      onShowToast(
-        `Transfer complete: ${res.transferred} video clip${res.transferred === 1 ? '' : 's'} ${transferMode === 'move' ? 'moved' : 'copied'} successfully!`,
-        'success'
-      );
 
       if (autoMoveToMainData && uploadStructure.mainDataPath && photoDir) {
-        await handleMoveMergedFolder(uploadStructure.mainDataPath);
+        await handleMoveMergedFolder(uploadStructure.mainDataPath, true);
+        onShowToast(
+          `Transfer complete: ${res.transferred} video clip${res.transferred === 1 ? '' : 's'} ${transferMode === 'move' ? 'moved' : 'copied'} to Main Data.`,
+          'success'
+        );
       } else {
-        await handleScan();
+        onShowToast(
+          `Transfer complete: ${res.transferred} video clip${res.transferred === 1 ? '' : 's'} ${transferMode === 'move' ? 'moved' : 'copied'} successfully.`,
+          'success'
+        );
+        await handleScan(true);
       }
     } catch (e: any) {
       console.error('Video transfer failed:', e);

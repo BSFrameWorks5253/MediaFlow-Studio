@@ -167,9 +167,10 @@ export const PhotoMatcherPage: React.FC<PhotoMatcherPageProps> = ({ onShowToast,
     }
   };
 
-  const handleScan = async () => {
+  const handleScan = async (opts?: boolean | React.MouseEvent<any>) => {
+    const isSilent = opts === true;
     if (!targetDir.trim()) {
-      onShowToast('Please select a production root directory first.', 'warning');
+      if (!isSilent) onShowToast('Please select a production root directory first.', 'warning');
       return;
     }
 
@@ -177,7 +178,7 @@ export const PhotoMatcherPage: React.FC<PhotoMatcherPageProps> = ({ onShowToast,
     try {
       const check = await window.electronAPI.checkPathExists(targetDir.trim());
       if (!check.exists) {
-        onShowToast('The selected folder does not exist or cannot be reached. Please check the path and try again.', 'danger');
+        if (!isSilent) onShowToast('The selected folder does not exist or cannot be reached. Please check the path and try again.', 'danger');
         setIsScanning(false);
         return;
       }
@@ -185,13 +186,15 @@ export const PhotoMatcherPage: React.FC<PhotoMatcherPageProps> = ({ onShowToast,
       // Use single-directory scan (SEQUORA mode)
       const res: PhotoMatchScanResult = await window.electronAPI.scanPhotoMatcher(targetDir.trim());
       setScanResult(res);
-      onShowToast(
-        `Scan complete: ${res.totalUsed} Matched (_U), ${res.totalMissing} Not Present (_R) out of ${res.totalRemaining} remaining photos.`,
-        'success'
-      );
+      if (!isSilent) {
+        onShowToast(
+          `Scan complete: ${res.totalUsed} Matched (_U), ${res.totalMissing} Missing (_R).`,
+          'success'
+        );
+      }
     } catch (e: any) {
       console.error('Photo Matcher scan failed:', e);
-      onShowToast(toUserErrorMessage(e, 'Scan failed. Please check folder permissions and try again.'), 'danger');
+      if (!isSilent) onShowToast(toUserErrorMessage(e, 'Scan failed. Please check folder permissions and try again.'), 'danger');
     } finally {
       setIsScanning(false);
     }
@@ -210,8 +213,8 @@ export const PhotoMatcherPage: React.FC<PhotoMatcherPageProps> = ({ onShowToast,
         `Renamed ${summary.success_count} files successfully!`,
         'success'
       );
-      // Refresh scan to update status
-      handleScan();
+      // Refresh scan silently to update table status without a second toast
+      await handleScan(true);
     } catch (e: any) {
       console.error('Photo rename execution error:', e);
       onShowToast(toUserErrorMessage(e, 'Rename execution failed. Please verify files are not in use.'), 'danger');
