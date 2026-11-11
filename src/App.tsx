@@ -59,6 +59,7 @@ const AppContent: React.FC = () => {
   });
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isSetupWizardOpen, setIsSetupWizardOpen] = useState(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -170,6 +171,13 @@ const AppContent: React.FC = () => {
         return;
       }
 
+      // Ctrl+B / Cmd+B: Toggle Sidebar Collapse (Physical Glassmorphism Layout Hotkey)
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        setIsSidebarCollapsed((prev) => !prev);
+        return;
+      }
+
       // '?' key: Toggle Keyboard Shortcuts Modal (only when not typing in an input)
       if (!isInput && e.key === '?') {
         e.preventDefault();
@@ -231,12 +239,14 @@ const AppContent: React.FC = () => {
       {/* Dynamic Liquid Aurora Canvas */}
       <LiquidAuroraBackground />
 
-      {/* 270px Non-Compressible Liquid Glass Sidebar Dock */}
-      <Sidebar
-        activePage={activePage}
-        onNavigate={setActivePage}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-      />
+      {/* 240px Fixed Physical Glass Sidebar Dock (Collapsible via Cmd/Ctrl + B) */}
+      {!isSidebarCollapsed && (
+        <Sidebar
+          activePage={activePage}
+          onNavigate={setActivePage}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+        />
+      )}
 
       {/* Main Studio Viewport Shell */}
       <div
@@ -251,18 +261,22 @@ const AppContent: React.FC = () => {
         {/* Top Navigation Bar with Auto Run Controller */}
         <TopBarAutoRun activePage={activePage} onNavigate={setActivePage} />
 
-        {/* Zoomed Page Viewport Container */}
+        {/* Zoomed Page Viewport Container: Physical Glass Main Utility Stage */}
         <main
-          className="glass-panel"
+          className="glass-panel glass-utility-grid"
           style={{
             flex: 1,
             borderRadius: 18,
-            padding: 16,
+            padding: 18,
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
             position: 'relative',
-            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.35)',
+            background: 'rgba(16, 16, 16, 0.45)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '0.5px solid rgba(255, 255, 255, 0.08)',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.45)',
           }}
         >
           <div

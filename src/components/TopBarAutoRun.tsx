@@ -36,7 +36,7 @@ export const TopBarAutoRun: React.FC<TopBarAutoRunProps> = ({ activePage, onNavi
 
   return (
     <header
-      className="glass-panel"
+      className="glass-panel drag-header-zone window-drag-region"
       style={{
         height: 48,
         minHeight: 48,
@@ -47,14 +47,16 @@ export const TopBarAutoRun: React.FC<TopBarAutoRunProps> = ({ activePage, onNavi
         justifyContent: 'space-between',
         gap: 12,
         marginBottom: 8,
-        border: '1px solid var(--border-subtle)',
-        background: 'var(--surface-card)',
+        border: '0.5px solid rgba(255, 255, 255, 0.08)',
+        background: 'rgba(16, 16, 16, 0.45)',
+        backdropFilter: 'blur(24px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
         zIndex: 5,
-        boxShadow: 'var(--shadow-card)',
+        boxShadow: '0 4px 18px -2px rgba(0, 0, 0, 0.35)',
       }}
     >
       {/* Left: Active Section Breadcrumb */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div className="window-no-drag interactive-no-drag" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div
           style={{
             width: 24,
@@ -87,7 +89,7 @@ export const TopBarAutoRun: React.FC<TopBarAutoRunProps> = ({ activePage, onNavi
       </div>
 
       {/* Right: Dynamic Auto Run Pipeline Controller */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div className="window-no-drag interactive-no-drag" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {/* State 1: IDLE */}
         {status === 'IDLE' && (
           <button

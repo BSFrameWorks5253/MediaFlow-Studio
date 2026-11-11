@@ -148,18 +148,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onOpen
   
   return (
     <aside
-      className="glass-panel"
+      className="glass-panel glass-persistent-menu"
       style={{
-        width: 250,
-        minWidth: 250,
-        maxWidth: 250,
+        width: 240,
+        minWidth: 240,
+        maxWidth: 240,
         height: '100%',
         borderRadius: 16,
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
         zIndex: 2,
-        boxShadow: 'var(--shadow-card)',
+        border: '0.5px solid rgba(255, 255, 255, 0.08)',
+        background: 'rgba(16, 16, 16, 0.45)',
+        backdropFilter: 'blur(24px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+        boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.45)',
+        transition: 'all 450ms var(--ease-cinematic)',
       }}
     >
       {/* Brand Header */}

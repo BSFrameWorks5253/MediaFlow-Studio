@@ -106,15 +106,20 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
 
   return (
     <header
-      className="glass-panel window-drag-region"
+      className="glass-panel drag-header-zone window-drag-region"
       style={{
-        height: 44,
-        borderRadius: 12,
+        height: 48,
+        minHeight: 48,
+        borderRadius: 14,
         padding: '0 8px 0 16px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         marginBottom: 8,
+        border: '0.5px solid rgba(255, 255, 255, 0.08)',
+        background: 'rgba(16, 16, 16, 0.45)',
+        backdropFilter: 'blur(24px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
         zIndex: 10,
         userSelect: 'none',
       }}
